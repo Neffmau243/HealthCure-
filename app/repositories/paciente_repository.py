@@ -46,20 +46,30 @@ class PacienteRepository:
             .all()
         )
 
-    def create(self, **kwargs) -> Paciente:
+    def list_all(self) -> list[Paciente]:
+        """
+        Retorna TODOS los pacientes registrados, ordenados por ID.
+        Usado por el endpoint GET /api/v1/pacientes/.
+        """
+        return self.db.query(Paciente).order_by(Paciente.id).all()
+
+    def create(self, usuario_creador_id: int = None, **kwargs) -> Paciente:
         """
         Crea un paciente nuevo.
         **kwargs permite pasar todos los campos como parámetros nombrados.
+        usuario_creador_id: ID del usuario que registra al paciente.
 
         Ejemplo:
             repo.create(
+                usuario_creador_id=1,
                 nombre="María",
                 documento_identidad="12345",
                 fecha_nacimiento=date(1985, 3, 15),
                 sexo="F"
             )
         """
-        paciente = Paciente(**kwargs)  # Crea el objeto ORM con los campos
+        paciente = Paciente(usuario_creador_id=usuario_creador_id, **kwargs)
+        # Crea el objeto ORM con los campos + quién lo registró
         self.db.add(paciente)          # Agrega a la sesión
         self.db.flush()                # Genera el ID sin commitear
         return paciente

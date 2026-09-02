@@ -32,6 +32,7 @@ CREATE TABLE pacientes (
     documento_identidad VARCHAR(30)   NOT NULL UNIQUE,
     fecha_nacimiento    DATE          NOT NULL,
     sexo                ENUM('M', 'F') NOT NULL,
+    usuario_creador_id  BIGINT        NULL,
     talla_cm            DECIMAL(5,1)  NULL,
     peso_kg             DECIMAL(5,1)  NULL,
     created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,

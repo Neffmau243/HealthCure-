@@ -97,6 +97,45 @@ class UsuarioResponse(BaseModel):
         # Sin esto, model_validate(usuario_orm) daría error
 
 
+class UsuarioUpdate(BaseModel):
+    """
+    DTO de ENTRADA — lo que el admin envía para editar un usuario existente.
+    Todos los campos son opcionales (update parcial).
+
+    Ejemplo JSON:
+    {
+        "nombre": "Dr. García (Editado)",
+        "rol": "admin",
+        "activo": false
+    }
+    """
+    nombre: Optional[str] = Field(None, min_length=2, max_length=150)
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(None, min_length=6, max_length=128)
+    rol: Optional[RolEnum] = None
+    activo: Optional[bool] = None
+
+
+class UsuarioAdminCreate(BaseModel):
+    """
+    DTO de ENTRADA — lo que el admin envía para crear un usuario.
+    A diferencia de UsuarioCreate (registro público), aquí el admin SÍ puede
+    elegir el rol (admin o usuario) y asignar una contraseña.
+
+    Ejemplo JSON:
+    {
+        "nombre": "Dr. García",
+        "email": "garcia@hospital.com",
+        "password": "mi_password_seguro",
+        "rol": "admin"
+    }
+    """
+    nombre: str = Field(..., min_length=2, max_length=150)
+    email: EmailStr
+    password: str = Field(..., min_length=6, max_length=128)
+    rol: RolEnum = RolEnum.usuario
+
+
 class TokenResponse(BaseModel):
     """
     DTO de SALIDA — respuesta del login exitoso.

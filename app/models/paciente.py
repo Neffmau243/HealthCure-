@@ -37,6 +37,12 @@ class Paciente(Base):
     sexo = Column(Enum("M", "F", name="sexo_enum"), nullable=False)
     # M = Masculino, F = Femenino
 
+    # --- Relación con el usuario que creó este paciente ---
+    usuario_creador_id = Column(BigInteger, nullable=True, index=True)
+    # Guarda qué usuario (médico/enfermera) registró este paciente.
+    # Se usa para permisos: solo el creador o un admin puede editar.
+    # nullable=True para compatibilidad con datos existentes del seed.
+
     # --- Mediciones físicas (opcionales, se pueden llenar después) ---
     talla_cm = Column(Numeric(5, 1), nullable=True)
     # Numeric(5,1) = hasta 999.9 cm (ej: 175.5 cm)

@@ -24,7 +24,7 @@ from app.services.paciente_service import PacienteService
 from app.schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse
 )
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
 
@@ -99,7 +99,7 @@ def get_paciente(
 def create_paciente(
     data: PacienteCreate,
     db: Session = Depends(get_db),
-    _user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
     """
     Registrar un paciente nuevo.
@@ -119,7 +119,7 @@ def create_paciente(
     """
     service = PacienteService(db)
     try:
-        return service.create(data)
+        return service.create(data, usuario_creador_id=user["id"])
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
@@ -129,20 +129,37 @@ def update_paciente(
     paciente_id: int,
     data: PacienteUpdate,
     db: Session = Depends(get_db),
-    _user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ):
     """
     Actualizar datos de un paciente existente.
     Solo se actualizan los campos que se envíen en el body.
 
+    PERMISOS:
+      - Admin: puede editar cualquier paciente
+      - Médico/Enfermera: solo puede editar pacientes que EL registró
+
     Body JSON (ejemplo — solo actualizar talla):
       {"talla_cm": 166.0}
 
     Retorna 200 con los datos actualizados.
+    Retorna 403 si no tiene permiso.
     Retorna 404 si el paciente no existe.
     """
     service = PacienteService(db)
-    paciente = service.update(paciente_id, data)
+
+    # Verificar que el paciente exista
+    paciente = service.get_by_id_raw(paciente_id)
     if not paciente:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
-    return paciente
+
+    # Verificar permisos: admin puede todo, medico solo lo que creo
+    if user["rol"] != "admin":
+        if paciente.usuario_creador_id is not None and paciente.usuario_creador_id != user["id"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para editar este paciente. Solo el usuario que lo registro puede modificarlo."
+            )
+
+    resultado = service.update(paciente_id, data)
+    return resultado

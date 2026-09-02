@@ -28,6 +28,13 @@ class PacienteService:
 
     # --- READ OPERATIONS ---
 
+    def get_by_id_raw(self, paciente_id: int):
+        """
+        Retorna el objeto ORM directamente (no el DTO).
+        Usado internamente para verificar permisos antes de updates.
+        """
+        return self.repo.get_by_id(paciente_id)
+
     def get_by_id(self, paciente_id: int) -> Optional[PacienteResponse]:
         """Busca paciente por ID y retorna el DTO de respuesta."""
         paciente = self.repo.get_by_id(paciente_id)
@@ -50,17 +57,18 @@ class PacienteService:
 
     # --- CREATE ---
 
-    def create(self, data: PacienteCreate) -> PacienteResponse:
+    def create(self, data: PacienteCreate, usuario_creador_id: int = None) -> PacienteResponse:
         """
         Registra un paciente nuevo.
         1. Verifica que no exista otro con el mismo documento
-        2. Crea el paciente en la BD
+        2. Crea el paciente en la BD (guarda quién lo registró)
         3. Retorna los datos del paciente creado
         """
         if self.repo.get_by_documento(data.documento_identidad):
             raise ValueError("Ya existe un paciente con ese documento")
 
         paciente = self.repo.create(
+            usuario_creador_id=usuario_creador_id,
             nombre=data.nombre,
             documento_identidad=data.documento_identidad,
             fecha_nacimiento=data.fecha_nacimiento,

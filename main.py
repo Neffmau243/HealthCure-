@@ -21,10 +21,32 @@ Jerarquía de rutas:
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.core.config import get_settings
 from app.api.v1 import auth, pacientes, evaluaciones, admin
 
 settings = get_settings()
+
+
+# --- LIFESPAN: ejecuta código al iniciar y apagar el servidor ---
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Maneja el ciclo de vida de la aplicación:
+      - Al INICIAR: ejecuta el seed de datos de prueba
+      - Al CERRAR: (nada por ahora)
+
+    Flask tiene @app.before_first_request. FastAPI usa lifespan.
+    """
+    # --- STARTUP ---
+    from app.seeds.seed import seed_database
+    seed_database()
+
+    yield  # El servidor está corriendo aquí
+
+    # --- SHUTDOWN ---
+    # Nada que limpiar por ahora
+
 
 # --- INSTANCIA DE FASTAPI ---
 app = FastAPI(
@@ -33,6 +55,7 @@ app = FastAPI(
     description="Sistema de triaje cardíaco con predicción ML — CardioPredict",
     docs_url="/docs",     # Swagger UI interactivo (para probar la API)
     redoc_url="/redoc",   # Documentación alternativa
+    lifespan=lifespan,    # Seed automático al iniciar
 )
 
 # --- CORS (Cross-Origin Resource Sharing) ---

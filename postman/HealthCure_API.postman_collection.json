@@ -1,0 +1,996 @@
+{
+  "info": {
+    "name": "HealthCure - CardioPredict API",
+    "description": "Coleccion completa de endpoints para probar la API de HealthCure.\n\nPASOS PARA USAR:\n1. Levanta el servidor: uvicorn main:app --reload --port 8000\n2. Importa esta coleccion en Postman (File - Import)\n3. IMPORTANTE: No necesitas crear un Environment - las variables son de coleccion\n4. Haz clic en \"Login - Obtener Token\" (admin o medico)\n5. El token se guarda automaticamente\n6. Todos los demas requests usan el token automaticamente\n\nCredenciales de prueba:\n  Admin:   admin@healthcure.com / admin123\n  Medico:  dr.garcia@healthcure.com / doctor123",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check - Verificar servidor",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Verifica que el servidor este funcionando. No requiere autenticacion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Servidor funcionando (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var r = pm.response.json();",
+                  "    pm.expect(r.status).to.eql('ok');",
+                  "    console.log(r.app + ' v' + r.version);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth - Autenticacion",
+      "item": [
+        {
+          "name": "1 - Login Admin",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@healthcure.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "description": "Login como admin. El token se guarda automaticamente para TODOS los requests de la coleccion."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "",
+                  "pm.test('Login admin exitoso (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(response.access_token).to.be.a('string');",
+                  "    pm.expect(response.usuario.rol).to.eql('admin');",
+                  "});",
+                  "",
+                  "if (response.access_token) {",
+                  "    pm.collectionVariables.set('token', response.access_token);",
+                  "    pm.collectionVariables.set('admin_id', response.usuario.id);",
+                  "    console.log('Token guardado - admin: ' + response.usuario.nombre);",
+                  "} else {",
+                  "    console.log('No se obtuvo token - revisa credenciales');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "2 - Login Medico",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"dr.garcia@healthcure.com\",\n  \"password\": \"doctor123\"\n}"
+            },
+            "description": "Login como medico. Reemplaza el token de admin con uno de usuario normal."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var response = pm.response.json();",
+                  "",
+                  "pm.test('Login medico exitoso (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(response.access_token).to.be.a('string');",
+                  "    pm.expect(response.usuario.rol).to.eql('usuario');",
+                  "});",
+                  "",
+                  "if (response.access_token) {",
+                  "    pm.collectionVariables.set('token', response.access_token);",
+                  "    console.log('Token guardado - medico: ' + response.usuario.nombre);",
+                  "} else {",
+                  "    console.log('No se obtuvo token - revisa credenciales');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login - Credenciales invalidas",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@healthcure.com\",\n  \"password\": \"wrong_password\"\n}"
+            },
+            "description": "Prueba de login con contrasena incorrecta. Debe retornar 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Error 401 - Credenciales invalidas', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Registrar Usuario Nuevo (publico)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Dra. Maria Torres\",\n  \"email\": \"dra.torres@healthcure.com\",\n  \"password\": \"password123\",\n  \"rol\": \"usuario\"\n}"
+            },
+            "description": "Registra un usuario nuevo. Aunque envies rol: admin, siempre se crea como usuario (seguridad)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Registro exitoso (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Dra. Maria Torres');",
+                  "    pm.expect(response.rol).to.eql('usuario');",
+                  "    pm.expect(response).to.not.have.property('password_hash');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mi Perfil - /me",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Obtiene los datos del usuario autenticado. Requiere token JWT."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Perfil obtenido (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('email');",
+                  "    pm.expect(response).to.not.have.property('password_hash');",
+                  "    console.log(response.nombre + ' (' + response.email + ') - rol: ' + response.rol);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Mi Perfil - Sin token (debe fallar)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Prueba de acceso sin token. Debe retornar 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Error 401 - No autenticado', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pacientes - CRUD",
+      "item": [
+        {
+          "name": "Listar Todos los Pacientes",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", ""]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Lista todos los pacientes de la base de datos."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de pacientes (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    pm.expect(response.length).to.be.above(0);",
+                  "    pm.expect(response[0]).to.have.property('nombre');",
+                  "    console.log(response.length + ' pacientes encontrados');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Buscar por Documento (parcial)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/search?documento=1032",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", "search"],
+              "query": [
+                {
+                  "key": "documento",
+                  "value": "1032"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Busqueda parcial por documento (autocomplete)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Busqueda por documento (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Obtener por Documento (exacto)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/by-documento/1032456789",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", "by-documento", "1032456789"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Busca un paciente por documento exacto."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Paciente encontrado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.documento_identidad).to.eql('1032456789');",
+                  "    console.log(response.nombre + ' - doc: ' + response.documento_identidad);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Obtener por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Obtiene un paciente por su ID."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Paciente ID 1 (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.id).to.eql(1);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Crear Paciente Nuevo",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", ""]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carmen Rosa Vasquez\",\n  \"documento_identidad\": \"1077889900\",\n  \"fecha_nacimiento\": \"1972-04-18\",\n  \"sexo\": \"F\",\n  \"talla_cm\": 158.5,\n  \"peso_kg\": 62.0\n}"
+            },
+            "description": "Registra un paciente nuevo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Paciente creado (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Carmen Rosa Vasquez');",
+                  "    pm.expect(response).to.have.property('id');",
+                  "    console.log('Paciente creado con ID: ' + response.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Actualizar Paciente (parcial)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"talla_cm\": 173.0,\n  \"peso_kg\": 86.0\n}"
+            },
+            "description": "Actualiza solo talla y peso del paciente 1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Paciente actualizado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.talla_cm).to.eql(173.0);",
+                  "    console.log(response.nombre + ' actualizado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Evaluaciones",
+      "item": [
+        {
+          "name": "Listar Todas las Evaluaciones",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/?limit=10&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", ""],
+              "query": [
+                { "key": "limit", "value": "10" },
+                { "key": "offset", "value": "0" }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Lista todas las evaluaciones (paginado)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de evaluaciones (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    console.log(response.length + ' evaluaciones encontradas');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Historial por Paciente (ID 1)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/by-paciente/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", "by-paciente", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Historial de evaluaciones del paciente 1 (Juan Perez)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Historial del paciente (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    console.log(response.length + ' evaluaciones para este paciente');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Ver Evaluacion por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", "1"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Obtiene la evaluacion con ID 1."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Evaluacion ID 1 (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.id).to.eql(1);",
+                  "    console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%)');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin - Gestion de Usuarios",
+      "description": "CRUD completo de usuarios. Solo accesible con token de admin.",
+      "item": [
+        {
+          "name": "1 - Listar Todos los Usuarios",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Lista todos los usuarios del sistema. Solo accesible por administradores."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de usuarios (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    pm.expect(response.length).to.be.above(0);",
+                  "    console.log('Admin - ' + response.length + ' usuarios encontrados');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "2 - Obtener Usuario por ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios", "2"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Obtiene un usuario por su ID. Retorna 404 si no existe."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario ID 2 (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('id');",
+                  "    pm.expect(response).to.have.property('email');",
+                  "    pm.expect(response).to.not.have.property('password_hash');",
+                  "    console.log('Usuario: ' + response.nombre + ' (' + response.email + ') - rol: ' + response.rol);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "3 - Crear Usuario (admin elige rol)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Dr. Carlos Mendez\",\n  \"email\": \"dr.mendez@healthcure.com\",\n  \"password\": \"mendez123\",\n  \"rol\": \"admin\"\n}"
+            },
+            "description": "El admin crea un usuario y puede asignar cualquier rol (admin o usuario). A diferencia del registro publico, aqui SÍ se puede elegir el rol."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario admin creado (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Dr. Carlos Mendez');",
+                  "    pm.expect(response.rol).to.eql('admin');",
+                  "    pm.expect(response).to.not.have.property('password_hash');",
+                  "    console.log('Admin creado con ID: ' + response.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "4 - Actualizar Usuario (parcial)",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios/2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios", "2"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Dr. Garcia (Editado)\",\n  \"rol\": \"admin\"\n}"
+            },
+            "description": "Actualiza solo los campos enviados (update parcial). Solo los campos presentes en el JSON se modifican."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario actualizado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Dr. Garcia (Editado)');",
+                  "    pm.expect(response.rol).to.eql('admin');",
+                  "    console.log('Usuario actualizado: ' + response.nombre);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "5 - Desactivar Usuario",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios/2/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios", "2", "deactivate"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Desactiva un usuario (soft delete). El usuario no se borra, solo se marca como inactivo. NO puede hacer login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario desactivado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.message).to.include('desactivado');",
+                  "    console.log('Usuario desactivado correctamente');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "6 - Reactivar Usuario",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios/2/activate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios", "2", "activate"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Reactiva un usuario que fue desactivado. Vuelve a poder hacer login."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario reactivado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('activo');",
+                  "    console.log('Usuario reactivado: ' + response.nombre);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "7 - Obtener Usuario Inexistente (404)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios/9999",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios", "9999"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Busca un usuario que no existe. Debe retornar 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Error 404 - Usuario no encontrado', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "8 - Crear Usuario Email Duplicado (409)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Duplicate Email\",\n  \"email\": \"admin@healthcure.com\",\n  \"password\": \"test1234\",\n  \"rol\": \"usuario\"\n}"
+            },
+            "description": "Intenta crear un usuario con un email que ya existe. Debe retornar 409 Conflict."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Error 409 - Email duplicado', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Seguridad",
+      "description": "Tests de seguridad - verificar que los permisos funcionan correctamente.",
+      "item": [
+        {
+          "name": "Admin - Acceso sin permisos (medico intenta admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/usuarios",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "usuarios"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "PRIMERO ejecuta 'Login Medico' para obtener un token de usuario normal. Luego ejecuta este request. Debe retornar 403."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Verificar permisos admin', function () {",
+                  "    var status = pm.response.code;",
+                  "    if (status === 403) {",
+                  "        console.log('OK - Token de usuario normal, 403 es correcto');",
+                  "    } else if (status === 200) {",
+                  "        console.log('WARNING - El token sigue siendo de admin. Ejecuta Login Medico primero.');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Acceso sin token (debe fallar)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/pacientes/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "pacientes", ""]
+            },
+            "description": "Prueba acceder a un endpoint protegido sin token. Debe retornar 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Error 401 - No autenticado', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -98,6 +98,9 @@ class PacienteResponse(BaseModel):
     sexo: SexoEnum
     talla_cm: Optional[float] = None
     peso_kg: Optional[float] = None
+    usuario_creador_id: Optional[int] = None
+    # ID del usuario que registró este paciente (médico/enfermera)
+    # Usado por el frontend para mostrar quién creó el registro
     created_at: datetime
 
     class Config:

@@ -74,6 +74,36 @@ class UsuarioRepository:
         usuario = self.get_by_id(usuario_id)
         if not usuario:
             return False
-        usuario.activo = False   # Soft delete — el registro sigue existiendo
+        usuario.activo = False   # Soft delete -- el registro sigue existiendo
         self.db.flush()          # Marca el cambio en la sesión
         return True
+
+    def activate(self, usuario_id: int) -> bool:
+        """
+        Reactiva un usuario desactivado.
+        Retorna True si se activó, False si no se encontró.
+        """
+        usuario = self.get_by_id(usuario_id)
+        if not usuario:
+            return False
+        usuario.activo = True
+        self.db.flush()
+        return True
+
+    def update(self, usuario_id: int, **kwargs) -> Optional[Usuario]:
+        """
+        Actualiza campos de un usuario.
+        Solo actualiza los campos que se pasen en kwargs.
+        Retorna el usuario actualizado o None si no existe.
+
+        Ejemplo de uso:
+            repo.update(1, nombre="Nuevo Nombre", rol="admin")
+        """
+        usuario = self.get_by_id(usuario_id)
+        if not usuario:
+            return None
+        for key, value in kwargs.items():
+            if hasattr(usuario, key):
+                setattr(usuario, key, value)
+        self.db.flush()
+        return usuario
