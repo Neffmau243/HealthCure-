@@ -130,6 +130,14 @@ CREATE TABLE evaluaciones (
     clasificacion           ENUM('bajo', 'moderado', 'alto') NOT NULL,
     modelo_version          VARCHAR(50)  NULL,
 
+    -- Triaje clínico (interpretación para médicos/enfermeros)
+    nivel_alerta            VARCHAR(100) NULL,
+    codigo_color            VARCHAR(20)  NULL,
+    accion_sugerida         TEXT         NULL,
+    factores_riesgo_detectados JSON     NULL,
+    factores_protectores    JSON         NULL,
+    recomendaciones_medicas JSON         NULL,
+
     created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_evaluacion_paciente

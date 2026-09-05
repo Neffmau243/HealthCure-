@@ -282,6 +282,14 @@ Además crea 5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluacione
     "probabilidad": 0.734521,
     "clasificacion": "alto",
     "modelo_version": "1.0.0",
+    "triaje_clinico": {
+        "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
+        "codigo_color": "rojo",
+        "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
+        "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
+        "factores_protectores": ["No Fumador"],
+        "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
+    },
     "created_at": "2025-01-15T10:30:00"
 }
 ```

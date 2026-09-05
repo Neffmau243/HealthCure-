@@ -548,7 +548,7 @@
                 }
               }
             },
-            "description": "Crea una evaluacion cardiaca (nueva instantanea de riesgo).\n\nFLUJO DE RE-EVALUACION (paciente que vuelve despues de tiempo X):\n1. Busca al paciente existente: GET /pacientes/search?documento=...\n   (o GET /pacientes/by-documento/{doc}) y copia su ID.\n2. Cambia la variable de coleccion paciente_id a ese ID.\n3. Ejecuta ESTE request con los datos clinicos NUEVOS de la visita.\n   Cada evaluacion se guarda con su propio created_at (nueva visita).\n4. Ver el historial completo: GET /evaluaciones/by-paciente/{{paciente_id}}\n   (las evaluaciones se ordenan de mas reciente a mas antigua).\n\nNOTA: mientras el modelo ML no este entrenado (falta modelo_cardiaco.joblib)\neste endpoint responde 500 'Modelo ML no disponible' - es esperado por ahora."
+            "description": "Crea una evaluacion cardiaca (nueva instantanea de riesgo).\n\nFLUJO DE RE-EVALUACION (paciente que vuelve despues de tiempo X):\n1. Busca al paciente existente: GET /pacientes/search?documento=...\n   (o GET /pacientes/by-documento/{doc}) y copia su ID.\n2. Cambia la variable de coleccion paciente_id a ese ID.\n3. Ejecuta ESTE request con los datos clinicos NUEVOS de la visita.\n   Cada evaluacion se guarda con su propio created_at (nueva visita).\n4. Ver el historial completo: GET /evaluaciones/by-paciente/{{paciente_id}}\n   (las evaluaciones se ordenan de mas reciente a mas antigua).\n\nRESPUESTA 201 (ejemplo del nuevo triaje clinico):\n{\n  \"id\": 7,\n  \"paciente_id\": 1,\n  \"usuario_id\": 2,\n  \"edad\": 55,\n  \"probabilidad\": 0.459186,\n  \"clasificacion\": \"moderado\",\n  \"triaje_clinico\": {\n    \"nivel_alerta\": \"RIESGO MODERADO - SEGUIMIENTO PREVENTIVO\",\n    \"codigo_color\": \"amarillo\",\n    \"accion_sugerida\": \"Programar consulta medica de control en los proximos 15 a 30 dias.\",\n    \"factores_riesgo_detectados\": [\"Hipertension Arterial\", \"Dislipidemia (Colesterol Alto)\", \"Diabetes Mellitus\"],\n    \"factores_protectores\": [\"Realiza Actividad Fisica Regular\", \"No Fumador\"],\n    \"recomendaciones_medicas\": [\"Solicitar perfil lipidico y examen de glucosa en ayunas.\"]\n  },\n  \"created_at\": \"2026-09-05T08:02:08\"\n}\n\nNOTA: mientras el modelo ML no este entrenado (falta modelo_cardiaco.joblib)\neste endpoint responde 500 'Modelo ML no disponible' - es esperado por ahora."
           },
           "event": [
             {
@@ -560,7 +560,14 @@
                   "        var r = pm.response.json();",
                   "        pm.expect(r.clasificacion).to.be.oneOf(['bajo', 'moderado', 'alto']);",
                   "        pm.expect(r.probabilidad).to.be.a('number');",
-                  "        console.log('Riesgo: ' + r.clasificacion + ' (' + (r.probabilidad * 100).toFixed(1) + '%)');",
+                  "        pm.expect(r.triaje_clinico).to.be.an('object');",
+                  "        pm.expect(r.triaje_clinico.codigo_color).to.be.oneOf(['verde', 'amarillo', 'rojo']);",
+                  "        pm.expect(r.triaje_clinico.nivel_alerta).to.be.a('string');",
+                  "        pm.expect(r.triaje_clinico.accion_sugerida).to.be.a('string');",
+                  "        pm.expect(r.triaje_clinico.factores_riesgo_detectados).to.be.an('array');",
+                  "        pm.expect(r.triaje_clinico.factores_protectores).to.be.an('array');",
+                  "        pm.expect(r.triaje_clinico.recomendaciones_medicas).to.be.an('array');",
+                  "        console.log('Riesgo: ' + r.clasificacion + ' (' + (r.probabilidad * 100).toFixed(1) + '%) - Triaje: ' + r.triaje_clinico.codigo_color);",
                   "    } else {",
                   "        console.log('El modelo ML aun no esta entrenado -> 500 esperado por ahora');",
                   "        pm.expect(pm.response.code).to.be.oneOf([201, 500]);",
@@ -665,12 +672,16 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Evaluacion ID 1 (200)', function () {",
+                "exec": [                  "    pm.test('Evaluacion ID 1 (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
                   "    pm.expect(response.id).to.eql(1);",
-                  "    console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%)');",
+                  "    if (response.triaje_clinico) {",
+                  "        pm.expect(response.triaje_clinico.nivel_alerta).to.be.a('string');",
+                  "        console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%) - Triaje: ' + response.triaje_clinico.codigo_color);",
+                  "    } else {",
+                  "        console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%)');",
+                  "    }",
                   "});"
                 ]
               }

@@ -72,6 +72,32 @@ class EvaluacionCreate(BaseModel):
     dificultad_para_caminar: bool = False
 
 
+class TriajeClinico(BaseModel):
+    """
+    Interpretación clínica del resultado ML, lista para consumir.
+
+    TODO es texto plano / listas de strings — SIN HTML ni estilos.
+    El frontend renderiza colores y tarjetas a partir de codigo_color
+    ("verde" / "amarillo" / "rojo").
+
+    Ejemplo JSON:
+    {
+        "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
+        "codigo_color": "amarillo",
+        "accion_sugerida": "Programar consulta médica de control...",
+        "factores_riesgo_detectados": ["Hipertensión Arterial", ...],
+        "factores_protectores": ["Realiza Actividad Física Regular"],
+        "recomendaciones_medicas": ["Solicitar perfil lipídico..."]
+    }
+    """
+    nivel_alerta: str
+    codigo_color: str  # "verde" | "amarillo" | "rojo" (semáforo)
+    accion_sugerida: str
+    factores_riesgo_detectados: list[str]
+    factores_protectores: list[str]
+    recomendaciones_medicas: list[str]
+
+
 class EvaluacionResponse(BaseModel):
     """
     DTO de SALIDA — resultado completo de la evaluación.
@@ -94,6 +120,14 @@ class EvaluacionResponse(BaseModel):
         "probabilidad": 0.734521,
         "clasificacion": "alto",
         "modelo_version": "1.0.0",
+        "triaje_clinico": {
+            "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
+            "codigo_color": "rojo",
+            "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
+            "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
+            "factores_protectores": ["No Fumador"],
+            "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
+        },
         "created_at": "2025-01-15T10:30:00"
     }
     """
@@ -116,6 +150,10 @@ class EvaluacionResponse(BaseModel):
     probabilidad: float  # 0.0 a 1.0
     clasificacion: ClasificacionEnum
     modelo_version: Optional[str] = None
+
+    # Interpretación clínica para médicos/enfermeros (triaje)
+    triaje_clinico: Optional[TriajeClinico] = None
+    # None si la evaluación es antigua y no tiene triaje persistido
 
     created_at: datetime
 
