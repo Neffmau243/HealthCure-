@@ -1,64 +1,89 @@
 # HealthCure — CardioPredict
 
-Sistema web de triaje cardíaco con predicción automática usando Machine Learning.
+Sistema web de triaje cardíaco con **predicción automática usando Machine Learning** y **triaje clínico determinista** que traduce los resultados del modelo en instrucciones accionables para médicos y enfermeros.
 
-## ¿Qué hace este proyecto?
-
-Un médico/técnico de salud ingresa los datos de un paciente y el sistema automáticamente predice el **riesgo cardíaco** usando un modelo de Random Forest/XGBoost.
+> 🩺 **Lo que hace:** Un médico/técnico de salud ingresa los datos de un paciente → el sistema predice el **riesgo cardíaco** con ML (Random Forest/XGBoost) → y genera automáticamente un **triaje clínico** con nivel de alerta, código de color, factores de riesgo/protectores y recomendaciones médicas.
 
 ```
-Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación de riesgo
+Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación → TRIAJE CLÍNICO
 ```
 
-## Arquitectura del Backend
+---
+
+## ✨ Qué hay ahora mismo
+
+| Feature | Estado |
+|---------|--------|
+| Predicción ML (probabilidad + clasificación) | ✅ Funcionando |
+| **Triaje Clínico Automático** | ✅ **Implementado** |
+| Endpoints REST (FastAPI + Swagger) | ✅ Funcionando |
+| Autenticación JWT + roles (admin/médico/enfermera) | ✅ Funcionando |
+| Gestión de pacientes | ✅ Funcionando |
+| Catálogos (distritos/localidades) | ✅ Funcionando |
+| Admin (gestión de usuarios + catálogos) | ✅ Funcionando |
+| Tests (pytest, SQLite en memoria) | ✅ Cubiertos |
+| Migraciones SQL | ✅ Incluidas |
+| Postman collection | ✅ Incluido |
+| Entrenamiento de modelo | ✅ Script incluido |
+
+---
+
+## 🏗️ Arquitectura del Backend
 
 ```
 app/
 ├── models/          → Entidades SQLAlchemy (tablas MySQL)
-├── schemas/         → DTOs de entrada/salida (Pydantic)
+├── schemas/         → DTOs de entrada/salida (Pydantic v2)
 ├── repositories/    → Acceso a la base de datos
 ├── mappers/         → Traductor entre capas
-├── ml/              → Modelo de Machine Learning
+├── ml/              → Modelo ML (predictor + clasificador)
 ├── services/        → Lógica de negocio
+│   ├── evaluacion_service.py        → Orquesta evaluaciones
+│   └── evaluacion_triaje_service.py → ★ Motor de triaje clínico ★
 ├── api/             → Endpoints HTTP (FastAPI)
 ├── core/            → Configuración y base de datos
 ├── exceptions/      → Excepciones personalizadas
-└── resources/       → Modelo .joblib, SQL, CSV
+├── resources/       → Modelo .joblib, SQL, CSV, migraciones
+│   └── migrations/
+│       └── 001_triaje_clinico.sql
+└── tests/           → Tests con SQLite en memoria
 ```
 
 ### Capas (de afuera hacia adentro)
 
 ```
 API Controller → Service → Repository → MySQL
-                   ↓
-                Mapper ↔ ML Predictor
+                    ↓
+                 Mapper ↔ ML Predictor
+                    ↓
+              Triaje Clínico (determinista)
 ```
 
-## Stack Tecnológico
+---
+
+## 🛠️ Stack Tecnológico
 
 | Componente | Tecnología |
 |------------|-----------|
-| Backend | Python + FastAPI |
-| Base de datos | MySQL |
+| Backend | Python 3.10+ + **FastAPI** |
+| Base de datos | MySQL 8.0+ |
 | ORM | SQLAlchemy |
 | Validación | Pydantic v2 |
 | Autenticación | JWT (python-jose) |
 | Contraseñas | bcrypt (passlib) |
 | ML | Random Forest / XGBoost (scikit-learn) |
+| Tests | pytest + httpx |
+| Documentación API | Swagger UI automático |
 
-## Requisitos
+---
 
-- Python 3.10+
-- MySQL 8.0+
-- pip (gestor de paquetes)
-
-## Instalación
+## 🚀 Instalación
 
 ### 1. Clonar el repositorio
 
 ```bash
-git clone <url-del-repositorio>
-cd healthcure-backend
+git clone https://github.com/Neffmau243/HealthCure-.git
+cd HealthCure-
 ```
 
 ### 2. Crear entorno virtual
@@ -77,12 +102,10 @@ source venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
+pip install -r requirements-dev.txt   # pytest + httpx
 ```
 
 ### 4. Configurar base de datos
-
-1. Abrir MySQL Workbench o tu cliente favorito
-2. Crear la base de datos:
 
 ```sql
 CREATE DATABASE healthcure_db
@@ -90,19 +113,18 @@ CREATE DATABASE healthcure_db
     COLLATE utf8mb4_unicode_ci;
 ```
 
-3. Ejecutar el script SQL:
+Ejecutar el script SQL:
 
 ```bash
-# Opción A: desde la consola de MySQL
 mysql -u root -p healthcure_db < app/resources/schema.sql
-
-# Opción B: desde MySQL Workbench
-# Abrir app/resources/schema.sql y ejecutar
 ```
 
-### 5. Configurar variables de entorno
+> **Si tu BD ya existe** (creada con schema.sql anterior), aplica la migración de triaje:
+> ```bash
+> mysql -u root -p healthcure_db < app/resources/migrations/001_triaje_clinico.sql
+> ```
 
-Editar el archivo `.env` con tus credenciales de MySQL:
+### 5. Configurar variables de entorno
 
 ```env
 DB_HOST=localhost
@@ -120,33 +142,27 @@ DEBUG=True
 uvicorn main:app --reload --port 8000
 ```
 
-El servidor arranca en: **http://localhost:8000**
+### 7. Verificar
 
-### 7. Verificar que funciona
+Abre **http://localhost:8000/docs** → Swagger UI con todos los endpoints.
 
-Abrir en el navegador: **http://localhost:8000/docs**
-
-Ahí aparece el Swagger UI con todos los endpoints disponibles.
-
-### 8. Correr los tests (opcional)
-
-Los tests corren con una base **SQLite en memoria** — NO necesitan MySQL levantado:
+### 8. Correr los tests
 
 ```bash
-pip install -r requirements-dev.txt   # pytest + httpx (solo desarrollo)
 python -m pytest app/tests -v
 ```
 
-Cubren el mapper de evaluaciones, el preprocesador del modelo ML y las reglas
-de permisos (quién puede editar pacientes y los guards anti-lockout del admin).
+Los tests usan **SQLite en memoria** — no necesitan MySQL levantado.
 
-## Endpoints Disponibles
+---
+
+## 📡 Endpoints Disponibles
 
 ### Auth (públicos)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| POST | `/api/v1/auth/register` | Registrar usuario nuevo (SIEMPRE crea rol `usuario`) |
+| POST | `/api/v1/auth/register` | Registrar usuario (SIEMPRE rol `usuario`) |
 | POST | `/api/v1/auth/login` | Login → token JWT |
 | GET | `/api/v1/auth/me` | Datos del usuario autenticado |
 
@@ -157,7 +173,6 @@ de permisos (quién puede editar pacientes y los guards anti-lockout del admin).
 | GET | `/api/v1/pacientes/` | Listar todos |
 | GET | `/api/v1/pacientes/search?documento=1234` | Buscar por documento |
 | GET | `/api/v1/pacientes/{id}` | Obtener por ID |
-| GET | `/api/v1/pacientes/by-documento/{doc}` | Obtener por documento exacto |
 | POST | `/api/v1/pacientes/` | Registrar paciente nuevo |
 | PUT | `/api/v1/pacientes/{id}` | Actualizar datos |
 
@@ -165,53 +180,46 @@ de permisos (quién puede editar pacientes y los guards anti-lockout del admin).
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| POST | `/api/v1/evaluaciones/` | **Crear evaluación (predicción ML)** |
+| **POST** | `/api/v1/evaluaciones/` | **Crear evaluación + predicción ML + TRIAJE CLÍNICO** |
 | GET | `/api/v1/evaluaciones/` | Listar todas (paginado) |
 | GET | `/api/v1/evaluaciones/{id}` | Ver una evaluación |
 | GET | `/api/v1/evaluaciones/by-paciente/{id}` | Historial de un paciente |
 
-### Catálogos (requiere JWT — opciones para el doctor)
+### Catálogos (requiere JWT)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `/api/v1/catalogos/distritos` | Distritos activos (dropdown) |
-| GET | `/api/v1/catalogos/localidades?distrito_id=1` | Localidades activas de un distrito (dropdown) |
+| GET | `/api/v1/catalogos/distritos` | Distritos activos |
+| GET | `/api/v1/catalogos/localidades?distrito_id=1` | Localidades activas |
 
 ### Admin (requiere JWT + rol admin)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `/api/v1/admin/usuarios` | Listar todos los usuarios |
-| GET | `/api/v1/admin/usuarios/{id}` | Obtener usuario por ID |
-| POST | `/api/v1/admin/usuarios` | Crear usuario (admin elige rol) |
-| PUT | `/api/v1/admin/usuarios/{id}` | Actualizar usuario (parcial) |
-| PUT | `/api/v1/admin/usuarios/{id}/activate` | Reactivar usuario |
-| PUT | `/api/v1/admin/usuarios/{id}/deactivate` | Desactivar usuario |
-| GET | `/api/v1/admin/distritos` | Listar distritos (catálogo) |
+| GET/POST | `/api/v1/admin/usuarios*` | Gestión de usuarios |
+| GET/POST | `/api/v1/admin/distritos*` | Gestión de distritos |
+| GET/POST | `/api/v1/admin/localidades*` | Gestión de localidades |
 
-> **Seguridad admin:** el registro público (`/auth/register`) **no acepta** campo `rol` — siempre crea usuarios con rol `usuario`. Para crear/editar admins solo existe `/api/v1/admin/usuarios*`. Además, un admin **no puede desactivar su propia cuenta ni quitarse el rol admin**, y **nadie puede desactivar/degradar al último administrador activo** (evita dejar la app sin administradores → responde `409`).
-| POST | `/api/v1/admin/distritos` | Crear distrito |
-| PUT | `/api/v1/admin/distritos/{id}` | Actualizar distrito |
-| PUT | `/api/v1/admin/distritos/{id}/deactivate` | Desactivar distrito |
-| GET | `/api/v1/admin/localidades` | Listar localidades (catálogo) |
-| POST | `/api/v1/admin/localidades` | Crear localidad |
-| PUT | `/api/v1/admin/localidades/{id}` | Actualizar localidad |
-| PUT | `/api/v1/admin/localidades/{id}/deactivate` | Desactivar localidad |
+> **Seguridad admin:** el registro público no acepta campo `rol`. Un admin no puede desactivar su propia cuenta ni quitarse el rol. Nadie puede desactivar al último administrador activo.
 
-## Flujo de Uso Típico
+---
+
+## 🩺 Flujo de Uso Típico
 
 ```
-1. POST /api/v1/auth/register   → Crear cuenta de usuario
+1. POST /api/v1/auth/register   → Crear cuenta
 2. POST /api/v1/auth/login      → Obtener token JWT
-3. GET  /api/v1/catalogos/distritos  → Cargar opciones del formulario (dropdowns)
-4. POST /api/v1/pacientes/      → Registrar paciente (formato detallado)
-5. POST /api/v1/evaluaciones/   → Evaluar riesgo cardíaco
+3. GET  /api/v1/catalogos/distritos → Cargar dropdowns
+4. POST /api/v1/pacientes/      → Registrar paciente
+5. POST /api/v1/evaluaciones/   → Evaluar riesgo + obtener triaje clínico
 6. GET  /api/v1/evaluaciones/   → Ver historial
 ```
 
-## Credenciales de Prueba (seed automático)
+---
 
-Al levantar el servidor, el seed crea estos usuarios (solo si la BD está vacía):
+## 🧪 Credenciales de Prueba (seed automático)
+
+Al levantar el servidor (BD vacía), se crean:
 
 | Rol | Email | Password |
 |-----|-------|----------|
@@ -219,34 +227,99 @@ Al levantar el servidor, el seed crea estos usuarios (solo si la BD está vacía
 | Médico | `dr.garcia@healthcure.com` | `doctor123` |
 | Enfermera | `ana.martinez@healthcure.com` | `enfermera123` |
 
-Además crea 5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluaciones.
+5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluaciones de prueba.
 
-## Registro de Paciente (formato detallado)
+---
+
+## 📋 Ejemplo de Evaluación + Triaje Clínico
+
+### Request
 
 ```json
+POST /api/v1/evaluaciones/
 {
-    "tipo_documento": "DNI",
-    "documento_identidad": "1032456789",
-    "numero_historia_clinica": "72769512",
-    "apellido_paterno": "Pérez",
-    "apellido_materno": "Rodríguez",
-    "nombres": "Juan",
-    "fecha_nacimiento": "1965-05-20",
-    "sexo": "M",
-    "telefono": "987654321",
-    "direccion": "Av. Principal 123",
-    "distrito_id": 1,
-    "localidad_id": 1,
-    "tipo_seguro": "SIS",
-    "codigo_afiliacion_seguro": "040-2-1032456789",
-    "talla_cm": 172.5,
-    "peso_kg": 85.3
+    "paciente_id": 1,
+    "edad": 55,
+    "presion_alta": true,
+    "colesterol_alto": true,
+    "tabaquismo": false,
+    "actividad_fisica": true,
+    "antecedente_acv": false,
+    "diabetes": true,
+    "salud_general": 3,
+    "dificultad_para_caminar": false
 }
 ```
 
-> Los `distrito_id` y `localidad_id` se eligen de los dropdowns cargados desde `/api/v1/catalogos/*`. El admin gestiona esos catálogos (crear/editar/desactivar) desde `/api/v1/admin/distritos` y `/api/v1/admin/localidades`.
+### Response (201 Created)
 
-## Estructura de un Request de Evaluación
+```json
+{
+    "id": 8,
+    "paciente_id": 1,
+    "usuario_id": 2,
+    "edad": 55,
+    "presion_alta": true,
+    "colesterol_alto": true,
+    "tabaquismo": false,
+    "actividad_fisica": true,
+    "antecedente_acv": false,
+    "diabetes": true,
+    "salud_general": 3,
+    "dificultad_para_caminar": false,
+    "probabilidad": 0.459186,
+    "clasificacion": "moderado",
+    "modelo_version": "1.0.0",
+    "triaje_clinico": {
+        "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
+        "codigo_color": "amarillo",
+        "accion_sugerida": "Programar consulta médica de control en los próximos 15 a 30 días.",
+        "factores_riesgo_detectados": [
+            "Hipertensión Arterial",
+            "Dislipidemia (Colesterol Alto)",
+            "Diabetes Mellitus"
+        ],
+        "factores_protectores": [
+            "Realiza Actividad Física Regular",
+            "No Fumador"
+        ],
+        "recomendaciones_medicas": [
+            "Solicitar perfil lipídico y examen de glucosa en ayunas.",
+            "Monitoreo ambulatorio de presión arterial durante 1 semana.",
+            "Reforzar cambios en el estilo de vida (dieta cardioprotectora)."
+        ]
+    },
+    "created_at": "2026-09-05T08:30:13"
+}
+```
+
+---
+
+## 🎯 Clasificación de Riesgo
+
+| Probabilidad | Clasificación | Nivel de Alerta | Semáforo |
+|-------------|---------------|-----------------|----------|
+| < 30% | **Bajo** | BAJO RIESGO - CONTROL DE RUTINA | 🟢 Verde |
+| 30% - 60% | **Moderado** | RIESGO MODERADO - SEGUIMIENTO PREVENTIVO | 🟡 Amarillo |现状 |
+| > 60% | **Alto** | ALTA PRIORIDAD - RIESGO ELEVADO | 🔴 Rojo |
+
+---
+
+## 🧠 ¿Qué es el triaje clínico?
+
+Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.459 → moderado"_, el sistema de triaje clínico traduce eso a información que un médico puede usar **inmediatamente**:
+
+- **¿Qué tan rápido actuar?** → `nivel_alerta`
+- **Semáforo visual** → `codigo_color` (verde/amarillo/rojo)
+- **¿Por qué dio ese riesgo?** → `factores_riesgo_detectados`
+- **¿Qué se está haciendo bien?** → `factores_protectores`
+- **Próximos pasos clínicos** → `accion_sugerida` + `recomendaciones_medicas`
+
+> **Diseño:** 100% determinista — mismos inputs → mismo triaje. Sin dependencias externas, sin HTML, sin estilos. El texto clínico vive en un solo archivo: `app/services/evaluacion_triaje_service.py`.
+
+---
+
+## 📂 Estructura de un Request de Evaluación
 
 ```json
 {
@@ -263,52 +336,25 @@ Además crea 5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluacione
 }
 ```
 
-## Respuesta con Predicción
+---
 
-```json
-{
-    "id": 1,
-    "paciente_id": 1,
-    "usuario_id": 1,
-    "edad": 55,
-    "presion_alta": true,
-    "colesterol_alto": true,
-    "tabaquismo": false,
-    "actividad_fisica": true,
-    "antecedente_acv": false,
-    "diabetes": true,
-    "salud_general": 3,
-    "dificultad_para_caminar": false,
-    "probabilidad": 0.734521,
-    "clasificacion": "alto",
-    "modelo_version": "1.0.0",
-    "triaje_clinico": {
-        "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
-        "codigo_color": "rojo",
-        "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
-        "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
-        "factores_protectores": ["No Fumador"],
-        "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
-    },
-    "created_at": "2025-01-15T10:30:00"
-}
-```
+## 📝 Notas de Desarrollo
 
-## Clasificación de Riesgo
+- **Dependencias:** `requirements.txt` (producción) y `requirements-dev.txt` (tests). `bcrypt` está fijado a `4.0.1` por compatibilidad con passlib 1.7.4.
+- **Dataset:** Heart Disease Health Indicators (CDC/BRFSS 2015, Kaggle)
+- **Entrenamiento:** `entrenar_modelo.py` — entrena y guarda el modelo como `app/resources/modelo_cardiaco.joblib`
+- **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
+- **BD nueva:** `schema.sql` ya incluye las columnas de triaje
+- **BD existente:** aplicar `app/resources/migrations/001_triaje_clinico.sql`
 
-| Probabilidad | Clasificación | Acción sugerida |
-|-------------|---------------|-----------------|
-| < 30% | **Bajo** | Seguimiento rutinario |
-| 30% - 60% | **Moderado** | Evaluación adicional |
-| > 60% | **Alto** | Atención inmediata |
+---
 
-## Notas para el Desarrollo
+## 📚 Documentación Adicional
 
-- **Dependencias**: `requirements.txt` (producción) y `requirements-dev.txt` (tests, solo desarrollo). `bcrypt` está fijado a `4.0.1` porque passlib 1.7.4 no lee versiones de bcrypt ≥ 4.1 (ruido en el log).
-- **ML deshabilitado temporalmente**: El endpoint de evaluaciones funcionará cuando se entrene el modelo y se guarde como `app/resources/modelo_cardiaco.joblib`
-- **Sin imágenes**: El análisis de imágenes médicas está en "Fase 2" (futuro)
-- **Dataset**: Heart Disease Health Indicators (CDC/BRFSS, Kaggle)
+- **Triaje Clínico detallado:** [`docs/TRIAGE_CLINICO.md`](docs/TRIAGE_CLINICO.md) — Arquitectura, reglas clínicas, flujo completo, compatibilidad con evaluaciones antiguas y guía de extensión.
 
-## Licencia
+---
 
-Proyecto académico — HealthCure CardioPredict
+## 🎯 Proyecto Academico — HealthCure CardioPredict
+
+Licencia: Proyecto académico
