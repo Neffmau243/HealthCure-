@@ -12,6 +12,10 @@
     {
       "key": "token",
       "value": ""
+    },
+    {
+      "key": "test_user_id",
+      "value": ""
     }
   ],
   "item": [
@@ -446,7 +450,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Carmen Rosa Vasquez\",\n  \"documento_identidad\": \"1077889900\",\n  \"fecha_nacimiento\": \"1972-04-18\",\n  \"sexo\": \"F\",\n  \"talla_cm\": 158.5,\n  \"peso_kg\": 62.0\n}"
+              "raw": "{\n  \"tipo_documento\": \"DNI\",\n  \"documento_identidad\": \"1077889900\",\n  \"numero_historia_clinica\": \"71234567\",\n  \"apellido_paterno\": \"Vasquez\",\n  \"apellido_materno\": \"Ramos\",\n  \"nombres\": \"Carmen Rosa\",\n  \"fecha_nacimiento\": \"1972-04-18\",\n  \"sexo\": \"F\",\n  \"telefono\": \"987654321\",\n  \"direccion\": \"Av. Los Incas 456\",\n  \"distrito_id\": 1,\n  \"localidad_id\": 1,\n  \"tipo_seguro\": \"SIS\",\n  \"codigo_afiliacion_seguro\": \"040-2-1077889900\",\n  \"talla_cm\": 158.5,\n  \"peso_kg\": 62.0\n}"
             },
             "description": "Registra un paciente nuevo."
           },
@@ -458,9 +462,10 @@
                   "pm.test('Paciente creado (201)', function () {",
                   "    pm.response.to.have.status(201);",
                   "    var response = pm.response.json();",
-                  "    pm.expect(response.nombre).to.eql('Carmen Rosa Vasquez');",
+                  "    pm.expect(response.nombre_completo).to.include('Carmen Rosa');",
                   "    pm.expect(response).to.have.property('id');",
-                  "    console.log('Paciente creado con ID: ' + response.id);",
+                  "    pm.expect(response).to.have.property('distrito');",
+                  "    console.log('Paciente creado con ID: ' + response.id + ' - ' + response.nombre_completo);",
                   "});"
                 ]
               }
@@ -489,9 +494,9 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"talla_cm\": 173.0,\n  \"peso_kg\": 86.0\n}"
+              "raw": "{\n  \"talla_cm\": 173.0,\n  \"peso_kg\": 86.0,\n  \"telefono\": \"987654322\"\n}"
             },
-            "description": "Actualiza solo talla y peso del paciente 1."
+            "description": "Actualiza solo talla, peso y telefono del paciente 1."
           },
           "event": [
             {
@@ -502,7 +507,7 @@
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
                   "    pm.expect(response.talla_cm).to.eql(173.0);",
-                  "    console.log(response.nombre + ' actualizado');",
+                  "    console.log(response.nombre_completo + ' actualizado');",
                   "});"
                 ]
               }
@@ -667,9 +672,9 @@
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/admin/usuarios/2",
+              "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "2"]
+              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}"]
             },
             "header": [
               {
@@ -684,7 +689,7 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Usuario ID 2 (200)', function () {",
+                  "pm.test('Usuario obtenido (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
                   "    pm.expect(response).to.have.property('id');",
@@ -719,7 +724,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Dr. Carlos Mendez\",\n  \"email\": \"dr.mendez@healthcure.com\",\n  \"password\": \"mendez123\",\n  \"rol\": \"admin\"\n}"
+              "raw": "{\n  \"nombre\": \"Usuario Test\",\n  \"email\": \"test.user@healthcure.com\",\n  \"password\": \"test123\",\n  \"rol\": \"usuario\"\n}"
             },
             "description": "El admin crea un usuario y puede asignar cualquier rol (admin o usuario). A diferencia del registro publico, aqui SÍ se puede elegir el rol."
           },
@@ -728,14 +733,21 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Usuario admin creado (201)', function () {",
+                  "pm.test('Usuario de prueba creado (201)', function () {",
                   "    pm.response.to.have.status(201);",
                   "    var response = pm.response.json();",
-                  "    pm.expect(response.nombre).to.eql('Dr. Carlos Mendez');",
-                  "    pm.expect(response.rol).to.eql('admin');",
+                  "    pm.expect(response.nombre).to.eql('Usuario Test');",
+                  "    pm.expect(response.rol).to.eql('usuario');",
                   "    pm.expect(response).to.not.have.property('password_hash');",
-                  "    console.log('Admin creado con ID: ' + response.id);",
-                  "});"
+                  "    console.log('Usuario de prueba creado con ID: ' + response.id);",
+                  "});",
+                  "",
+                  "// Guardar el ID del usuario recien creado en una variable de coleccion",
+                  "// Los tests 4, 5 y 6 lo usan. Asi NUNCA tocamos a dr.garcia ni al admin.",
+                  "if (response.id) {",
+                  "    pm.collectionVariables.set('test_user_id', response.id);",
+                  "    console.log('test_user_id guardado: ' + response.id);",
+                  "}"
                 ]
               }
             }
@@ -747,9 +759,9 @@
           "request": {
             "method": "PUT",
             "url": {
-              "raw": "{{base_url}}/api/v1/admin/usuarios/2",
+              "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "2"]
+              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}"]
             },
             "header": [
               {
@@ -763,7 +775,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Dr. Garcia (Editado)\",\n  \"rol\": \"admin\"\n}"
+              "raw": "{\n  \"nombre\": \"Usuario Test (Editado)\",\n  \"rol\": \"admin\"\n}"
             },
             "description": "Actualiza solo los campos enviados (update parcial). Solo los campos presentes en el JSON se modifican."
           },
@@ -772,12 +784,12 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Usuario actualizado (200)', function () {",
+                  "pm.test('Usuario de prueba actualizado (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
-                  "    pm.expect(response.nombre).to.eql('Dr. Garcia (Editado)');",
+                  "    pm.expect(response.nombre).to.eql('Usuario Test (Editado)');",
                   "    pm.expect(response.rol).to.eql('admin');",
-                  "    console.log('Usuario actualizado: ' + response.nombre);",
+                  "    console.log('Usuario de prueba actualizado: ' + response.nombre);",
                   "});"
                 ]
               }
@@ -790,9 +802,9 @@
           "request": {
             "method": "PUT",
             "url": {
-              "raw": "{{base_url}}/api/v1/admin/usuarios/2/deactivate",
+              "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}/deactivate",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "2", "deactivate"]
+              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}", "deactivate"]
             },
             "header": [
               {
@@ -810,8 +822,9 @@
                   "pm.test('Usuario desactivado (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
-                  "    pm.expect(response.message).to.include('desactivado');",
-                  "    console.log('Usuario desactivado correctamente');",
+                  "    pm.expect(response.id).to.eql({{test_user_id}});",
+                  "    pm.expect(response.activo).to.eql(false);",
+                  "    console.log('Usuario desactivado: ' + response.nombre);",
                   "});"
                 ]
               }
@@ -824,9 +837,9 @@
           "request": {
             "method": "PUT",
             "url": {
-              "raw": "{{base_url}}/api/v1/admin/usuarios/2/activate",
+              "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}/activate",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "2", "activate"]
+              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}", "activate"]
             },
             "header": [
               {
@@ -916,6 +929,240 @@
                 "exec": [
                   "pm.test('Error 409 - Email duplicado', function () {",
                   "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "9 - Crear Distrito (catálogo)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/distritos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "distritos"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Sachaca\"\n}"
+            },
+            "description": "El admin crea un distrito. Luego el doctor podra elegirlo en su formulario. Retorna 409 si el nombre ya existe."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Distrito creado (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Sachaca');",
+                  "    pm.collectionVariables.set('distrito_id', response.id);",
+                  "    console.log('Distrito creado con ID: ' + response.id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "10 - Crear Localidad (catálogo)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/localidades",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "localidades"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cerro Verde\",\n  \"distrito_id\": {{distrito_id}}\n}"
+            },
+            "description": "El admin crea una localidad dentro del distrito recien creado. Retorna 409 si el distrito no existe o la localidad ya esta en ese distrito."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Localidad creada (201)', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.nombre).to.eql('Cerro Verde');",
+                  "    pm.expect(response.distrito).to.eql('Sachaca');",
+                  "    console.log('Localidad: ' + response.nombre + ' en ' + response.distrito);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "11 - Listar Distritos (admin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/distritos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "distritos"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "El admin ve TODOS los distritos, incluidos los desactivados."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de distritos admin (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    console.log('Distritos totales: ' + response.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "12 - Desactivar Distrito",
+          "request": {
+            "method": "PUT",
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/distritos/{{distrito_id}}/deactivate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "distritos", "{{distrito_id}}", "deactivate"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Desactiva el distrito recien creado: ya no aparece en el dropdown del doctor (soft delete)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Distrito desactivado (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response.activo).to.eql(false);",
+                  "    console.log('Distrito desactivado: ' + response.nombre);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Catalogos (opciones para el doctor)",
+      "description": "Opciones que el doctor usa en sus formularios (dropdowns).\nLos catálogos los gestiona el admin desde la carpeta Admin.",
+      "item": [
+        {
+          "name": "Listar Distritos (dropdown)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/catalogos/distritos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "catalogos", "distritos"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Retorna los distritos ACTIVOS (los que el admin no desactivo). El frontend los muestra en el dropdown del formulario de paciente."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de distritos (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    console.log('Distritos disponibles: ' + response.length);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Listar Localidades de un Distrito",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/catalogos/localidades?distrito_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "catalogos", "localidades"],
+              "query": [
+                {
+                  "key": "distrito_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Retorna las localidades ACTIVAS del distrito 1 (Alto Selva Alegre). Dropdown encadenado: eliges distrito, luego localidad."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Lista de localidades (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    var response = pm.response.json();",
+                  "    pm.expect(response).to.be.an('array');",
+                  "    console.log('Localidades del distrito 1: ' + response.length);",
                   "});"
                 ]
               }

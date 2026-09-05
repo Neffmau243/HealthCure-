@@ -158,22 +158,67 @@ Ahí aparece el Swagger UI con todos los endpoints disponibles.
 | GET | `/api/v1/evaluaciones/{id}` | Ver una evaluación |
 | GET | `/api/v1/evaluaciones/by-paciente/{id}` | Historial de un paciente |
 
+### Catálogos (requiere JWT — opciones para el doctor)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/catalogos/distritos` | Distritos activos (dropdown) |
+| GET | `/api/v1/catalogos/localidades?distrito_id=1` | Localidades activas de un distrito (dropdown) |
+
 ### Admin (requiere JWT + rol admin)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/api/v1/admin/usuarios` | Listar todos los usuarios |
+| GET | `/api/v1/admin/usuarios/{id}` | Obtener usuario por ID |
+| POST | `/api/v1/admin/usuarios` | Crear usuario (admin elige rol) |
+| PUT | `/api/v1/admin/usuarios/{id}` | Actualizar usuario (parcial) |
+| PUT | `/api/v1/admin/usuarios/{id}/activate` | Reactivar usuario |
 | PUT | `/api/v1/admin/usuarios/{id}/deactivate` | Desactivar usuario |
+| GET | `/api/v1/admin/distritos` | Listar distritos (catálogo) |
+| POST | `/api/v1/admin/distritos` | Crear distrito |
+| PUT | `/api/v1/admin/distritos/{id}` | Actualizar distrito |
+| PUT | `/api/v1/admin/distritos/{id}/deactivate` | Desactivar distrito |
+| GET | `/api/v1/admin/localidades` | Listar localidades (catálogo) |
+| POST | `/api/v1/admin/localidades` | Crear localidad |
+| PUT | `/api/v1/admin/localidades/{id}` | Actualizar localidad |
+| PUT | `/api/v1/admin/localidades/{id}/deactivate` | Desactivar localidad |
 
 ## Flujo de Uso Típico
 
 ```
 1. POST /api/v1/auth/register   → Crear cuenta de usuario
 2. POST /api/v1/auth/login      → Obtener token JWT
-3. POST /api/v1/pacientes/      → Registrar paciente
-4. POST /api/v1/evaluaciones/   → Evaluar riesgo cardíaco
-5. GET  /api/v1/evaluaciones/   → Ver historial
+3. GET  /api/v1/catalogos/distritos  → Cargar opciones del formulario (dropdowns)
+4. POST /api/v1/pacientes/      → Registrar paciente (formato detallado)
+5. POST /api/v1/evaluaciones/   → Evaluar riesgo cardíaco
+6. GET  /api/v1/evaluaciones/   → Ver historial
 ```
+
+## Registro de Paciente (formato detallado)
+
+```json
+{
+    "tipo_documento": "DNI",
+    "documento_identidad": "1032456789",
+    "numero_historia_clinica": "72769512",
+    "apellido_paterno": "Pérez",
+    "apellido_materno": "Rodríguez",
+    "nombres": "Juan",
+    "fecha_nacimiento": "1965-05-20",
+    "sexo": "M",
+    "telefono": "987654321",
+    "direccion": "Av. Principal 123",
+    "distrito_id": 1,
+    "localidad_id": 1,
+    "tipo_seguro": "SIS",
+    "codigo_afiliacion_seguro": "040-2-1032456789",
+    "talla_cm": 172.5,
+    "peso_kg": 85.3
+}
+```
+
+> Los `distrito_id` y `localidad_id` se eligen de los dropdowns cargados desde `/api/v1/catalogos/*`. El admin gestiona esos catálogos (crear/editar/desactivar) desde `/api/v1/admin/distritos` y `/api/v1/admin/localidades`.
 
 ## Estructura de un Request de Evaluación
 

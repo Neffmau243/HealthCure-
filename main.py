@@ -23,7 +23,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
-from app.api.v1 import auth, pacientes, evaluaciones, admin
+from app.api.v1 import auth, pacientes, evaluaciones, admin, catalogos
 
 settings = get_settings()
 
@@ -63,10 +63,14 @@ app = FastAPI(
 # desde un navegador web. Sin esto, el navegador bloquearía las peticiones.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],      # En producción, cambiar a ["http://localhost:3000"]
-    allow_credentials=True,   # Permite cookies y headers de autenticación
-    allow_methods=["*"],      # Permite GET, POST, PUT, DELETE, etc.
-    allow_headers=["*"],      # Permite cualquier header (Authorization, Content-Type, etc.)
+    allow_origins=settings.cors_origins_list,  # Desde .env (CORS_ORIGINS)
+    # allow_credentials solo se habilita con orígenes CONCRETOS (no "*"):
+    # la spec CORS rechaza wildcard + credentials en navegadores. Como
+    # autenticamos con JWT en el header Authorization (no con cookies),
+    # en desarrollo con "*" las credenciales quedan apagadas.
+    allow_credentials=settings.cors_origins_list != ["*"],
+    allow_methods=["*"],  # Permite GET, POST, PUT, DELETE, etc.
+    allow_headers=["*"],  # Permite cualquier header (Authorization, Content-Type, etc.)
 )
 
 # --- REGISTRO DE ENDPOINTS (Routers) ---
@@ -76,6 +80,7 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(pacientes.router, prefix="/api/v1")
 app.include_router(evaluaciones.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
+app.include_router(catalogos.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])

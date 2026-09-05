@@ -1,0 +1,43 @@
+# ============================================================
+# HealthCure - CardioPredict
+# Archivos que NO deben subirse a git
+# ============================================================
+
+# --- Credenciales y entorno ---
+# NUNCA subir el .env (contiene passwords y JWT secret)
+.env
+
+# --- Python / caché ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Entorno virtual ---
+venv/
+.env/
+.venv/
+env/
+
+# --- Base de datos SQLite (por si acaso) ---
+*.db
+*.sqlite3
+
+# --- IDE / editores ---
+.vscode/
+.idea/
+*.swp
+*.sublime-project
+*.sublime-workspace
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Tests / coverage ---
+.pytest_cache/
+.coverage
+htmlcov/

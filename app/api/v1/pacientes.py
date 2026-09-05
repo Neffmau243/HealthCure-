@@ -135,7 +135,7 @@ def update_paciente(
     Actualizar datos de un paciente existente.
     Solo se actualizan los campos que se envíen en el body.
 
-    PERMISOS:
+    PERMISOS (los valida el Service, no este controller):
       - Admin: puede editar cualquier paciente
       - Médico/Enfermera: solo puede editar pacientes que EL registró
 
@@ -145,21 +145,21 @@ def update_paciente(
     Retorna 200 con los datos actualizados.
     Retorna 403 si no tiene permiso.
     Retorna 404 si el paciente no existe.
+
+    NOTA: Este endpoint NO tiene lógica de negocio — el Service
+    valida permisos y el controller solo traduce excepciones a HTTP.
     """
     service = PacienteService(db)
+    try:
+        resultado = service.update(
+            paciente_id,
+            data,
+            current_user_id=user["id"],
+            current_user_rol=user["rol"],
+        )
+    except PermissionError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
-    # Verificar que el paciente exista
-    paciente = service.get_by_id_raw(paciente_id)
-    if not paciente:
+    if not resultado:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")
-
-    # Verificar permisos: admin puede todo, medico solo lo que creo
-    if user["rol"] != "admin":
-        if paciente.usuario_creador_id is not None and paciente.usuario_creador_id != user["id"]:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="No tienes permiso para editar este paciente. Solo el usuario que lo registro puede modificarlo."
-            )
-
-    resultado = service.update(paciente_id, data)
     return resultado

@@ -53,6 +53,22 @@ class Settings(BaseSettings):
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
+    # --- CORS (permisos de conexión desde el frontend) ---
+    # Orígenes permitidos, separados por coma. Ejemplos:
+    #   "*"                          → cualquier origen (SOLO desarrollo)
+    #   "http://localhost:3000"      → un solo frontend
+    #   "http://localhost:3000,https://app.healthcure.com" → varios
+    # NOTA: con "*" los navegadores rechazan allow_credentials=True (spec CORS),
+    # así que en main.py las credenciales se habilitan solo si hay orígenes concretos.
+    CORS_ORIGINS: str = "*"
+
+    @property
+    def cors_origins_list(self) -> list[str]:
+        """Convierte CORS_ORIGINS (string separado por comas) en lista de Python."""
+        if self.CORS_ORIGINS.strip() == "*":
+            return ["*"]
+        return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
     # --- JWT (autenticación por tokens) ---
     JWT_SECRET_KEY: str = "CHANGE-THIS-IN-PRODUCTION-super-secret-key"
     JWT_ALGORITHM: str = "HS256"  # Algoritmo de firma HMAC-SHA256

@@ -4,10 +4,11 @@ usuario.py — SCHEMAS (DTOs) PARA USUARIOS
 Los schemas definen la FORMA de los datos que entran y salen de la API.
 Son los "contratos" entre el frontend y el backend:
 
-  - UsuarioCreate    → lo que el frontend envía al registrar un usuario
-  - UsuarioLogin     → lo que el frontend envía al hacer login
-  - UsuarioResponse  → lo que el backend retorna al frontend
-  - TokenResponse    → lo que el backend retorna después de un login exitoso
+  - UsuarioCreate       → lo que el frontend envía al registrarse (registro PÚBLICO)
+  - UsuarioAdminCreate  → lo que el admin envía al crear un usuario (puede elegir rol)
+  - UsuarioLogin        → lo que el frontend envía al hacer login
+  - UsuarioResponse     → lo que el backend retorna al frontend
+  - TokenResponse       → lo que el backend retorna después de un login exitoso
 
 IMPORTANTE: Pydantic valida automáticamente que los datos cumplan
 las restricciones (email válido, password mínimo 6 caracteres, etc.)
@@ -31,15 +32,20 @@ class RolEnum(str, Enum):
 
 class UsuarioCreate(BaseModel):
     """
-    DTO de ENTRADA — lo que el frontend envía para registrar un usuario.
+    DTO de ENTRADA — lo que el frontend envía al REGISTRO PÚBLICO
+    (POST /api/v1/auth/register).
 
     Ejemplo JSON:
     {
         "nombre": "Dr. García",
         "email": "garcia@hospital.com",
-        "password": "mi_password_seguro",
-        "rol": "usuario"
+        "password": "mi_password_seguro"
     }
+
+    NOTA DE SEGURIDAD: NO existe campo "rol" aquí a propósito.
+    El registro público SIEMPRE crea usuarios con rol "usuario".
+    Si se necesitara crear un admin, eso lo hace un admin existente
+    desde POST /api/v1/admin/usuarios (schema UsuarioAdminCreate).
     """
     nombre: str = Field(..., min_length=2, max_length=150)
     # ... = obligatorio (no tiene valor por defecto)
@@ -49,10 +55,6 @@ class UsuarioCreate(BaseModel):
 
     password: str = Field(..., min_length=6, max_length=128)
     # La contraseña NUNCA se retorna en las respuestas, solo se recibe
-
-    rol: RolEnum = RolEnum.usuario
-    # Por defecto todos los registros son "usuario"
-    # Solo un admin puede crear otros admins
 
 
 class UsuarioLogin(BaseModel):

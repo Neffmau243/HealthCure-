@@ -12,5 +12,7 @@ y las migraciones no funcionarían.
 from app.models.usuario import Usuario
 from app.models.paciente import Paciente
 from app.models.evaluacion import Evaluacion
+from app.models.distrito import Distrito
+from app.models.localidad import Localidad
 
-__all__ = ["Usuario", "Paciente", "Evaluacion"]
+__all__ = ["Usuario", "Paciente", "Evaluacion", "Distrito", "Localidad"]

@@ -79,10 +79,15 @@ class EvaluacionService:
         # Import LAZY: solo se importa cuando se ejecuta evaluate().
         # Por qué: si el modelo .joblib no existe, el server sigue
         # funcionando para auth, pacientes, etc. Solo falla al predecir.
+        #
+        # Solo capturamos ImportError (módulo faltante) y MLException
+        # (errores del pipeline: modelo no encontrado, datos inválidos).
+        # NUNCA Exception genérico — eso escondería bugs reales de
+        # programación (typos, errores de lógica) como "modelo caído".
         try:
             from app.ml.predictor import predict as ml_predict
             prediction = ml_predict(model_input)
-        except (ImportError, Exception) as e:
+        except (ImportError, MLException) as e:
             raise MLException(f"Modelo ML no disponible: {e}")
 
         # PASO 4: Mapper crea dict para persistir en BD

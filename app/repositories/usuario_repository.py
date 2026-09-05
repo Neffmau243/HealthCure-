@@ -66,6 +66,17 @@ class UsuarioRepository:
         return self.db.query(Usuario).all()
         # .all() → SELECT * FROM usuarios (sin filtro)
 
+    def count_active_admins(self) -> int:
+        """
+        Cuenta cuántos administradores ACTIVOS hay.
+        Usado para proteger al sistema de quedarse sin admins
+        (un admin no puede desactivar/degrada al último admin activo).
+        """
+        return self.db.query(Usuario).filter(
+            Usuario.rol == "admin",
+            Usuario.activo.is_(True),
+        ).count()
+
     def deactivate(self, usuario_id: int) -> bool:
         """
         Desactiva un usuario (no lo borra físicamente).

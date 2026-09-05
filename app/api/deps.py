@@ -55,20 +55,13 @@ def get_current_user(
     payload = auth_service.decode_token(token)
 
     if payload is None:
-        # Debug: ayuda a identificar por qué falló el token
-        from jose import JWTError, jwt
-        from app.core.config import get_settings
-        settings = get_settings()
-        try:
-            # Intentar decodificar sin verificar firma para debug
-            unverified = jwt.get_unverified_claims(token)
-            detail = f"Token decodificado pero firma inválida. Claims: {unverified}"
-        except Exception:
-            detail = "Token inválido — no se pudo decodificar. Asegúrate de enviar: Authorization: Bearer <token>"
-
+        # Token inválido, expirado o con firma incorrecta.
+        # NO se expone el contenido del token en el mensaje de error
+        # (antes se hacía con get_unverified_claims para debug, pero
+        # eso filtraba claims del token al cliente — riesgo de info leak).
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=detail,
+            detail="Token inválido o expirado. Envía: Authorization: Bearer <token>",
             headers={"WWW-Authenticate": "Bearer"},
         )
 

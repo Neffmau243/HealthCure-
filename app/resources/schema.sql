@@ -24,25 +24,90 @@ CREATE TABLE usuarios (
 );
 
 -- ============================================================
--- 2. PACIENTES (datos administrativos)
+-- 2. DISTRITOS (catálogo gestionado por el admin)
 -- ============================================================
-CREATE TABLE pacientes (
-    id                  BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nombre              VARCHAR(150)  NOT NULL,
-    documento_identidad VARCHAR(30)   NOT NULL UNIQUE,
-    fecha_nacimiento    DATE          NOT NULL,
-    sexo                ENUM('M', 'F') NOT NULL,
-    usuario_creador_id  BIGINT        NULL,
-    talla_cm            DECIMAL(5,1)  NULL,
-    peso_kg             DECIMAL(5,1)  NULL,
-    created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CREATE TABLE distritos (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre      VARCHAR(100) NOT NULL UNIQUE,
+    activo      BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
-    INDEX ix_pacientes_documento (documento_identidad)
+    INDEX ix_distritos_nombre (nombre)
 );
 
 -- ============================================================
--- 3. EVALUACIONES (cada predicción cardíaca)
+-- 3. LOCALIDADES (catálogo gestionado por el admin, depende de distrito)
+-- ============================================================
+CREATE TABLE localidades (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    nombre      VARCHAR(100) NOT NULL,
+    distrito_id BIGINT       NOT NULL,
+    activo      BOOLEAN      NOT NULL DEFAULT TRUE,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_localidad_distrito
+        FOREIGN KEY (distrito_id) REFERENCES distritos(id)
+        ON DELETE RESTRICT,
+
+    INDEX ix_localidades_distrito_id (distrito_id),
+    INDEX ix_localidades_nombre (nombre)
+);
+
+-- ============================================================
+-- 4. PACIENTES (datos administrativos detallados)
+-- ============================================================
+CREATE TABLE pacientes (
+    id                      BIGINT AUTO_INCREMENT PRIMARY KEY,
+
+    -- Identidad
+    tipo_documento          ENUM('DNI', 'CE', 'Pasaporte') NOT NULL DEFAULT 'DNI',
+    documento_identidad     VARCHAR(30)  NOT NULL UNIQUE,
+    numero_historia_clinica VARCHAR(30)  NULL UNIQUE,
+
+    -- Nombres (formato peruano)
+    apellido_paterno        VARCHAR(100) NOT NULL,
+    apellido_materno        VARCHAR(100) NULL,
+    nombres                 VARCHAR(100) NOT NULL,
+    fecha_nacimiento        DATE         NOT NULL,
+    sexo                    ENUM('M', 'F') NOT NULL,
+
+    -- Contacto / ubicación
+    telefono                VARCHAR(20)  NULL,
+    direccion               VARCHAR(200) NULL,
+    distrito_id             BIGINT       NULL,
+    localidad_id            BIGINT       NULL,
+
+    -- Seguro
+    tipo_seguro             ENUM('SIS', 'EsSalud', 'Privado', 'Otro') NOT NULL DEFAULT 'SIS',
+    codigo_afiliacion_seguro VARCHAR(50) NULL,
+
+    -- Control
+    usuario_creador_id      BIGINT       NULL,
+    activo                  BOOLEAN      NOT NULL DEFAULT TRUE,
+
+    -- Mediciones
+    talla_cm                DECIMAL(5,1) NULL,
+    peso_kg                 DECIMAL(5,1) NULL,
+
+    created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_paciente_distrito
+        FOREIGN KEY (distrito_id) REFERENCES distritos(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_paciente_localidad
+        FOREIGN KEY (localidad_id) REFERENCES localidades(id)
+        ON DELETE SET NULL,
+
+    INDEX ix_pacientes_documento (documento_identidad),
+    INDEX ix_pacientes_historia_clinica (numero_historia_clinica),
+    INDEX ix_pacientes_usuario_creador (usuario_creador_id)
+);
+
+-- ============================================================
+-- 5. EVALUACIONES (cada predicción cardíaca)
 -- ============================================================
 CREATE TABLE evaluaciones (
     id                      BIGINT AUTO_INCREMENT PRIMARY KEY,

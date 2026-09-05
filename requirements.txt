@@ -7,6 +7,11 @@ pydantic>=2.9.0
 pydantic-settings>=2.5.0
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+# bcrypt PINNEADO a 4.0.1: passlib 1.7.4 (no mantenido desde 2020)
+# falla al leer la versión de bcrypt >= 4.1 (se eliminó bcrypt.__about__)
+# y llena el log con "(trapped) error reading bcrypt version" en cada login.
+# 4.0.1 es la última versión compatible y no tiene CVEs conocidos.
+bcrypt==4.0.1
 python-multipart>=0.0.12
 joblib>=1.4.0
 pandas>=2.2.0

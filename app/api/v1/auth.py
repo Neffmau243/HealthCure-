@@ -25,7 +25,11 @@ def register(data: UsuarioCreate, db: Session = Depends(get_db)):
     Registrar un nuevo usuario en el sistema.
 
     Body JSON:
-      {"nombre": "Dr. García", "email": "garcia@h.com", "password": "123456", "rol": "usuario"}
+      {"nombre": "Dr. García", "email": "garcia@h.com", "password": "123456"}
+
+    SEGURIDAD: El registro público SIEMPRE crea usuarios con rol
+    "usuario" (no existe campo rol en este endpoint). Para crear un
+    admin, un admin existente debe usar POST /api/v1/admin/usuarios.
 
     Retorna 201 con los datos del usuario creado (sin password).
     Retorna 409 si el email ya está registrado.
