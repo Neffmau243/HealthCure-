@@ -20,6 +20,10 @@
     {
       "key": "paciente_id",
       "value": "1"
+    },
+    {
+      "key": "evaluacion_id",
+      "value": "8"
     }
   ],
   "item": [
@@ -644,6 +648,40 @@
                   "    var response = pm.response.json();",
                   "    pm.expect(response).to.be.an('array');",
                   "    console.log(response.length + ' evaluaciones para este paciente');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Descargar FUA en PDF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/{{evaluacion_id}}/fua",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", "{{evaluacion_id}}", "fua"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Descarga el Formato Unico de Atencion (FUA) en PDF para una evaluacion.\nEl PDF se genera 100% en el backend (ReportLab) en tamano oficio peruano (215x330mm)\ncon: datos del paciente, atencion, factores de riesgo, resultado del modelo ML, triaje\nclinico con semaforo de color, factores detectados/protectores, recomendaciones y firmas.\n\nIMPORTANTE: cambia la variable evaluacion_id (ej: 1, 8, etc.) al ID que quieras imprimir.\nDescarga: fua_<id>.pdf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('FUA en PDF (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('content-type')).to.eql('application/pdf');",
+                  "    pm.expect(pm.response.headers.get('content-disposition')).to.include('attachment');",
+                  "    console.log('PDF descargado - tamano: ' + pm.response.responseSize + ' bytes');",
                   "});"
                 ]
               }

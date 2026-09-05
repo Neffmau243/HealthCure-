@@ -18,11 +18,12 @@ Rutas:
 
 Autenticación: TODOS requieren token JWT válido.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.services.evaluacion_service import EvaluacionService
+from app.services.reporte_service import ReporteService
 from app.schemas.evaluacion import EvaluacionCreate, EvaluacionResponse
 from app.exceptions.ml_exceptions import MLException
 from app.api.deps import get_current_user
@@ -130,3 +131,39 @@ def get_evaluacion(
     if not evaluacion:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluación no encontrada")
     return evaluacion
+
+
+@router.get("/{evaluacion_id}/fua", response_class=Response)
+def get_evaluacion_fua_pdf(
+    evaluacion_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """
+    DESCARGAR PDF (FORMATO ÚNICO DE ATENCIÓN) DE UNA EVALUACIÓN
+
+    Genera un PDF descargable en tamaño oficio peruano (215x330mm) con:
+      - Datos del paciente
+      - Datos de la atención y profesional
+      - Variables preventivas y factores de riesgo
+      - Resultado del modelo + triaje clínico (semáforo de color)
+      - Factores detectados, protectores y recomendaciones
+      - Sección de firmas para completar a mano
+
+    Respuesta:
+      200 → application/pdf (adjunto descargable)
+      404 → si la evaluación no existe
+
+    Ejemplo: GET /api/v1/evaluaciones/8/fua
+    """
+    service = ReporteService(db)
+    pdf = service.generar_fua(evaluacion_id)
+    if pdf is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluación no encontrada")
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="fua_{evaluacion_id}.pdf"'
+        },
+    )
