@@ -128,13 +128,25 @@ Abrir en el navegador: **http://localhost:8000/docs**
 
 Ahí aparece el Swagger UI con todos los endpoints disponibles.
 
+### 8. Correr los tests (opcional)
+
+Los tests corren con una base **SQLite en memoria** — NO necesitan MySQL levantado:
+
+```bash
+pip install -r requirements-dev.txt   # pytest + httpx (solo desarrollo)
+python -m pytest app/tests -v
+```
+
+Cubren el mapper de evaluaciones, el preprocesador del modelo ML y las reglas
+de permisos (quién puede editar pacientes y los guards anti-lockout del admin).
+
 ## Endpoints Disponibles
 
 ### Auth (públicos)
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| POST | `/api/v1/auth/register` | Registrar usuario nuevo |
+| POST | `/api/v1/auth/register` | Registrar usuario nuevo (SIEMPRE crea rol `usuario`) |
 | POST | `/api/v1/auth/login` | Login → token JWT |
 | GET | `/api/v1/auth/me` | Datos del usuario autenticado |
 
@@ -176,6 +188,8 @@ Ahí aparece el Swagger UI con todos los endpoints disponibles.
 | PUT | `/api/v1/admin/usuarios/{id}/activate` | Reactivar usuario |
 | PUT | `/api/v1/admin/usuarios/{id}/deactivate` | Desactivar usuario |
 | GET | `/api/v1/admin/distritos` | Listar distritos (catálogo) |
+
+> **Seguridad admin:** el registro público (`/auth/register`) **no acepta** campo `rol` — siempre crea usuarios con rol `usuario`. Para crear/editar admins solo existe `/api/v1/admin/usuarios*`. Además, un admin **no puede desactivar su propia cuenta ni quitarse el rol admin**, y **nadie puede desactivar/degradar al último administrador activo** (evita dejar la app sin administradores → responde `409`).
 | POST | `/api/v1/admin/distritos` | Crear distrito |
 | PUT | `/api/v1/admin/distritos/{id}` | Actualizar distrito |
 | PUT | `/api/v1/admin/distritos/{id}/deactivate` | Desactivar distrito |
@@ -194,6 +208,18 @@ Ahí aparece el Swagger UI con todos los endpoints disponibles.
 5. POST /api/v1/evaluaciones/   → Evaluar riesgo cardíaco
 6. GET  /api/v1/evaluaciones/   → Ver historial
 ```
+
+## Credenciales de Prueba (seed automático)
+
+Al levantar el servidor, el seed crea estos usuarios (solo si la BD está vacía):
+
+| Rol | Email | Password |
+|-----|-------|----------|
+| Admin | `admin@healthcure.com` | `admin123` |
+| Médico | `dr.garcia@healthcure.com` | `doctor123` |
+| Enfermera | `ana.martinez@healthcure.com` | `enfermera123` |
+
+Además crea 5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluaciones.
 
 ## Registro de Paciente (formato detallado)
 
@@ -270,6 +296,7 @@ Ahí aparece el Swagger UI con todos los endpoints disponibles.
 
 ## Notas para el Desarrollo
 
+- **Dependencias**: `requirements.txt` (producción) y `requirements-dev.txt` (tests, solo desarrollo). `bcrypt` está fijado a `4.0.1` porque passlib 1.7.4 no lee versiones de bcrypt ≥ 4.1 (ruido en el log).
 - **ML deshabilitado temporalmente**: El endpoint de evaluaciones funcionará cuando se entrene el modelo y se guarde como `app/resources/modelo_cardiaco.joblib`
 - **Sin imágenes**: El análisis de imágenes médicas está en "Fase 2" (futuro)
 - **Dataset**: Heart Disease Health Indicators (CDC/BRFSS, Kaggle)

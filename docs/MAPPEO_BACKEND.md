@@ -228,7 +228,7 @@ Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | # | Metodo | Ruta | Auth | Rol | Descripcion | Status Codes |
 |---|--------|------|------|-----|-------------|--------------|
 | 1 | `GET` | `/health` | No | — | Health check del servidor | 200 |
-| 2 | `POST` | `/api/v1/auth/register` | No | — | Registrar usuario nuevo | 201, 409, 422 |
+| 2 | `POST` | `/api/v1/auth/register` | No | — | Registrar usuario nuevo (SIEMPRE rol `usuario`, sin campo rol) | 201, 409, 422 |
 | 3 | `POST` | `/api/v1/auth/login` | No | — | Login → JWT | 200, 401, 422 |
 | 4 | `GET` | `/api/v1/auth/me` | Si | Cualquiera | Datos del usuario autenticado | 200, 401 |
 | 5 | `GET` | `/api/v1/pacientes/` | Si | Cualquiera | Listar todos los pacientes | 200, 401 |
@@ -244,7 +244,7 @@ Header: Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 | 15 | `GET` | `/api/v1/admin/usuarios` | Si | **admin** | Listar todos los usuarios | 200, 401, 403 |
 | 16 | `GET` | `/api/v1/admin/usuarios/{id}` | Si | **admin** | Obtener usuario por ID | 200, 401, 403, 404 |
 | 17 | `POST` | `/api/v1/admin/usuarios` | Si | **admin** | Crear usuario (admin elige rol) | 201, 401, 403, 409, 422 |
-| 18 | `PUT` | `/api/v1/admin/usuarios/{id}` | Si | **admin** | Actualizar usuario (parcial) | 200, 401, 403, 404, 409, 422 |
+| 18 | `PUT` | `/api/v1/admin/usuarios/{id}` | Si | **admin** | Actualizar usuario (parcial, con guards anti-lockout) | 200, 401, 403, 404, 409, 422 |
 | 19 | `PUT` | `/api/v1/admin/usuarios/{id}/activate` | Si | **admin** | Reactivar usuario | 200, 401, 403, 404 |
 | 20 | `PUT` | `/api/v1/admin/usuarios/{id}/deactivate` | Si | **admin** | Desactivar usuario (soft delete) | 200, 401, 403, 404, 409 |
 | 21 | `GET` | `/api/v1/catalogos/distritos` | Si | Cualquiera | Distritos ACTIVOS (dropdown del doctor) | 200, 401 |
@@ -585,13 +585,15 @@ DATOS DE ENTRADA (Body JSON — solo campos a actualizar):
 // nombre, fecha_nacimiento, sexo NO se tocan (son null/omitidos)
 
 FLUJO INTERNO:
-  Controller → PacienteService.get_by_id_raw(1) → verificar que exista
-    → Verificar PERMISOS:
+  Controller → PacienteService.update(
+        1, data, current_user_id=user.id, current_user_rol=user.rol)
+    → El SERVICE verifica existencia + PERMISOS (no el controller):
         Si user["rol"] == "admin" → puede editar cualquier paciente
         Si user["rol"] == "usuario" → solo puede editar si
             paciente.usuario_creador_id == user["id"]
-    → PacienteService.update(1, data)
+        (si no tiene permiso → PermissionError → controller traduce a 403)
     → data.model_dump(exclude_unset=True) → {"talla_cm": 166.0, "peso_kg": 71.5}
+    → Valida distrito/localidad y duplicados de historia clinica
     → PacienteRepository.update(paciente, talla_cm=166.0, peso_kg=71.5)
     → UPDATE pacientes SET talla_cm=166.0, peso_kg=71.5, updated_at=NOW() WHERE id=1
 
@@ -910,9 +912,9 @@ ERRORES:
 ```
 DATOS DE ENTRADA (Body JSON — solo campos a actualizar):
 {
-    "nombre": "Dr. Garcia (Editado)",
+    "nombre": "Dr. Carlos Mendez (Editado)",
     "rol": "admin",
-    "activo": false
+    "activo": true
 }
 // Todos los campos son opcionales. Solo se actualiza lo que se envie.
 
@@ -925,18 +927,21 @@ CAMPOS DISPONIBLES PARA ACTUALIZAR:
 
 FLUJO INTERNO:
   Controller → Depends(require_admin)
-    → AdminService.update_usuario(2, data)
+    → AdminService.update_usuario(usuario_id, data, current_admin_id=admin.id)
     → data.model_dump(exclude_unset=True) → solo campos enviados
     → Si cambio email → verifica duplicado
     → Si cambio password → hashea con bcrypt
-    → UsuarioRepository.update(2, **campos)
-    → SELECT * FROM usuarios WHERE id=2 (recargar)
+    → GUARDS anti-lockout (solo si se toca rol o activo):
+        1) No puedes quitarte el rol admin ni desactivar tu PROPIA cuenta
+        2) No puedes degradar/desactivar al ULTIMO admin activo
+    → UsuarioRepository.update(usuario_id, **campos)
+    → SELECT * FROM usuarios WHERE id=usuario_id (recargar)
 
 RESPUESTA (200):
 {
-    "id": 2,
-    "nombre": "Dr. Garcia (Editado)",
-    "email": "dr.garcia@healthcure.com",
+    "id": 6,
+    "nombre": "Dr. Carlos Mendez (Editado)",
+    "email": "dr.mendez@hospital.com",
     "rol": "admin",
     "activo": true,
     "created_at": "2025-01-15T10:30:00"
@@ -945,8 +950,14 @@ RESPUESTA (200):
 ERRORES:
   404 → "Usuario no encontrado"
   409 → "Ya existe otro usuario con ese email"
+  409 → "No puedes desactivar ni cambiar el rol de tu propia cuenta..." (guard 1)
+  409 → "No puedes desactivar al último administrador activo..." (guard 2)
   403 → "Se requiere rol de administrador"
   422 → Validacion de Pydantic
+
+NOTA PARA PRUEBAS: para probar este endpoint NO edites a los usuarios del
+seed (admin/Dr. Garcia). Crea primero un usuario de prueba con 6.15 y usa
+su ID — asi las credenciales del seed quedan intactas.
 ```
 
 ---
@@ -1164,14 +1175,6 @@ Todos creados por Dr. Garcia (usuario_creador_id = 2):
 | Maria Lopez | 48 | Moderado | 35.2% | **moderado** | solo presion alta, activa |
 | Roberto Gomez | 71 | Alto | 92.1% | **alto** | presion + colesterol + ACV + diabetes + inmovilidad |
 
-### 9.3 Evaluaciones Creadas (ejemplos hardcodeados)
-
-| Paciente | Edad | Riesgo | Probabilidad | Clasificacion | Factores clave |
-|----------|------|--------|-------------|---------------|----------------|
-| Juan Perez | 61 | Alto | 78.5% | **alto** | presion + colesterol + tabaquismo + diabetes |
-| Maria Lopez | 48 | Moderado | 35.2% | **moderado** | solo presion alta, activa |
-| Roberto Gomez | 71 | Alto | 92.1% | **alto** | presion + colesterol + ACV + diabetes + inmovilidad |
-
 ---
 
 ## 10. Matriz de Permisos
@@ -1227,11 +1230,26 @@ QUIEN PUEDE EDITAR UN PACIENTE?
 ```
 POST /auth/register (cualquiera):
   - SIEMPRE crea usuarios con rol "usuario"
-  - No importa lo que envies en "rol"
+  - El schema NI SIQUIERA incluye campo "rol" (si envias "rol": "admin"
+    como extra, Pydantic lo ignora y el usuario queda "usuario")
 
 POST /admin/usuarios (solo admin):
   - El admin PUEDE elegir el rol ("admin" o "usuario")
   - Puede crear otros admins
+```
+
+### Reglas anti-lockout (usuarios admin)
+
+```
+PUT /admin/usuarios/{id}  y  PUT /admin/usuarios/{id}/deactivate
+
+Un admin NO puede:
+  1. Desactivar ni quitarse el rol admin a SI MISMO             → 409
+  2. Desactivar/degradar al ULTIMO admin activo del sistema      → 409
+
+Motivo: evitar que un error deje la app SIN NINGUN administrador
+(lockout total). Con 2+ admins activos, un admin SI puede desactivar
+normalmente a otro admin o a cualquier usuario normal.
 ```
 
 ---
@@ -1248,21 +1266,26 @@ app/
 ├── models/
 │   ├── __init__.py            # Importa todos los modelos (para Alembic)
 │   ├── usuario.py             # Tabla usuarios (auth)
-│   ├── paciente.py            # Tabla pacientes (datos admin + usuario_creador_id)
-│   └── evaluacion.py          # Tabla evaluaciones (predicciones ML)
+│   ├── paciente.py            # Tabla pacientes (formato detallado + usuario_creador_id)
+│   ├── evaluacion.py          # Tabla evaluaciones (predicciones ML)
+│   ├── distrito.py            # Catalogo de distritos (gestiona el admin)
+│   └── localidad.py           # Catalogo de localidades (depende del distrito)
 ├── schemas/
 │   ├── __init__.py
 │   ├── usuario.py             # UsuarioCreate, Login, Response, Token, Update, AdminCreate
 │   ├── paciente.py            # PacienteCreate, Update, Response
-│   └── evaluacion.py          # EvaluacionCreate, Response, PredictionResult
+│   ├── evaluacion.py          # EvaluacionCreate, Response, PredictionResult
+│   └── catalogo.py            # Distrito/Localidad Create, Update, Response
 ├── mappers/
 │   ├── __init__.py
 │   └── evaluacion_mapper.py   # Request→ML→ORM→Response
 ├── repositories/
 │   ├── __init__.py
-│   ├── usuario_repository.py  # CRUD usuarios (+ update, activate)
-│   ├── paciente_repository.py # CRUD pacientes
-│   └── evaluacion_repository.py # CRUD evaluaciones
+│   ├── usuario_repository.py  # CRUD usuarios (+ update, activate, count_active_admins)
+│   ├── paciente_repository.py # CRUD pacientes (+ joinedload de distrito/localidad)
+│   ├── evaluacion_repository.py # CRUD evaluaciones
+│   ├── distrito_repository.py # CRUD distritos (catálogo)
+│   └── localidad_repository.py # CRUD localidades (catálogo)
 ├── ml/
 │   ├── __init__.py
 │   ├── model_loader.py        # Singleton: carga .joblib una vez
@@ -1271,38 +1294,46 @@ app/
 ├── services/
 │   ├── __init__.py
 │   ├── auth_service.py        # JWT + bcrypt + registro/login
-│   ├── paciente_service.py    # CRUD pacientes (+ get_by_id_raw para permisos)
+│   ├── paciente_service.py    # CRUD pacientes + permisos (solo creador o admin)
 │   ├── evaluacion_service.py  # Orquesta ML + BD
-│   └── admin_service.py       # CRUD completo de usuarios (solo admin)
+│   ├── admin_service.py       # CRUD usuarios + guards anti-lockout + CRUD catálogos
+│   └── catalogo_service.py    # Lectura de catálogos para el doctor (dropdowns)
 ├── api/
 │   ├── __init__.py
 │   ├── deps.py                # get_current_user + require_admin
 │   └── v1/
 │       ├── __init__.py
 │       ├── auth.py            # /auth/*
-│       ├── pacientes.py       # /pacientes/* (con control de permisos)
+│       ├── pacientes.py       # /pacientes/* (permisos en el Service)
 │       ├── evaluaciones.py    # /evaluaciones/*
-│       └── admin.py           # /admin/* (CRUD completo de usuarios)
+│       ├── catalogos.py       # /catalogos/* (opciones activas para el doctor)
+│       └── admin.py           # /admin/* (usuarios + distritos + localidades)
 ├── exceptions/
 │   ├── __init__.py
 │   └── ml_exceptions.py       # ModelNotFoundError, PredictionError, etc.
 ├── seeds/
 │   ├── __init__.py
-│   └── seed.py                # Datos de prueba (admin, pacientes, evals)
+│   └── seed.py                # Datos de prueba + backfill idempotente de creadores
 ├── tests/
-│   └── __init__.py
+│   ├── __init__.py
+│   ├── conftest.py             # Fixtures: SQLite en memoria (sin MySQL)
+│   ├── test_evaluacion_mapper.py   # Transformaciones del mapper
+│   ├── test_preprocessor.py        # Validacion del preprocesador ML
+│   └── test_permisos_pacientes.py  # Permisos + guards anti-lockout (HTTP)
 ├── clients/
-│   └── __init__.py
+│   └── __init__.py            # (vacio — no se consumen APIs externas)
 └── resources/
     ├── __init__.py
-    ├── schema.sql             # DDL MySQL completo
+    ├── schema.sql             # DDL MySQL completo (referencia)
     ├── modelo_cardiaco.joblib # (pendiente — modelo entrenado)
     └── plantilla_pacientes.csv # (pendiente — plantilla de carga)
 
 main.py                         # FastAPI entry point + lifespan (seed)
-requirements.txt                # Dependencias Python
-.env                            # Variables de entorno (MySQL, JWT)
-.env.example                    # Template de .env
+requirements.txt                # Dependencias de produccion
+requirements-dev.txt            # Dependencias de tests (pytest, httpx)
+.gitignore                      # Excluye .env, __pycache__, venv, etc.
+.env.example                    # Template del .env (SIEMPRE versionado)
+.env                            # Credenciales reales — NO se commitea
 README.md                       # Documentacion del proyecto
 postman/
 └── HealthCure_API.postman_collection.json  # Coleccion Postman completa
