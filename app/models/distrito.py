@@ -22,7 +22,7 @@ from app.core.database import Base
 class Distrito(Base):
     """
     Representa la tabla 'distritos' en MySQL.
-    Ejemplos: Alto Selva Alegre, Cayma, Miraflores, Paucarpata, Yanahuara...
+    Ejemplos: Alto Selva Alegre, Cayma, Miraflores, Yanahuara...
     """
     __tablename__ = "distritos"
 
