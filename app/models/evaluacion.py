@@ -12,7 +12,7 @@ la tabla pacientes, porque un mismo paciente puede tener diferentes
 valores de presión, colesterol, etc. en diferentes evaluaciones.
 """
 from sqlalchemy import (
-    Columna, BigInteger, SmallInteger, Boolean, Enum,
+    Column, BigInteger, SmallInteger, Boolean, Enum,
     String, Text, JSON, Numeric, DateTime, ForeignKey, Index, func
 )
 from sqlalchemy.orm import relationship
