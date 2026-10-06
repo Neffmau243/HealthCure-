@@ -10,6 +10,46 @@ Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación →
 
 ---
 
+## 🚀 Levantar el proyecto (2 comandos)
+
+**1) Backend (FastAPI) — desde la raíz del repo:**
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+→ API en <http://localhost:8000> · Swagger en <http://localhost:8000/docs>
+
+**2) Frontend (React + Vite) — en otra terminal:**
+
+```bash
+cd frontend && npm install && npm run dev
+```
+
+→ App en <http://localhost:5173>
+
+> **Requisito:** crea la base de datos `healthcure_db` en MySQL y pon tus credenciales en `.env` antes del primer arranque (ver [Instalación](#-instalación)). El backend siembra solo los datos y usuarios de prueba la primera vez que se levanta.
+
+---
+
+## 🔑 Credenciales de prueba (seed automático)
+
+Al levantar el backend con la BD vacía se crean estas cuentas:
+
+| Rol | Email | Password |
+|-----|-------|----------|
+| Admin | `admin@healthcure.com` | `admin123` |
+| Médico | `dr.garcia@healthcure.com` | `doctor123` |
+| Enfermera | `ana.martinez@healthcure.com` | `enfermera123` |
+
+> El frontend **ya está integrado con la API**: el login llama a `POST /api/v1/auth/login` y
+> guarda el JWT. Estas son las cuentas con las que puedes entrar. El backend debe estar
+> corriendo en `http://localhost:8000` (el frontend apunta ahí por defecto y se puede cambiar
+> con `VITE_API_URL`). Detalle de la integración en
+> [`docs/MAPEO_RUTAS_FRONT_BACK.md`](docs/MAPEO_RUTAS_FRONT_BACK.md).
+
+---
+
 ## ✨ Qué hay ahora mismo
 
 | Feature | Estado |
@@ -17,10 +57,12 @@ Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación →
 | Predicción ML (probabilidad + clasificación) | ✅ Funcionando |
 | **Triaje Clínico Automático** | ✅ **Implementado** |
 | Endpoints REST (FastAPI + Swagger) | ✅ Funcionando |
-| Autenticación JWT + roles (admin/médico/enfermera) | ✅ Funcionando |
+| Autenticación JWT + roles (admin/usuario) | ✅ Funcionando |
 | Gestión de pacientes | ✅ Funcionando |
+| Atenciones del consultorio (diagnóstico/tratamiento) | ✅ Implementado |
 | Catálogos (distritos/localidades) | ✅ Funcionando |
 | Admin (gestión de usuarios + catálogos) | ✅ Funcionando |
+| **Frontend React integrado con la API** | ✅ **Funcionando** |
 | Tests (pytest, SQLite en memoria) | ✅ Cubiertos |
 | Migraciones SQL | ✅ Incluidas |
 | Postman collection | ✅ Incluido |
@@ -119,9 +161,10 @@ Ejecutar el script SQL:
 mysql -u root -p healthcure_db < app/resources/schema.sql
 ```
 
-> **Si tu BD ya existe** (creada con schema.sql anterior), aplica la migración de triaje:
+> **Si tu BD ya existe** (creada con schema.sql anterior), aplica las migraciones:
 > ```bash
 > mysql -u root -p healthcure_db < app/resources/migrations/001_triaje_clinico.sql
+> mysql -u root -p healthcure_db < app/resources/migrations/002_atenciones.sql
 > ```
 
 ### 5. Configurar variables de entorno
@@ -185,6 +228,18 @@ Los tests usan **SQLite en memoria** — no necesitan MySQL levantado.
 | GET | `/api/v1/evaluaciones/{id}` | Ver una evaluación |
 | GET | `/api/v1/evaluaciones/by-paciente/{id}` | Historial de un paciente |
 
+### Atenciones del Consultorio (requiere JWT)
+
+Registra el acto médico: diagnóstico, tratamiento e indicaciones, con trazabilidad del
+profesional que atendió y vínculo opcional a la evaluación que lo originó.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/v1/atenciones/` | Registrar atención (diagnóstico/tratamiento) |
+| GET | `/api/v1/atenciones/` | Listar todas (paginado) |
+| GET | `/api/v1/atenciones/by-paciente/{id}` | Historial de atenciones del paciente |
+| GET | `/api/v1/atenciones/{id}` | Ver una atención |
+
 ### Catálogos (requiere JWT)
 
 | Método | Ruta | Descripción |
@@ -217,15 +272,9 @@ Los tests usan **SQLite en memoria** — no necesitan MySQL levantado.
 
 ---
 
-## 🧪 Credenciales de Prueba (seed automático)
+## 🧪 Datos de Prueba (seed automático)
 
-Al levantar el servidor (BD vacía), se crean:
-
-| Rol | Email | Password |
-|-----|-------|----------|
-| Admin | `admin@healthcure.com` | `admin123` |
-| Médico | `dr.garcia@healthcure.com` | `doctor123` |
-| Enfermera | `ana.martinez@healthcure.com` | `enfermera123` |
+Al levantar el servidor con la BD vacía se crean, además de las [credenciales de prueba](#-credenciales-de-prueba-seed-automático):
 
 5 distritos, 15 localidades, 5 pacientes de ejemplo y 3 evaluaciones de prueba.
 
@@ -344,14 +393,17 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 - **Dataset:** Heart Disease Health Indicators (CDC/BRFSS 2015, Kaggle)
 - **Entrenamiento:** `entrenar_modelo.py` — entrena y guarda el modelo como `app/resources/modelo_cardiaco.joblib`
 - **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
-- **BD nueva:** `schema.sql` ya incluye las columnas de triaje
-- **BD existente:** aplicar `app/resources/migrations/001_triaje_clinico.sql`
+- **Frontend:** vive en `frontend/`; `npm install && npm run dev` (puerto 5173). La URL del
+  backend se configura con `VITE_API_URL` (ver `frontend/.env.example`).
+- **BD nueva:** `schema.sql` ya incluye las columnas de triaje y la tabla `atenciones`
+- **BD existente:** aplicar `app/resources/migrations/001_triaje_clinico.sql` y `002_atenciones.sql`
 
 ---
 
 ## 📚 Documentación Adicional
 
 - **Triaje Clínico detallado:** [`docs/TRIAGE_CLINICO.md`](docs/TRIAGE_CLINICO.md) — Arquitectura, reglas clínicas, flujo completo, compatibilidad con evaluaciones antiguas y guía de extensión.
+- **Mapeo rutas Frontend ↔ Backend:** [`docs/MAPEO_RUTAS_FRONT_BACK.md`](docs/MAPEO_RUTAS_FRONT_BACK.md) — Rutas de ambos lados, contraste, desalineaciones y lo que falta para integrar.
 
 ---
 

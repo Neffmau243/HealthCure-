@@ -2,6 +2,9 @@
 
 > Documento tecnico de referencia: rutas, flujos, CRUD, datos de entrada/salida, y arquitectura ML.
 > Generado a partir del codigo fuente actual del proyecto.
+>
+> ⚠️ Este documento **no incluye** el router `atenciones` (consultorio) agregado después.
+> Para el mapa actualizado de backend + frontend integrados ver `MAPEO_RUTAS_FRONT_BACK.md`.
 
 ---
 

@@ -2,6 +2,9 @@
 
 > Documento técnico de referencia: arquitectura, rutas, flujos, CRUD, datos de entrada/salida, estado actual del modelo ML, y tareas pendientes.
 > Generado a partir del código fuente actual del proyecto (revisión completa).
+>
+> ⚠️ Documento histórico del backend: **no incluye** el router `atenciones` ni el frontend ya
+> integrado. Para el estado actual ver `MAPEO_RUTAS_FRONT_BACK.md`.
 
 ---
 

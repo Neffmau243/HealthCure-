@@ -150,3 +150,32 @@ CREATE TABLE evaluaciones (
     INDEX ix_evaluaciones_paciente_id (paciente_id),
     INDEX ix_evaluaciones_created_at (created_at)
 );
+-- ============================================================
+-- 6. ATENCIONES (acto médico del consultorio)
+-- ============================================================
+CREATE TABLE atenciones (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    paciente_id     BIGINT       NOT NULL,
+    evaluacion_id   BIGINT       NULL,
+    usuario_id      BIGINT       NOT NULL,
+
+    diagnostico     TEXT         NOT NULL,
+    tratamiento     TEXT         NOT NULL,
+    indicaciones    TEXT         NULL,
+
+    created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_atencion_paciente
+        FOREIGN KEY (paciente_id) REFERENCES pacientes(id)
+        ON DELETE RESTRICT,
+    CONSTRAINT fk_atencion_evaluacion
+        FOREIGN KEY (evaluacion_id) REFERENCES evaluaciones(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_atencion_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
+        ON DELETE RESTRICT,
+
+    INDEX ix_atenciones_paciente_id (paciente_id),
+    INDEX ix_atenciones_created_at (created_at)
+);

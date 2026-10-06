@@ -14,6 +14,7 @@ Jerarquía de rutas:
     /api/v1/auth/*          → Autenticación (login, registro)
     /api/v1/pacientes/*     → CRUD de pacientes
     /api/v1/evaluaciones/*  → Evaluaciones cardíacas (ML)
+    /api/v1/atenciones/*    → Atenciones del consultorio (diagnóstico/tratamiento)
     /api/v1/admin/*         → Administración (solo admins)
     /health                 → Health check (sin auth)
     /docs                   → Swagger UI (documentación interactiva)
@@ -23,7 +24,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
-from app.api.v1 import auth, pacientes, evaluaciones, admin, catalogos
+from app.api.v1 import auth, pacientes, evaluaciones, atenciones, admin, catalogos
 
 settings = get_settings()
 
@@ -79,6 +80,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(pacientes.router, prefix="/api/v1")
 app.include_router(evaluaciones.router, prefix="/api/v1")
+app.include_router(atenciones.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(catalogos.router, prefix="/api/v1")
 
