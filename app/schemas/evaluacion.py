@@ -11,7 +11,7 @@ Separación clave:
   - EvaluacionResponse incluye TODO + el resultado de la predicción
   - PredictionResult es solo el output del modelo ML (sin DB)
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -157,8 +157,8 @@ class EvaluacionResponse(BaseModel):
 
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PredictionResult(BaseModel):

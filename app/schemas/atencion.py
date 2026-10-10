@@ -8,7 +8,7 @@ Contratos de entrada/salida del acto médico:
 La atención referencia al paciente (obligatorio) y opcionalmente a la
 evaluación cardíaca que la originó.
 """
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -78,5 +78,5 @@ class AtencionResponse(BaseModel):
             return v.nombre_completo
         return v
 
-    class Config:
-        from_attributes = True
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)

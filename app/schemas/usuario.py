@@ -14,7 +14,7 @@ IMPORTANTE: Pydantic valida automáticamente que los datos cumplan
 las restricciones (email válido, password mínimo 6 caracteres, etc.)
 Si algo falla, FastAPI retorna un error 422 con los campos inválidos.
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -93,10 +93,9 @@ class UsuarioResponse(BaseModel):
     activo: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
-        # Permite crear el schema desde un objeto SQLAlchemy (ORM)
-        # Sin esto, model_validate(usuario_orm) daría error
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    # from_attributes permite crear el schema desde un objeto SQLAlchemy (ORM).
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsuarioUpdate(BaseModel):
