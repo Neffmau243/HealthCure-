@@ -25,6 +25,9 @@ ficha técnica real generada por el entrenamiento (v2.0.0).
 10. [Limitaciones y próximos pasos](#10-limitaciones-y-próximos-pasos)
 11. [Glosario](#11-glosario)
 
+> 📄 **Ficha formal del modelo (uso previsto, límites y ética):**
+> [`MODEL_CARD.md`](MODEL_CARD.md)
+
 ---
 
 ## 1. Qué es y dónde vive
@@ -339,7 +342,7 @@ Matriz de confusión (umbral 0.50):
 
 ```
                   Predijo NO   Predijo SÍ
-Real NO (45,776)    32,831      13,126
+Real NO (45,957)    32,831      13,126
 Real SÍ  (4,779)       864       3,915
 ```
 
@@ -369,6 +372,104 @@ Las tres bandas quedan pobladas → el semáforo del triaje informa de verdad.
 > `INTEGRACION_ML.md` mencionaban "F1 ~0.60-0.65". Ese valor **era incorrecto**
 > (se esperaba, nunca se midió). Las cifras de esta sección salen de la ficha
 > técnica real y se reproducen con `python entrenar_modelo.py`.
+
+### 7.4 Desbalance de clases: por qué las métricas son las que son
+
+Esta es la sección que **justifica** los números anteriores. Leer "F1 = 0.36"
+sin contexto hace parecer un modelo malo; con contexto, es el resultado esperable
+del dataset.
+
+**El punto de partida: 9.42% de enfermos.** En el conjunto de test hay
+**4,779 enfermos de 50,736** casos. Con esa proporción:
+
+| Referencia | Valor | Lectura |
+|---|---|---|
+| Un modelo que dijera **"nadie está enfermo"** | Accuracy **90.58%** · Recall **0.00%** | Acertaría casi todo y **no detectaría a un solo enfermo** |
+| Baseline aleatorio de PR AUC (prevalencia) | 0.0942 | El azar "promete" 9.4% de precisión; nuestro modelo logra **0.3537 (×3.8)** |
+| Baseline aleatorio de ROC AUC | 0.5000 | El modelo logra **0.8403** |
+
+> **Por eso la accuracy sola es engañosa y PR AUC es la métrica honesta aquí:**
+> un modelo inútil (el que no predice nada) alcanzaría 90.58% de accuracy.
+> La comparación válida es contra la prevalencia, no contra el 100%.
+
+**El costo de los errores no es simétrico.** En el umbral 0.50:
+
+```
+Falsos negativos (FN) =    864  → pacientes ENFERMOS clasificados como sanos
+Falsos positivos (FP) = 13,126  → pacientes sanos derivados a revisión
+                          → 1 falso negativo por cada ~15 falsas alarmas
+```
+
+Un FN es un paciente que se va a casa sin seguimiento; un FP es una consulta
+adicional (costo y ansiedad). Por eso el modelo se queda en el umbral 0.50 con
+**recall 0.8192** en lugar del umbral de F1 óptimo (0.7026), que sube precision a
+0.3242 pero **deja escapar al 44.2% de los enfermos** (2,112 FN).
+
+**Qué significa cada banda para el médico (esto es lo que importa en consulta).**
+El triaje no usa 0.50: deriva a revisión a todo el que caiga en `moderado` o
+`alto` (≥ 0.30). Medido sobre el test:
+
+| Banda | Pacientes | % del total | Enfermos en la banda | **PPV** (de los marcados, cuántos enfermos) | % de enfermos que captura |
+|---|---|---|---|---|---|
+| bajo (< 0.30) | 25,929 | 51.1% | 388 | **1.5%** | 8.1% |
+| moderado (0.30-0.60) | 12,220 | 24.1% | 972 | **8.0%** | 20.3% |
+| alto (≥ 0.60) | 12,587 | 24.8% | 3,419 | **27.2%** | **71.5%** |
+
+**Regla de triaje completa (≥ 0.30 = "no bajo"): sensibilidad 91.88% ·
+especificidad 55.58% · precision 17.70%.** Deriva a revisión al **48.9%** de los
+pacientes y deja sin marcar solo al **8.1%** de los enfermos.
+
+Interpretación honesta de esta tabla:
+
+- ✅ **Como filtro de priorización funciona:** la banda `alto` ocupa un cuarto de
+  la población y concentra al 71.5% de los enfermos. La banda `bajo` tiene 1.5%
+  de PPV: es una zona de riesgo realmente baja.
+- ⚠️ **Como diagnóstico no funciona:** PPV 27.2% en `alto` significa que ~3 de
+  cada 4 pacientes marcados en rojo **no** están enfermos. El modelo ordena y
+  prioriza; **no** confirma enfermedad.
+- ⚠️ **La precisión baja (0.2297) es consecuencia del desbalance**, no un bug.
+
+### 7.5 Las probabilidades NO están calibradas (y está medido)
+
+Curva de calibración sobre el test:
+
+| Métrica | Valor | Lectura |
+|---|---|---|
+| **Brier del modelo** | **0.1714** | Error cuadrático medio de la probabilidad |
+| Brier de "predecir siempre la prevalencia" | **0.0853** | Baseline |
+
+> ⚠️ **El modelo tiene PEOR Brier que decir siempre 9.42%.** Esto es esperable y
+> consecuente con la decisión de producto de §4.4: `scale_pos_weight=9.62` infla
+> las probabilidades **a propósito** para que las bandas fijas 0.30/0.60 queden
+> pobladas (si no, el triaje colapsa a "todo bajo").
+
+**Consecuencia práctica (importante para el uso clínico):**
+
+- La salida se debe leer como **escala de riesgo para ordenar/priorizar**, NO como
+  "probabilidad de que el paciente esté enfermo". Un 0.60 **no** significa 60%.
+- Si en algún momento se necesita `P(enfermedad)` interpretable, hay que envolver
+  el modelo en `CalibratedClassifierCV` (isotónica/Platt) **y recalibrar las
+  bandas** — no basta con cambiar el número.
+
+### 7.6 Evidencia visual
+
+Las figuras se generan desde el modelo versionado (sin reentrenar) y el script
+**verifica** que las métricas coincidan con la ficha técnica:
+
+```bash
+python scripts/generar_figuras.py
+# [VERIF] OK ... el modelo reproduce exactamente las métricas de su ficha técnica.
+```
+
+| Figura | Qué demuestra |
+|---|---|
+| ![Curva ROC](figuras/01_curva_roc.png) | Discriminación: ROC AUC 0.8403 vs 0.50 del azar |
+| ![Precision-Recall](figuras/02_curva_precision_recall.png) | Rendimiento con 9.4% de positivos: PR AUC 0.3537 vs 0.0942 la prevalencia |
+| ![Matriz de confusión](figuras/03_matriz_confusion.png) | Tipos de error: 864 FN vs 13,126 FP |
+| ![Calibración](figuras/04_curva_calibracion.png) | Sobreestima el riesgo (Brier 0.1714 > 0.0853) |
+| ![Importancia de variables](figuras/05_importancia_features.png) | Qué variables pesan (gain de XGBoost) |
+| ![Barrido de umbral](figuras/06_barrido_umbral.png) | Compromiso precision/recall y las bandas 0.30/0.60 |
+| ![Distribución de riesgo](figuras/07_distribucion_riesgo.png) | Reparto real en las 3 bandas del triaje |
 
 ---
 
@@ -450,11 +551,14 @@ for nombre, datos in casos.items():
 
 **Limitaciones conocidas (honestas):**
 
-1. **Probabilidad no calibrada.** La ponderación hace que la salida sea una
-   *escala de riesgo*, no `P(enfermedad)` real. Mejora posible: envolver el
-   modelo en `CalibratedClassifierCV` y recalibrar los umbrales clínicos.
-2. **Desbalance y F1 moderado.** Con 9.4% de positivos, F1 ~0.36-0.41 es el techo
-   realista del dataset. No se debe prometer más.
+1. **Probabilidad no calibrada (medido, no supuesto).** Brier del modelo
+   **0.1714** vs **0.0853** de predecir siempre la prevalencia (ver §7.5). La
+   ponderación convierte la salida en una *escala de riesgo*, no en
+   `P(enfermedad)`. Mejora posible: envolver el modelo en
+   `CalibratedClassifierCV` **y recalibrar las bandas 0.30/0.60**.
+2. **Desbalance y F1 moderado.** Con 9.42% de positivos (4,779 de 50,736), F1
+   0.36-0.41 es el techo realista del dataset (ver §7.4). Además, la PPV de la
+   banda `alto` es solo 27.2%: el modelo prioriza, no diagnostica.
 3. **Población distinta.** El dataset es de EE.UU. (BRFSS); la población objetivo
    es local. Puede haber *dataset shift*. No usar como diagnóstico definitivo.
 4. **Umbrales clínicos fijos.** 0.30/0.60 son una decisión de producto; conviene
@@ -464,6 +568,9 @@ for nombre, datos in casos.items():
 
 **Próximos pasos sugeridos:**
 
+- Evaluación por subgrupos: **hoy no es posible** con las 9 variables del modelo
+  (BRFSS sí tiene sexo/raza/ingreso, pero la API no los recibe ni los persiste).
+  Si se quiere medir equidad, primero hay que capturar esos campos.
 - Calibración de probabilidades + recalibración de umbrales.
 - Explicabilidad por paciente (SHAP) para justificar el riesgo.
 - Análisis de equidad por subgrupos (sexo, edad, seguro).

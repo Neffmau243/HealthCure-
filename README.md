@@ -64,6 +64,8 @@ Al levantar el backend con la BD vacía se crean estas cuentas:
 | Admin (gestión de usuarios + catálogos) | ✅ Funcionando |
 | **Frontend React integrado con la API** | ✅ **Funcionando** |
 | Tests (pytest, SQLite en memoria) | ✅ Cubiertos |
+| Figuras de evaluación del modelo (`scripts/generar_figuras.py`) | ✅ Incluidas |
+| Ficha del modelo / Model Card | ✅ Incluida |
 | Migraciones SQL | ✅ Incluidas |
 | Postman collection | ✅ Incluido |
 | Entrenamiento de modelo | ✅ Script incluido |
@@ -144,7 +146,7 @@ source venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
-pip install -r requirements-dev.txt   # pytest + httpx
+pip install -r requirements-dev.txt   # pytest + httpx + matplotlib (figuras del modelo)
 ```
 
 ### 4. Configurar base de datos
@@ -349,7 +351,7 @@ POST /api/v1/evaluaciones/
 | Probabilidad | Clasificación | Nivel de Alerta | Semáforo |
 |-------------|---------------|-----------------|----------|
 | < 30% | **Bajo** | BAJO RIESGO - CONTROL DE RUTINA | 🟢 Verde |
-| 30% - 60% | **Moderado** | RIESGO MODERADO - SEGUIMIENTO PREVENTIVO | 🟡 Amarillo |现状 |
+| 30% - 60% | **Moderado** | RIESGO MODERADO - SEGUIMIENTO PREVENTIVO | 🟡 Amarillo |
 | > 60% | **Alto** | ALTA PRIORIDAD - RIESGO ELEVADO | 🔴 Rojo |
 
 ---
@@ -392,7 +394,8 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 - **Dependencias:** `requirements.txt` (producción) y `requirements-dev.txt` (tests). `bcrypt` está fijado a `4.0.1` por compatibilidad con passlib 1.7.4.
 - **Dataset:** Heart Disease Health Indicators (CDC/BRFSS 2015, Kaggle)
 - **Entrenamiento:** `entrenar_modelo.py` — compara Random Forest vs XGBoost con validación cruzada, optimiza el umbral de F1 y guarda **dos** artefactos: el modelo `app/resources/modelo_cardiaco.joblib` y su ficha técnica `app/resources/modelo_cardiaco_metadata.json` (versión, dataset, hiperparámetros y métricas).
-- **Modelo actual (v2.0.0):** XGBoost · ROC AUC 0.840 · Recall 0.82 · F1 0.36 (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
+- **Figuras del modelo:** `python scripts/generar_figuras.py` — genera ROC, precision-recall, matriz de confusión, calibración, importancia de variables, barrido de umbral y distribución de riesgo en `docs/figuras/`. No reentrena: carga el `.joblib` y **verifica** que las métricas coincidan con la ficha técnica.
+- **Modelo actual (v2.0.0):** XGBoost · ROC AUC 0.840 · PR AUC 0.354 · Recall 0.82 · F1 0.36 · PPV banda `alto` 27.2% (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
 - **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
 - **Frontend:** vive en `frontend/`; `npm install && npm run dev` (puerto 5173). La URL del
   backend se configura con `VITE_API_URL` (ver `frontend/.env.example`).
@@ -404,6 +407,7 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 ## 📚 Documentación Adicional
 
 - **Modelo ML (entrada, entrenamiento, métricas y entregables):** [`docs/MODELO_ML.md`](docs/MODELO_ML.md) — arquitectura del pipeline, qué datos espera, cómo se entrenó/versiona y qué métricas entrega.
+- **Ficha del modelo (Model Card):** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) — uso previsto y fuera de alcance, datos de entrenamiento, métricas con su interpretación clínica, calibración, evaluación por subgrupos, consideraciones éticas y limitaciones conocidas.
 - **Triaje Clínico detallado:** [`docs/TRIAGE_CLINICO.md`](docs/TRIAGE_CLINICO.md) — Arquitectura, reglas clínicas, flujo completo, compatibilidad con evaluaciones antiguas y guía de extensión.
 - **Mapeo rutas Frontend ↔ Backend:** [`docs/MAPEO_RUTAS_FRONT_BACK.md`](docs/MAPEO_RUTAS_FRONT_BACK.md) — Rutas de ambos lados, contraste, desalineaciones y lo que falta para integrar.
 
