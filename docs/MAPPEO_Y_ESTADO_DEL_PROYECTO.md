@@ -743,8 +743,8 @@ Todos creados por Dr. Garcia (`usuario_creador_id = 2`):
 | Validación | Pydantic v2 | 2.9+ |
 | Autenticación | JWT (python-jose) | 3.3+ |
 | Contraseñas | bcrypt (passlib) | 4.0.1 |
-| ML | Random Forest (scikit-learn) | 1.5+ |
-| ML备选 | XGBoost | 2.1+ |
+| ML (algoritmo) | XGBoost (comparado con Random Forest) | 3.4+ |
+| ML (librería) | scikit-learn | 1.9+ |
 | Procesamiento | pandas | 2.2+ |
 | Serialización | joblib | 1.4+ |
 | Servidor | uvicorn | 0.30+ |
