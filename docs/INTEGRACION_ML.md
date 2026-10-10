@@ -108,12 +108,21 @@ Está documentada en los dos archivos y protegida por tests unitarios
 
 ## 4. Archivos creados / modificados
 
-### 4.1 `entrenar_modelo.py` (NUEVO — raíz del proyecto)
+### 4.1 `entrenar_modelo.py` (raíz del proyecto)
 
-Entrena un `RandomForestClassifier` con el CSV de Kaggle y guarda el
-modelo donde el backend lo busca.
+**v2.0.0 — pipeline de calidad.** Ya no entrena un único modelo a mano:
 
-Correcciones aplicadas al plan original:
+1. Divide train/test de forma **estratificada** (seed 42).
+2. Busca hiperparámetros con `RandomizedSearchCV` + **validación cruzada**
+   (3 folds, scoring `roc_auc` y `pr_auc`).
+3. **Compara Random Forest vs XGBoost** y elige el mejor por ROC AUC de CV.
+4. Reajusta el ganador en todo el train y **optimiza el umbral de F1**.
+5. Guarda el modelo **y su ficha técnica** (`modelo_cardiaco_metadata.json`)
+   con versión, dataset, hiperparámetros, métricas y umbrales.
+
+> Detalle completo de entrada/salida y métricas: [`MODELO_ML.md`](MODELO_ML.md).
+
+Correcciones aplicadas al plan original (v1):
 
 1. **Sin emojis en los `print`** — la consola de Windows (cp1252) crashea
    con `✅`/`🌱` (el mismo bug que ya se arregló en el seed).
@@ -176,15 +185,18 @@ carpeta Evaluaciones (antes solo había GETs) y la variable de colección
 ```bash
 # 1. Coloca el CSV en la raíz del proyecto (NO se commitea)
 
-# 2. Con el venv activo, entrena (tarda ~10-30 segundos):
+# 2. Con el venv activo, entrena (comparación + CV: ~2-3 minutos):
 python entrenar_modelo.py
 
-# 3. Salida esperada (valores aproximados con el dataset real):
-#    [TRAIN] Filas: 253680 | Positivos: ~9.1%
-#    Accuracy:  ~0.74-0.76
-#    F1:        ~0.60-0.65
-#    ROC AUC:   ~0.75-0.80
+# 3. Salida esperada (valores reales, v2.0.0):
+#    [TRAIN] Filas: 253680 | Positivos: 23893 (9.4%)
+#    MEJOR FAMILIA: XGBoost (CV ROC AUC=0.8391)
+#    Umbral óptimo para F1: 0.7026 (F1=0.4101)
+#    Distribución de triaje en test: bajo 51.1% | moderado 24.1% | alto 24.8%
+#    Accuracy: 0.7243 | Precision: 0.2297 | Recall: 0.8192
+#    F1: 0.3588 | ROC AUC: 0.8403 | PR AUC: 0.3537
 #    Modelo guardado en app/resources/modelo_cardiaco.joblib
+#    Ficha técnica guardada en app/resources/modelo_cardiaco_metadata.json
 
 # 4. Reinicia el servidor (con --reload se reinicia solo al tocar un .py;
 #    el .joblib se lee en la PRIMERA predicción, así que no hace falta
@@ -239,7 +251,7 @@ Resultado: el backend predice y guarda correctamente. Las probabilidades
     "...": "...",
     "probabilidad": 0.937349,
     "clasificacion": "alto",
-    "modelo_version": "1.0.0"
+    "modelo_version": "2.0.0"
 }
 ```
 
@@ -258,16 +270,23 @@ Resultado: el backend predice y guarda correctamente. Las probabilidades
 | `422` al crear evaluación | Body con campos faltantes o edad fuera de 1–120 | Revisar la pestaña Response de Postman (dice el campo exacto) |
 | Consola llena de SQL | `DEBUG=True` en `.env` | Cambiar a `DEBUG=False` |
 
-### Umbrales de clasificación (ajustables)
+### Umbrales de clasificación (desde la ficha técnica)
 
-`app/ml/predictor.py::_classify()` usa umbrales fijos para el MVP:
+`app/ml/predictor.py::_classify()` **ya no hardcodea** los umbrales: los lee
+de `app/ml/metadata.py` (la ficha técnica que guarda el entrenamiento), con
+fallback a los valores del MVP si no existe la ficha.
 
 | Probabilidad | Clasificación |
 |--------------|---------------|
 | < 0.30 | bajo |
 | 0.30 – 0.60 | moderado |
-| > 0.60 | alto |
+| >= 0.60 | alto |
 
-En una fase posterior se pueden calibrar con la curva ROC y criterio
-clínico — el código ya está aislado en una función para tocarlo sin
-romper nada más.
+**Ojo:** estos 3 niveles son la regla clínica del producto. El modelo se
+entrena con **ponderación de clases** (`class_weight="balanced"` /
+`scale_pos_weight`) precisamente para que su salida caiga en una escala de
+riesgo donde 0.30/0.60 separan las bandas. El umbral óptimo de F1 del
+modelo (0.7026) es otra cosa: es el punto binario enfermedad/no-enfermedad
+y queda en la metadata como referencia.
+
+Ver [`MODELO_ML.md`](MODELO_ML.md#5-umbrales-de-decisión-y-clasificación).
