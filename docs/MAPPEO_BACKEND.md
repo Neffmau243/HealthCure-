@@ -693,7 +693,7 @@ DATOS QUE SE GUARDAN EN MySQL (tabla evaluaciones):
   dificultad_para_caminar → FALSE
   probabilidad            → 0.734521  ← calculado por el ML
   clasificacion           → "alto"     ← calculado por el ML
-  modelo_version          → "1.0.0"
+  modelo_version          → "2.0.0"
   created_at              → CURRENT_TIMESTAMP
 
 RESPUESTA (201):
@@ -712,7 +712,7 @@ RESPUESTA (201):
     "dificultad_para_caminar": false,
     "probabilidad": 0.734521,
     "clasificacion": "alto",
-    "modelo_version": "1.0.0",
+    "modelo_version": "2.0.0",
     "created_at": "2025-01-15T10:30:00"
 }
 

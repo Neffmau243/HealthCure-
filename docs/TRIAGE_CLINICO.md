@@ -314,7 +314,7 @@ POST /api/v1/evaluaciones/
     "dificultad_para_caminar": false,
     "probabilidad": 0.459186,
     "clasificacion": "moderado",
-    "modelo_version": "1.0.0",
+    "modelo_version": "2.0.0",
     "triaje_clinico": {
         "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
         "codigo_color": "amarillo",

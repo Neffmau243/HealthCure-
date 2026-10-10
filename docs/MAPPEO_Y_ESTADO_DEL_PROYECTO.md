@@ -495,7 +495,7 @@ RESPUESTA (201):
     "dificultad_para_caminar": false,
     "probabilidad": 0.734521,
     "clasificacion": "alto",
-    "modelo_version": "1.0.0",
+    "modelo_version": "2.0.0",
     "created_at": "..."
 }
 
@@ -578,18 +578,25 @@ Probabilidad de enfermedad cardiaca:
 └─────────────────────┴─────────────────────┴────────────────────┘
 ```
 
-### 9.4 Modelo Actual (ENTRENADO ✅)
+### 9.4 Modelo Actual (ENTRENADO — v2.0.0)
 
 | Campo | Valor |
 |-------|-------|
-| **Algoritmo** | Random Forest (100 estimadores, max_depth=10, class_weight="balanced") |
+| **Algoritmo** | XGBoost (400 árboles, max_depth=3, learning_rate=0.05, scale_pos_weight=9.62) |
+| **Selección** | Comparado con Random Forest vía CV estratificada (3 folds). XGB 0.8391 vs RF 0.8373 (ROC AUC) |
 | **Dataset** | Heart Disease Health Indicators (CDC/BRFSS 2015) |
-| **Archivo** | `app/resources/modelo_cardiaco.joblib` (15.7 MB) |
-| **Version** | `1.0.0` |
-| **Estado** | ✅ **ENTRENADO Y OPERATIVO** |
-| **Métricas** | Accuracy: 72.44% \| ROC AUC: 83.65% \| F1: 35.71% |
+| **Archivo** | `app/resources/modelo_cardiaco.joblib` |
+| **Ficha técnica** | `app/resources/modelo_cardiaco_metadata.json` (versión, dataset, hiperparámetros, métricas) |
+| **Version** | `2.0.0` (la API la lee de la ficha técnica, no está hardcodeada) |
+| **Estado** | ENTRENADO Y OPERATIVO |
+| **Métricas (test, umbral 0.50)** | Accuracy: 72.43% \| Recall: 81.92% \| ROC AUC: 84.03% \| PR AUC: 35.37% \| F1: 35.88% |
+| **Métricas (test, umbral óptimo 0.7026)** | Accuracy: 84.88% \| Recall: 55.81% \| F1: 41.01% |
+| **Distribución de triaje (test)** | bajo 51.1% \| moderado 24.1% \| alto 24.8% |
 | **Filas entrenamiento** | 253,680 (20% test = 50,736) |
 | **Clase positiva** | 23,893 (9.4% — dataset desbalanceado) |
+
+> Detalle completo (entrada, entrenamiento, versionado y entregables):
+> [`MODELO_ML.md`](MODELO_ML.md).
 
 ### 9.5 Comportamiento con Modelo
 
@@ -771,12 +778,15 @@ Todos creados por Dr. Garcia (`usuario_creador_id = 2`):
 
 | Detalle | Valor |
 |---------|-------|
-| Modelo | `app/resources/modelo_cardiaco.joblib` (15.7 MB) |
-| Algoritmo | Random Forest (n_estimators=100, max_depth=10, class_weight="balanced") |
+| Modelo | `app/resources/modelo_cardiaco.joblib` + `modelo_cardiaco_metadata.json` |
+| Algoritmo | XGBoost (n_estimators=400, max_depth=3, lr=0.05, scale_pos_weight=9.62) |
+| Version | 2.0.0 (leída de la ficha técnica) |
 | Dataset | 253,680 filas BRFSS 2015 |
-| Accuracy | 72.44% |
-| ROC AUC | 83.65% |
-| F1 Score | 35.71% |
+| Accuracy | 72.43% |
+| Recall | 81.92% |
+| ROC AUC | 84.03% |
+| PR AUC | 35.37% |
+| F1 Score | 35.88% (41.01% con umbral óptimo 0.7026) |
 | Estado | **Operativo** — `POST /api/v1/evaluaciones/` retorna predicciones |
 
 ---

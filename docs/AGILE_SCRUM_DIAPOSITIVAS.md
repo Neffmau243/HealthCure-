@@ -179,9 +179,9 @@ Este incremento hizo al sistema **seguro y auditable** — premisa para exponer 
 
 | Entregable | Evidencia |
 |------------|-----------|
-| Modelo **Random Forest** entrenado (100 estimadores, class_weight="balanced") | `app/resources/modelo_cardiaco.joblib` (15.7 MB) |
-| Dataset real CD**C/BRFSS 2015** — 253,680 filas | Indicadores de salud de EE.UU. |
-| Métricas del modelo | **Accuracy 72.44% · ROC AUC 83.65% · F1 35.71%** |
+| Modelo **XGBoost** (comparado con Random Forest vía validación cruzada) | `app/resources/modelo_cardiaco.joblib` + ficha técnica JSON |
+| Dataset real **CDC/BRFSS 2015** — 253,680 filas | Indicadores de salud de EE.UU. |
+| Métricas del modelo (v2.0.0) | **ROC AUC 84.03% · Recall 81.92% · F1 35.88% · PR AUC 35.37%** |
 | Endpoint de evaluación con predicción | `POST /api/v1/evaluaciones/` → probabilidad (0.459) + clasificación ("moderado") |
 | Pipeline robusto | preprocessor (valida y ordena columnas) → model_loader (singleton en RAM) → predictor |
 

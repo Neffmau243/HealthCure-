@@ -113,7 +113,7 @@ API Controller → Service → Repository → MySQL
 | Validación | Pydantic v2 |
 | Autenticación | JWT (python-jose) |
 | Contraseñas | bcrypt (passlib) |
-| ML | Random Forest / XGBoost (scikit-learn) |
+| ML | XGBoost (comparado con Random Forest) — scikit-learn |
 | Tests | pytest + httpx |
 | Documentación API | Swagger UI automático |
 
@@ -316,9 +316,9 @@ POST /api/v1/evaluaciones/
     "diabetes": true,
     "salud_general": 3,
     "dificultad_para_caminar": false,
-    "probabilidad": 0.459186,
+    "probabilidad": 0.51315,
     "clasificacion": "moderado",
-    "modelo_version": "1.0.0",
+    "modelo_version": "2.0.0",
     "triaje_clinico": {
         "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
         "codigo_color": "amarillo",
@@ -391,7 +391,8 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 
 - **Dependencias:** `requirements.txt` (producción) y `requirements-dev.txt` (tests). `bcrypt` está fijado a `4.0.1` por compatibilidad con passlib 1.7.4.
 - **Dataset:** Heart Disease Health Indicators (CDC/BRFSS 2015, Kaggle)
-- **Entrenamiento:** `entrenar_modelo.py` — entrena y guarda el modelo como `app/resources/modelo_cardiaco.joblib`
+- **Entrenamiento:** `entrenar_modelo.py` — compara Random Forest vs XGBoost con validación cruzada, optimiza el umbral de F1 y guarda **dos** artefactos: el modelo `app/resources/modelo_cardiaco.joblib` y su ficha técnica `app/resources/modelo_cardiaco_metadata.json` (versión, dataset, hiperparámetros y métricas).
+- **Modelo actual (v2.0.0):** XGBoost · ROC AUC 0.840 · Recall 0.82 · F1 0.36 (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
 - **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
 - **Frontend:** vive en `frontend/`; `npm install && npm run dev` (puerto 5173). La URL del
   backend se configura con `VITE_API_URL` (ver `frontend/.env.example`).
@@ -402,6 +403,7 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 
 ## 📚 Documentación Adicional
 
+- **Modelo ML (entrada, entrenamiento, métricas y entregables):** [`docs/MODELO_ML.md`](docs/MODELO_ML.md) — arquitectura del pipeline, qué datos espera, cómo se entrenó/versiona y qué métricas entrega.
 - **Triaje Clínico detallado:** [`docs/TRIAGE_CLINICO.md`](docs/TRIAGE_CLINICO.md) — Arquitectura, reglas clínicas, flujo completo, compatibilidad con evaluaciones antiguas y guía de extensión.
 - **Mapeo rutas Frontend ↔ Backend:** [`docs/MAPEO_RUTAS_FRONT_BACK.md`](docs/MAPEO_RUTAS_FRONT_BACK.md) — Rutas de ambos lados, contraste, desalineaciones y lo que falta para integrar.
 
