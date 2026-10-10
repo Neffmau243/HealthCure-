@@ -229,6 +229,7 @@ Los tests usan **SQLite en memoria** — no necesitan MySQL levantado.
 | GET | `/api/v1/evaluaciones/` | Listar todas (paginado) |
 | GET | `/api/v1/evaluaciones/{id}` | Ver una evaluación |
 | GET | `/api/v1/evaluaciones/by-paciente/{id}` | Historial de un paciente |
+| GET | `/api/v1/evaluaciones/resumen` | Conteos exactos para el dashboard (total, hoy, por nivel y pacientes ya triados hoy) |
 
 ### Atenciones del Consultorio (requiere JWT)
 

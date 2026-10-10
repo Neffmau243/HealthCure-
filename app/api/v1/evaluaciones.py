@@ -24,7 +24,11 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.evaluacion_service import EvaluacionService
 from app.services.reporte_service import ReporteService
-from app.schemas.evaluacion import EvaluacionCreate, EvaluacionResponse
+from app.schemas.evaluacion import (
+    EvaluacionCreate,
+    EvaluacionResponse,
+    ResumenEvaluaciones,
+)
 from app.exceptions.ml_exceptions import MLException
 from app.api.deps import get_current_user
 
@@ -96,8 +100,33 @@ def list_evaluaciones(
 
 
 # ⚠️ RUTAS ESTÁTICAS ANTES DE LAS DINÁMICAS
-# /by-paciente DEBE ir ANTES de /{evaluacion_id}
-# Si no, FastAPI interpreta "by-paciente" como un ID y nunca llega aquí.
+# /resumen y /by-paciente DEBEN ir ANTES de /{evaluacion_id}
+# Si no, FastAPI interpreta "resumen" como un ID y nunca llega aquí.
+
+@router.get("/resumen", response_model=ResumenEvaluaciones)
+def get_resumen_evaluaciones(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """
+    RESUMEN AGREGADO DE EVALUACIONES (SOLO LECTURA)
+
+    Devuelve los conteos exactos para el dashboard y para la cola de triaje,
+    resueltos con COUNT en SQL:
+      - total_evaluaciones: todas las evaluaciones registradas
+      - total_hoy: las de la fecha de hoy
+      - por_clasificacion: cuántas de cada nivel de riesgo (bajo/moderado/alto)
+      - pacientes_evaluados_hoy: IDs de pacientes ya triados hoy
+
+    Existe para que el frontend no tenga que contar una página de 200 filas
+    (lo que daría números falsos al pasar de 200 evaluaciones).
+
+    Ejemplo: GET /api/v1/evaluaciones/resumen
+    """
+    service = EvaluacionService(db)
+    return service.resumen()
+
+
 
 @router.get("/by-paciente/{paciente_id}", response_model=list[EvaluacionResponse])
 def get_evaluaciones_by_paciente(

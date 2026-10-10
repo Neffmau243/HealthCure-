@@ -25,11 +25,17 @@ Porque SRP (Single Responsibility Principle):
   - Predictor: solo ejecuta el modelo ML
   - Service: orquesta ambos sin que se conozcan entre sí
 """
+from datetime import date
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.repositories.evaluacion_repository import EvaluacionRepository
 from app.repositories.paciente_repository import PacienteRepository
-from app.schemas.evaluacion import EvaluacionCreate, EvaluacionResponse
+from app.schemas.evaluacion import (
+    ClasificacionEnum,
+    EvaluacionCreate,
+    EvaluacionResponse,
+    ResumenEvaluaciones,
+)
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.exceptions.ml_exceptions import MLException
 
@@ -117,3 +123,29 @@ class EvaluacionService:
         """Retorna evaluaciones paginadas (para el admin)."""
         evaluaciones = self.evaluacion_repo.list_all(limit=limit, offset=offset)
         return [EvaluacionMapper.to_response(e) for e in evaluaciones]
+
+    def resumen(self) -> ResumenEvaluaciones:
+        """
+        Agregados para el dashboard y la cola de triaje.
+
+        Por qué existe: el frontend calculaba "Evaluaciones realizadas" y
+        "Riesgo alto" contando una página de como máximo 200 evaluaciones,
+        así que a partir de la 201 el número mostrado era falso sin avisar.
+        Aquí los conteos son COUNT en SQL: exactos y sin traer filas.
+
+        `pacientes_evaluados_hoy` define qué pacientes NO están pendientes:
+        la cola es diaria (un paciente triado la semana pasada vuelve a
+        estar pendiente hoy).
+        """
+        hoy = date.today().isoformat()
+        conteo = self.evaluacion_repo.contar_por_clasificacion()
+        return ResumenEvaluaciones(
+            total_evaluaciones=self.evaluacion_repo.contar(),
+            total_hoy=self.evaluacion_repo.contar_hoy(hoy),
+            # Se completan los 3 niveles con 0 para que el frontend no tenga
+            # que defenderse de claves ausentes.
+            por_clasificacion={
+                nivel.value: conteo.get(nivel.value, 0) for nivel in ClasificacionEnum
+            },
+            pacientes_evaluados_hoy=self.evaluacion_repo.pacientes_evaluados_hoy(hoy),
+        )

@@ -161,6 +161,33 @@ class EvaluacionResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class ResumenEvaluaciones(BaseModel):
+    """
+    DTO de SALIDA — agregados para el dashboard (SOLO LECTURA).
+
+    Existe para que los KPIs y la cola de triaje no se calculen contando
+    una página de resultados en el navegador: si el front pide `limit=200`
+    y hay 201 evaluaciones, el número mostrado sería falso sin avisar.
+
+    Aquí los conteos se hacen con COUNT en SQL, así que son exactos y no
+    traen filas al cliente.
+
+    Ejemplo JSON:
+    {
+        "total_evaluaciones": 39,
+        "total_hoy": 5,
+        "por_clasificacion": {"bajo": 17, "moderado": 10, "alto": 12},
+        "pacientes_evaluados_hoy": [1, 4, 7]
+    }
+    """
+    total_evaluaciones: int
+    total_hoy: int
+    # Claves siempre presentes (con 0 si no hay casos de ese nivel)
+    por_clasificacion: dict[str, int]
+    # IDs de pacientes ya triados HOY: define la cola de "pendientes"
+    pacientes_evaluados_hoy: list[int]
+
+
 class PredictionResult(BaseModel):
     """
     DTO INTERNO — resultado puro del modelo ML.
