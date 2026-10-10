@@ -13,6 +13,16 @@ export const evaluacionesService = {
     return data
   },
 
+  /**
+   * GET /evaluaciones/resumen → conteos exactos para el dashboard.
+   * Se resuelven con COUNT en el backend, así que no dependen de cuántas
+   * filas se hayan traído (contar una página daría números falsos).
+   */
+  async resumen() {
+    const { data } = await api.get('/evaluaciones/resumen')
+    return data
+  },
+
   /** GET /evaluaciones/by-paciente/{id} → historial del paciente */
   async porPaciente(pacienteId) {
     const { data } = await api.get(`/evaluaciones/by-paciente/${pacienteId}`)

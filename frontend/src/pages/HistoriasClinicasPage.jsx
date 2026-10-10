@@ -95,21 +95,25 @@ export default function HistoriasClinicasPage() {
         className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-4"
       >
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"
+            aria-hidden="true"
+          />
           <input
             type="text"
             placeholder="Buscar por documento del paciente..."
+            aria-label="Buscar paciente por número de documento"
             value={documento}
             onChange={(e) => setDocumento(e.target.value)}
-            className="w-full py-2.5 pl-10 pr-4 rounded-lg border border-slate-300 text-sm outline-none focus:border-sky-500 transition-colors"
+            className="w-full py-3 min-h-11 pl-10 pr-4 rounded-lg border border-slate-300 text-sm outline-none focus:border-sky-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17324c] transition-colors"
           />
         </div>
         <button
           type="submit"
           disabled={buscando}
-          className="px-5 py-2.5 bg-[#17324c] hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition cursor-pointer disabled:opacity-60 inline-flex items-center justify-center gap-2"
+          className="px-5 py-3 min-h-11 bg-[#17324c] hover:bg-slate-800 text-white rounded-lg text-sm font-medium transition cursor-pointer disabled:opacity-60 inline-flex items-center justify-center gap-2"
         >
-          {buscando && <Loader2 className="w-4 h-4 animate-spin" />}
+          {buscando && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
           Buscar
         </button>
       </form>

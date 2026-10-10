@@ -24,7 +24,10 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
 
   const triaje = evaluacion.triaje_clinico;
   const semaforo = clasesSemaforo(triaje?.codigo_color);
-  const probabilidad = (evaluacion.probabilidad * 100).toFixed(1);
+  // Se muestra como ÍNDICE de riesgo, no como probabilidad: el modelo no está
+  // calibrado (Brier 0.1714 vs 0.0853 del baseline, ver docs/MODEL_CARD.md),
+  // así que un "82.6%" se leería como probabilidad real de enfermedad.
+  const indiceRiesgo = (evaluacion.probabilidad * 100).toFixed(1);
 
   const descargarFua = async () => {
     setDescargando(true);
@@ -66,8 +69,11 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
           >
             Riesgo {evaluacion.clasificacion}
           </span>
-          <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/70 text-slate-700 border border-white">
-            {probabilidad}%
+          <span
+            className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/70 text-slate-700 border border-white"
+            title="Índice de riesgo: sirve para ordenar y priorizar. No es la probabilidad de que el paciente esté enfermo."
+          >
+            Índice de riesgo {indiceRiesgo}
           </span>
         </div>
       </div>
@@ -78,6 +84,13 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
           {triaje.accion_sugerida}
         </p>
       )}
+
+      {/* Advertencia explícita: evita que el número se lea como diagnóstico. */}
+      <p className="text-[11px] text-slate-600 leading-relaxed">
+        Este índice <span className="font-semibold">prioriza</span> la atención y no confirma
+        enfermedad: el modelo no está calibrado como probabilidad clínica. La decisión es del
+        personal de salud.
+      </p>
 
       {!compacta && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

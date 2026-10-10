@@ -126,13 +126,17 @@ export default function ConsultorioPage() {
             </h3>
 
             <div className="relative mb-3">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+              <Search
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4"
+                aria-hidden="true"
+              />
               <input
                 type="text"
                 placeholder="Buscar por documento o nombre..."
+                aria-label="Buscar paciente por documento o nombre"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className="w-full pl-10 pr-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 transition"
+                className="w-full pl-10 pr-3 py-3 min-h-11 text-sm bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-sky-400 transition"
               />
             </div>
 
@@ -245,10 +249,14 @@ export default function ConsultorioPage() {
             {exito && <Alerta tipo="exito">{exito}</Alerta>}
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label
+                className="block text-xs font-semibold text-slate-700 mb-1"
+                htmlFor="cons-diagnostico"
+              >
                 Diagnóstico Final del Médico *
               </label>
               <textarea
+                id="cons-diagnostico"
                 rows="2"
                 required
                 minLength={3}
@@ -261,10 +269,14 @@ export default function ConsultorioPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  htmlFor="cons-tratamiento"
+                >
                   Tratamiento / Receta *
                 </label>
                 <textarea
+                  id="cons-tratamiento"
                   rows="3"
                   required
                   minLength={3}
@@ -276,10 +288,14 @@ export default function ConsultorioPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                <label
+                  className="block text-xs font-semibold text-slate-700 mb-1"
+                  htmlFor="cons-indicaciones"
+                >
                   Indicaciones Generales
                 </label>
                 <textarea
+                  id="cons-indicaciones"
                   rows="3"
                   value={form.indicaciones}
                   onChange={(e) => setForm({ ...form, indicaciones: e.target.value })}

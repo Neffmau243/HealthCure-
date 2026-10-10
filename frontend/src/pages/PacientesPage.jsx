@@ -266,16 +266,18 @@ export default function PacientesPage() {
           <button
             onClick={() => navigate('/dashboard/historiales', { state: { pacienteId: row.id } })}
             title="Ver Historia Clínica"
-            className="p-1.5 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition cursor-pointer inline-flex items-center justify-center"
+            aria-label={`Ver historia clínica de ${nombreCompleto(row)}`}
+            className="w-11 h-11 shrink-0 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition cursor-pointer inline-flex items-center justify-center"
           >
-            <FileText className="w-4 h-4" />
+            <FileText className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={() => abrirModalEditar(row)}
             title="Editar Paciente"
-            className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition cursor-pointer inline-flex items-center justify-center"
+            aria-label={`Editar paciente ${nombreCompleto(row)}`}
+            className="w-11 h-11 shrink-0 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition cursor-pointer inline-flex items-center justify-center"
           >
-            <Edit className="w-4 h-4" />
+            <Edit className="w-4 h-4" aria-hidden="true" />
           </button>
         </div>
       ),
@@ -304,13 +306,14 @@ export default function PacientesPage() {
 
       <div className="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex items-center gap-4">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-3 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" aria-hidden="true" />
           <input
             type="text"
             placeholder="Buscar por documento, nombres o apellidos..."
+            aria-label="Buscar paciente por documento, nombres o apellidos"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:bg-white transition"
+            className="w-full pl-11 pr-4 py-3 min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 focus:bg-white transition"
           />
         </div>
       </div>

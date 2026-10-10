@@ -11,12 +11,21 @@ export default function DashboardLayout() {
     <div className="flex h-screen w-screen overflow-hidden bg-[#fcf6f4] font-lexend relative">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      <button 
+      {/* Con el menú cerrado el botón estaba en left:-20px, es decir la mitad
+          fuera de la pantalla (medido: 50% visible). Ahora queda siempre
+          dentro del viewport. */}
+      <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className="absolute top-1/2 -translate-y-1/2 z-60 w-10 h-10 bg-white hover:bg-slate-50 text-[#17324c] flex items-center justify-center rounded-full shadow-lg border border-sky-300 ring-2 ring-sky-400/20 transition-all duration-300 ease-in-out cursor-pointer"
-        style={{ left: sidebarOpen ? '244px' : '-20px' }}
+        aria-label={sidebarOpen ? 'Ocultar menú lateral' : 'Mostrar menú lateral'}
+        aria-expanded={sidebarOpen}
+        className="absolute top-1/2 -translate-y-1/2 z-60 w-11 h-11 bg-white hover:bg-slate-50 text-[#17324c] flex items-center justify-center rounded-full shadow-lg border border-sky-300 ring-2 ring-sky-400/20 transition-all duration-300 ease-in-out cursor-pointer"
+        style={{ left: sidebarOpen ? '236px' : '8px' }}
       >
-        {sidebarOpen ? <ChevronLeft className="w-5 h-5 stroke-[2.5]" /> : <ChevronRight className="w-5 h-5 stroke-[2.5]" />}
+        {sidebarOpen ? (
+          <ChevronLeft className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+        ) : (
+          <ChevronRight className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
+        )}
       </button>
 
       <div className="flex-1 flex flex-col h-full overflow-hidden">

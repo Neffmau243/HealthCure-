@@ -8,6 +8,7 @@ import {
   BrainCircuit,
   ClipboardList,
   CheckCircle2,
+  ChevronDown,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Tabla from '../components/ui/Tabla';
@@ -39,6 +40,10 @@ export default function TriajePage() {
 
   const [pacientes, setPacientes] = useState([]);
   const [evaluaciones, setEvaluaciones] = useState([]);
+  // Conteos exactos del backend (COUNT en SQL). No se cuentan filas en el
+  // navegador porque la lista viene paginada y el número sería falso.
+  const [resumen, setResumen] = useState(null);
+  const [guiaAbierta, setGuiaAbierta] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
   const [busqueda, setBusqueda] = useState('');
@@ -51,12 +56,14 @@ export default function TriajePage() {
 
   const cargarTodo = async () => {
     try {
-      const [listaPacientes, listaEvaluaciones] = await Promise.all([
+      const [listaPacientes, listaEvaluaciones, datosResumen] = await Promise.all([
         pacientesService.listar(),
         evaluacionesService.listar({ limit: LIMITE_EVALUACIONES }),
+        evaluacionesService.resumen(),
       ]);
       setPacientes(listaPacientes);
       setEvaluaciones(listaEvaluaciones);
+      setResumen(datosResumen);
       setError(null);
     } catch (e) {
       setError(mensajeError(e, 'No se pudieron cargar los datos'));
@@ -71,13 +78,15 @@ export default function TriajePage() {
     let activo = true;
     (async () => {
       try {
-        const [listaPacientes, listaEvaluaciones] = await Promise.all([
+        const [listaPacientes, listaEvaluaciones, datosResumen] = await Promise.all([
           pacientesService.listar(),
           evaluacionesService.listar({ limit: LIMITE_EVALUACIONES }),
+          evaluacionesService.resumen(),
         ]);
         if (!activo) return;
         setPacientes(listaPacientes);
         setEvaluaciones(listaEvaluaciones);
+        setResumen(datosResumen);
         setError(null);
       } catch (e) {
         if (activo) setError(mensajeError(e, 'No se pudieron cargar los datos'));
@@ -107,14 +116,25 @@ export default function TriajePage() {
     return mapa;
   }, [evaluaciones]);
 
+  // ── COLA DE TRIAJE ────────────────────────────────────────────────
+  // "Pendiente" = NO tiene evaluación de HOY. Antes se definía como "nunca
+  // evaluado en su historia", así que un paciente triado la semana pasada
+  // quedaba marcado como evaluado para siempre y la cola se vaciaba sola.
+  const idsEvaluadosHoy = useMemo(
+    () => new Set(resumen?.pacientes_evaluados_hoy ?? []),
+    [resumen]
+  );
   const pendientes = useMemo(
-    () => pacientes.filter((p) => !evaluacionesPorPaciente[p.id]?.length),
-    [pacientes, evaluacionesPorPaciente]
+    () => pacientes.filter((p) => !idsEvaluadosHoy.has(p.id)),
+    [pacientes, idsEvaluadosHoy]
   );
-  const evaluados = useMemo(
-    () => pacientes.filter((p) => evaluacionesPorPaciente[p.id]?.length),
-    [pacientes, evaluacionesPorPaciente]
+  const evaluadosHoy = useMemo(
+    () => pacientes.filter((p) => idsEvaluadosHoy.has(p.id)),
+    [pacientes, idsEvaluadosHoy]
   );
+  // Pacientes con historial previo pero aún pendientes hoy (los que hay que
+  // volver a triar) y los ya atendidos en esta jornada.
+  const evaluados = evaluadosHoy;
 
   const guardarTriaje = async (datos) => {
     if (!pacienteSeleccionado) return;
@@ -189,10 +209,14 @@ export default function TriajePage() {
       titulo: 'Estado',
       render: (row) => {
         const lista = evaluacionesPorPaciente[row.id];
+        const triadoHoy = idsEvaluadosHoy.has(row.id);
         if (!lista?.length) {
+          // Ojo con el vocabulario: "Pendiente de triaje" ahora significa
+          // "sin triaje HOY" (el filtro de arriba). Aquí el paciente no tiene
+          // ninguna evaluación en su historia, así que se dice distinto.
           return (
             <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
-              Pendiente de triaje
+              Sin evaluaciones
             </span>
           );
         }
@@ -203,11 +227,13 @@ export default function TriajePage() {
               className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${clasesClasificacion(
                 ev.clasificacion
               )}`}
+              title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
             >
-              {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}%
+              {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}
             </span>
-            <span className="text-xs text-slate-400">
-              {lista.length} {lista.length === 1 ? 'evaluación' : 'evaluaciones'}
+            <span className="text-xs text-slate-500">
+              {triadoHoy ? 'Triado hoy' : 'Sin triaje hoy'} · {lista.length}{' '}
+              {lista.length === 1 ? 'evaluación' : 'evaluaciones'}
             </span>
           </div>
         );
@@ -222,21 +248,22 @@ export default function TriajePage() {
           <div className="flex items-center justify-center gap-2">
             <button
               onClick={() => abrirTriaje(row)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-2 min-h-11 rounded-xl text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer ${
                 tieneEvaluaciones
                   ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   : 'bg-[#17324c] text-white hover:bg-slate-800 shadow-sm'
               }`}
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-3.5 h-3.5" aria-hidden="true" />
               <span>{tieneEvaluaciones ? 'Nueva evaluación' : 'Iniciar triaje'}</span>
             </button>
             <button
               onClick={() => navigate('/dashboard/historiales', { state: { pacienteId: row.id } })}
               title="Ver historia clínica"
-              className="p-1.5 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition cursor-pointer inline-flex items-center justify-center"
+              aria-label={`Ver historia clínica de ${nombreCompleto(row)}`}
+              className="w-11 h-11 shrink-0 bg-sky-50 text-sky-600 rounded-lg hover:bg-sky-100 transition cursor-pointer inline-flex items-center justify-center"
             >
-              <FileText className="w-4 h-4" />
+              <FileText className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         );
@@ -257,7 +284,7 @@ export default function TriajePage() {
         </div>
         <button
           onClick={() => navigate('/dashboard/pacientes')}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl text-sm font-medium shadow-md transition cursor-pointer w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 px-4 py-3 min-h-11 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl text-sm font-medium shadow-md transition cursor-pointer w-full sm:w-auto"
         >
           <UserPlus className="w-4 h-4" />
           <span>Registrar paciente</span>
@@ -268,10 +295,30 @@ export default function TriajePage() {
 
       {/* Guía del proceso: deja claro el flujo paciente → triaje → modelo ML */}
       <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
-        <p className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-4">
-          Cómo funciona el proceso
-        </p>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-stretch">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
+            Cómo funciona el proceso
+          </p>
+          {/* En pantallas chicas la guía arranca cerrada: ocupaba 186px (21%
+              del viewport) y empujaba la tabla de pacientes bajo el pliegue. */}
+          <button
+            type="button"
+            onClick={() => setGuiaAbierta((v) => !v)}
+            aria-expanded={guiaAbierta}
+            aria-controls="guia-proceso"
+            className="lg:hidden inline-flex items-center gap-1.5 px-3 py-2 min-h-11 rounded-xl text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition cursor-pointer"
+          >
+            {guiaAbierta ? 'Ocultar' : 'Ver pasos'}
+            <ChevronDown
+              className={`w-4 h-4 transition-transform ${guiaAbierta ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          </button>
+        </div>
+        <div
+          id="guia-proceso"
+          className={`${guiaAbierta ? 'grid' : 'hidden lg:grid'} grid-cols-1 lg:grid-cols-3 gap-4 items-stretch`}
+        >
           <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
             <span className="w-7 h-7 shrink-0 rounded-full bg-[#17324c] text-white text-xs font-bold flex items-center justify-center">
               1
@@ -318,7 +365,10 @@ export default function TriajePage() {
                 Probabilidad, clasificación y triaje clínico con semáforo y recomendaciones.
               </p>
               <p className="text-xs font-semibold text-indigo-800 mt-2">
-                {evaluaciones.length} {evaluaciones.length === 1 ? 'evaluación realizada' : 'evaluaciones realizadas'}
+                {(resumen?.total_evaluaciones ?? evaluaciones.length)}{' '}
+                {(resumen?.total_evaluaciones ?? evaluaciones.length) === 1
+                  ? 'evaluación realizada'
+                  : 'evaluaciones realizadas'}
               </p>
             </div>
           </div>
@@ -362,7 +412,7 @@ export default function TriajePage() {
               <button
                 key={f.id}
                 onClick={() => setFiltro(f.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                className={`px-3.5 py-2.5 min-h-11 rounded-xl text-xs font-semibold transition cursor-pointer ${
                   activo
                     ? 'bg-[#17324c] text-white shadow-sm'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -381,7 +431,8 @@ export default function TriajePage() {
             placeholder="Buscar paciente por documento o nombres..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 transition"
+            aria-label="Buscar paciente por documento o nombres"
+            className="w-full pl-11 pr-4 py-3 min-h-11 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400 transition"
           />
         </div>
       </div>
@@ -409,7 +460,7 @@ export default function TriajePage() {
           </p>
           <button
             onClick={() => navigate('/dashboard/consultorio')}
-            className="shrink-0 inline-flex items-center gap-2 px-4 py-2 bg-white text-slate-900 rounded-xl text-sm font-semibold hover:bg-slate-100 transition cursor-pointer"
+            className="shrink-0 inline-flex items-center gap-2 px-4 py-3 min-h-11 bg-white text-slate-900 rounded-xl text-sm font-semibold hover:bg-slate-100 transition cursor-pointer"
           >
             Ir al Consultorio <ArrowRight className="w-4 h-4" />
           </button>

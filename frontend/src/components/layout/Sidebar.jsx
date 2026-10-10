@@ -72,17 +72,20 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     >
       <div className="w-64 flex flex-col h-full">
         <div className="flex items-center justify-center h-20 px-3 bg-[#7FCFEC] border-b border-sky-300/60 shadow-xs shrink-0">
+          {/* Sin `scale-200`: el logo se renderizaba a 420x128 dentro de un
+              contenedor de 256x80 y desbordaba el ancho del menú. */}
           <img
             src={logoImage}
-            alt="Logo"
-            className="w-[210px] h-auto max-h-16 object-contain drop-shadow-sm scale-200"
+            alt="HealthCure"
+            className="w-[180px] h-auto max-h-12 object-contain drop-shadow-sm"
           />
         </div>
 
         <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3 custom-scrollbar">
           {seccionesVisibles.map((seccion) => (
             <div key={seccion.titulo} className="flex flex-col gap-1">
-              <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#17324c]/60">
+              {/* /60 daba 3.84:1 de contraste (WCAG AA exige 4.5:1). Con /80 sube a ~5:1. */}
+              <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#17324c]/80">
                 {seccion.titulo}
               </p>
 
@@ -93,7 +96,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   <button
                     key={item.id}
                     onClick={() => irA(item.path)}
-                    className={`flex items-center gap-3 w-full px-3.5 py-2.5 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-3 w-full px-3.5 py-2.5 min-h-11 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-[#17324c] text-white shadow-md'
                         : 'text-slate-800 hover:bg-sky-300/50'

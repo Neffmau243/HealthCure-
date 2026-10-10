@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Loader2, Info } from 'lucide-react';
+import { cloneElement, useId, useState } from 'react';
+import { Loader2, Info, BrainCircuit } from 'lucide-react';
 import { calcularIMC, edadACategoria, obtenerEdad, nombreCompleto } from '../../utils/triaje';
 import { Alerta } from '../ui/Feedback';
+import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
 
 const inputClass =
   'w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none';
@@ -59,24 +60,56 @@ const formInicialTriaje = (paciente, ultimaEvaluacion) => ({
     : {}),
 });
 
-function Seccion({ titulo, children }) {
+function Seccion({ titulo, children, nota, usadaPorModelo = false }) {
   return (
     <fieldset className="space-y-3">
-      <legend className="text-sm font-semibold text-slate-800 mb-2">{titulo}</legend>
+      <legend className="w-full mb-2">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-slate-800">{titulo}</span>
+          {usadaPorModelo ? (
+            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
+              Usada por el modelo
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+              No entra al modelo
+            </span>
+          )}
+        </span>
+        {nota && <span className="block text-xs text-slate-500 mt-1 font-normal">{nota}</span>}
+      </legend>
       {children}
     </fieldset>
   );
 }
 
-function Campo({ label, children }) {
+/**
+ * Campo con etiqueta ASOCIADA de verdad (`htmlFor` + `id`).
+ * Antes el <label> y el input eran hermanos sueltos, así que el campo no
+ * tenía nombre accesible y el lector de pantalla anunciaba "cuadro de edición".
+ */
+function Campo({ label, children, ayuda }) {
+  const id = useId();
+  const hijo = cloneElement(children, {
+    id,
+    'aria-describedby': ayuda ? `${id}-ayuda` : undefined,
+  });
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-700 mb-1">{label}</label>
-      {children}
+      <label htmlFor={id} className="block text-xs font-medium text-slate-700 mb-1">
+        {label}
+      </label>
+      {hijo}
+      {ayuda && (
+        <p id={`${id}-ayuda`} className="text-[11px] text-slate-500 mt-1">
+          {ayuda}
+        </p>
+      )}
     </div>
   );
 }
 
+/** La casilla ya envuelve al input, así que su etiqueta sí está asociada. */
 function Casilla({ name, label, checked, onChange }) {
   return (
     <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
@@ -104,6 +137,13 @@ export default function ModalTriaje({
   // precargados del paciente y de su última evaluación.
   const [form, setForm] = useState(() => formInicialTriaje(paciente, ultimaEvaluacion));
 
+  // Scroll bloqueado, Escape, clic fuera y foco inicial: ver el hook.
+  const { propsContenedor, alClicFondo } = useDialogoAccesible({
+    abierto: true,
+    onClose,
+    ocupado: guardando,
+  });
+
   const tieneRegistro = Boolean(paciente?.peso_kg || paciente?.talla_cm);
   const precargado = tieneRegistro || Boolean(ultimaEvaluacion);
 
@@ -124,121 +164,182 @@ export default function ModalTriaje({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-6 lg:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-100">
-        <h2 className="text-xl font-bold text-slate-800 mb-1">Registro de Triaje</h2>
-        <p className="text-xs text-slate-500 mb-5">
-          Paciente:{' '}
-          <span className="font-semibold text-slate-700">{nombreCompleto(paciente)}</span> (Doc:{' '}
-          {paciente?.documento_identidad}) · {edad != null ? `${edad} años` : 'edad desconocida'}
-        </p>
+    <div
+      className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+      onClick={alClicFondo}
+    >
+      <div
+        {...propsContenedor}
+        aria-labelledby="titulo-triaje"
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] shadow-2xl border border-slate-100 flex flex-col"
+      >
+        <div className="px-6 lg:px-8 pt-6 lg:pt-8 pb-4 border-b border-slate-100 shrink-0">
+          <h2 id="titulo-triaje" className="text-xl font-bold text-slate-800 mb-1">
+            Registro de Triaje
+          </h2>
+          <p className="text-xs text-slate-500">
+            Paciente:{' '}
+            <span className="font-semibold text-slate-700">{nombreCompleto(paciente)}</span> (Doc:{' '}
+            {paciente?.documento_identidad}) · {edad != null ? `${edad} años` : 'edad desconocida'}
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && <Alerta>{error}</Alerta>}
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+          <div className="overflow-y-auto px-6 lg:px-8 py-5 space-y-6 flex-1">
+            {error && <Alerta>{error}</Alerta>}
 
-          {precargado && (
-            <div className="flex items-start gap-2.5 text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-xl p-3">
-              <Info className="w-4 h-4 mt-0.5 shrink-0 text-sky-600" />
-              <span>
-                Precargamos
-                {tieneRegistro ? ' el peso y la talla de su registro' : ''}
-                {tieneRegistro && ultimaEvaluacion ? ' y' : ''}
-                {ultimaEvaluacion ? ' los antecedentes de su última evaluación' : ''}.
-                Verifícalos y actualízalos si hace falta.
-              </span>
-            </div>
-          )}
+            {precargado && (
+              <div className="flex items-start gap-2.5 text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-xl p-3">
+                <Info className="w-4 h-4 mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
+                <span>
+                  Precargamos
+                  {tieneRegistro ? ' el peso y la talla de su registro' : ''}
+                  {tieneRegistro && ultimaEvaluacion ? ' y' : ''}
+                  {ultimaEvaluacion ? ' los antecedentes de su última evaluación' : ''}.
+                  Verifícalos y actualízalos si hace falta.
+                </span>
+              </div>
+            )}
 
-          <Seccion titulo="Signos vitales">
-            <div className="grid grid-cols-2 gap-4">
-              <Campo label="Peso (kg)">
-                <input type="number" step="0.1" min="1" name="peso" required value={form.peso} onChange={handleChange} placeholder="70" className={inputClass} />
-              </Campo>
-              <Campo label="Altura (cm)">
-                <input type="number" min="30" name="altura" required value={form.altura} onChange={handleChange} placeholder="170" className={inputClass} />
-              </Campo>
-              <Campo label="Presión Arterial (mmHg)">
-                <input type="text" name="presionArterial" required pattern="\d{2,3}\s*/\s*\d{2,3}" title="Formato: 120/80" value={form.presionArterial} onChange={handleChange} placeholder="120/80" className={inputClass} />
-              </Campo>
-              <Campo label="Temperatura (°C)">
-                <input type="number" step="0.1" name="temperatura" required value={form.temperatura} onChange={handleChange} placeholder="36.5" className={inputClass} />
-              </Campo>
-              <Campo label="Frecuencia Cardíaca (bpm)">
-                <input type="number" name="frecuenciaCardiaca" required value={form.frecuenciaCardiaca} onChange={handleChange} placeholder="80" className={inputClass} />
-              </Campo>
-              <Campo label="Saturación de Oxígeno (%)">
-                <input type="number" name="saturacion" required value={form.saturacion} onChange={handleChange} placeholder="98" className={inputClass} />
-              </Campo>
-            </div>
-            <p className="text-xs text-slate-500">
-              IMC calculado: <span className="font-semibold text-slate-700">{imc ?? '—'}</span>
-            </p>
-          </Seccion>
+            <Seccion
+              titulo="Signos vitales que sí entran al modelo"
+              usadaPorModelo
+              nota="La presión alta se deduce de este campo o del diagnóstico previo."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Campo label="Presión Arterial (mmHg)">
+                  <input
+                    type="text"
+                    name="presionArterial"
+                    required
+                    pattern="\d{2,3}\s*/\s*\d{2,3}"
+                    title="Formato: 120/80"
+                    value={form.presionArterial}
+                    onChange={handleChange}
+                    placeholder="120/80"
+                    className={inputClass}
+                  />
+                </Campo>
+              </div>
+            </Seccion>
 
-          {sinEdadValida && (
-            <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
-              El modelo de riesgo solo aplica a pacientes de 18 años o más con fecha de nacimiento
-              registrada. Actualiza la fecha de nacimiento del paciente antes de evaluarlo.
-            </p>
-          )}
+            <Seccion
+              titulo="Otros signos vitales (apoyo en consulta)"
+              nota="Hoy el registro no los guarda todavía; quedan como apoyo visual en pantalla. Por eso ya no son obligatorios."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Campo label="Peso (kg)">
+                  <input type="number" step="0.1" min="1" name="peso" value={form.peso} onChange={handleChange} placeholder="70" className={inputClass} />
+                </Campo>
+                <Campo label="Altura (cm)">
+                  <input type="number" min="30" name="altura" value={form.altura} onChange={handleChange} placeholder="170" className={inputClass} />
+                </Campo>
+                <Campo label="Temperatura (°C)">
+                  <input type="number" step="0.1" name="temperatura" value={form.temperatura} onChange={handleChange} placeholder="36.5" className={inputClass} />
+                </Campo>
+                <Campo label="Frecuencia Cardíaca (bpm)">
+                  <input type="number" name="frecuenciaCardiaca" value={form.frecuenciaCardiaca} onChange={handleChange} placeholder="80" className={inputClass} />
+                </Campo>
+                <Campo label="Saturación de Oxígeno (%)">
+                  <input type="number" name="saturacion" value={form.saturacion} onChange={handleChange} placeholder="98" className={inputClass} />
+                </Campo>
+              </div>
+              <p className="text-xs text-slate-500">
+                IMC calculado (referencial):{' '}
+                <span className="font-semibold text-slate-700">{imc ?? '—'}</span>
+              </p>
+            </Seccion>
 
-          <Seccion titulo="Antecedentes">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Casilla name="hipertensionPrevia" label="Diagnóstico previo de hipertensión" checked={form.hipertensionPrevia} onChange={handleChange} />
-              <Casilla name="colesterolAlto" label="Colesterol alto" checked={form.colesterolAlto} onChange={handleChange} />
-              <Casilla name="chequeoColesterol" label="Chequeo de colesterol en los últimos 5 años" checked={form.chequeoColesterol} onChange={handleChange} />
-              <Casilla name="derrame" label="Derrame cerebral previo" checked={form.derrame} onChange={handleChange} />
-              <Casilla name="dificultadCaminar" label="Dificultad seria para caminar o subir escaleras" checked={form.dificultadCaminar} onChange={handleChange} />
-            </div>
-            <Campo label="Diabetes">
-              <select name="diabetes" value={form.diabetes} onChange={handleChange} className={inputClass}>
-                <option value="0">No tiene</option>
-                <option value="1">Prediabetes</option>
-                <option value="2">Diabetes</option>
-              </select>
-            </Campo>
-          </Seccion>
+            {sinEdadValida && (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                El modelo de riesgo solo aplica a pacientes de 18 años o más con fecha de nacimiento
+                registrada. Actualiza la fecha de nacimiento del paciente antes de evaluarlo.
+              </p>
+            )}
 
-          <Seccion titulo="Hábitos">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Casilla name="fuma" label="Ha fumado al menos 100 cigarrillos en su vida" checked={form.fuma} onChange={handleChange} />
-              <Casilla name="actividadFisica" label="Actividad física en los últimos 30 días" checked={form.actividadFisica} onChange={handleChange} />
-              <Casilla name="frutas" label="Come fruta al menos una vez al día" checked={form.frutas} onChange={handleChange} />
-              <Casilla name="verduras" label="Come verduras al menos una vez al día" checked={form.verduras} onChange={handleChange} />
-              <Casilla name="alcoholExcesivo" label="Consumo excesivo de alcohol" checked={form.alcoholExcesivo} onChange={handleChange} />
-            </div>
-          </Seccion>
-
-          <Seccion titulo="Percepción de salud">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Campo label="Salud general">
-                <select name="saludGeneral" value={form.saludGeneral} onChange={handleChange} className={inputClass}>
-                  <option value="1">Excelente</option>
-                  <option value="2">Muy buena</option>
-                  <option value="3">Buena</option>
-                  <option value="4">Regular</option>
-                  <option value="5">Mala</option>
+            <Seccion titulo="Antecedentes" usadaPorModelo>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Casilla name="hipertensionPrevia" label="Diagnóstico previo de hipertensión" checked={form.hipertensionPrevia} onChange={handleChange} />
+                <Casilla name="colesterolAlto" label="Colesterol alto" checked={form.colesterolAlto} onChange={handleChange} />
+                <Casilla name="derrame" label="Derrame cerebral previo" checked={form.derrame} onChange={handleChange} />
+                <Casilla name="dificultadCaminar" label="Dificultad seria para caminar o subir escaleras" checked={form.dificultadCaminar} onChange={handleChange} />
+              </div>
+              <Campo label="Diabetes">
+                <select name="diabetes" value={form.diabetes} onChange={handleChange} className={inputClass}>
+                  <option value="0">No tiene</option>
+                  <option value="1">Prediabetes</option>
+                  <option value="2">Diabetes</option>
                 </select>
               </Campo>
-              <Campo label="Días de mala salud mental (último mes)">
-                <input type="number" min="0" max="30" name="diasSaludMental" value={form.diasSaludMental} onChange={handleChange} className={inputClass} />
-              </Campo>
-              <Campo label="Días de mala salud física (último mes)">
-                <input type="number" min="0" max="30" name="diasSaludFisica" value={form.diasSaludFisica} onChange={handleChange} className={inputClass} />
-              </Campo>
-            </div>
-          </Seccion>
+            </Seccion>
 
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <button type="button" onClick={onClose} className="px-4 py-2.5 border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium text-sm transition cursor-pointer">
+            <Seccion titulo="Hábitos" usadaPorModelo>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Casilla name="fuma" label="Ha fumado al menos 100 cigarrillos en su vida" checked={form.fuma} onChange={handleChange} />
+                <Casilla name="actividadFisica" label="Actividad física en los últimos 30 días" checked={form.actividadFisica} onChange={handleChange} />
+              </div>
+            </Seccion>
+
+            <Seccion titulo="Percepción de salud" usadaPorModelo>
+              <div className="grid grid-cols-1">
+                <Campo label="Salud general">
+                  <select name="saludGeneral" value={form.saludGeneral} onChange={handleChange} className={inputClass}>
+                    <option value="1">Excelente</option>
+                    <option value="2">Muy buena</option>
+                    <option value="3">Buena</option>
+                    <option value="4">Regular</option>
+                    <option value="5">Mala</option>
+                  </select>
+                </Campo>
+              </div>
+            </Seccion>
+
+            <Seccion
+              titulo="Datos complementarios"
+              nota="Se capturan para la consulta, pero el modelo no los usa y el registro todavía no los guarda."
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Casilla name="chequeoColesterol" label="Chequeo de colesterol en los últimos 5 años" checked={form.chequeoColesterol} onChange={handleChange} />
+                <Casilla name="frutas" label="Come fruta al menos una vez al día" checked={form.frutas} onChange={handleChange} />
+                <Casilla name="verduras" label="Come verduras al menos una vez al día" checked={form.verduras} onChange={handleChange} />
+                <Casilla name="alcoholExcesivo" label="Consumo excesivo de alcohol" checked={form.alcoholExcesivo} onChange={handleChange} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Campo label="Días de mala salud mental (último mes)">
+                  <input type="number" min="0" max="30" name="diasSaludMental" value={form.diasSaludMental} onChange={handleChange} className={inputClass} />
+                </Campo>
+                <Campo label="Días de mala salud física (último mes)">
+                  <input type="number" min="0" max="30" name="diasSaludFisica" value={form.diasSaludFisica} onChange={handleChange} className={inputClass} />
+                </Campo>
+              </div>
+            </Seccion>
+
+            <div className="flex items-start gap-2.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <BrainCircuit className="w-4 h-4 mt-0.5 shrink-0 text-indigo-600" aria-hidden="true" />
+              <span>
+                El modelo recibe 9 variables: presión alta, colesterol alto, tabaquismo, actividad
+                física, antecedente de ACV, diabetes, salud general, dificultad para caminar y edad.
+              </span>
+            </div>
+          </div>
+
+          {/* Acciones fijas: antes el botón de guardar quedaba ~180px por debajo
+              del pliegue en un viewport de 900px y había que bajar todo el formulario. */}
+          <div className="px-6 lg:px-8 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl flex flex-col-reverse sm:flex-row sm:justify-end gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 min-h-11 border border-slate-200 rounded-xl text-slate-600 hover:bg-white bg-white font-medium text-sm transition cursor-pointer"
+            >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={sinEdadValida || guardando}
-              className="px-5 py-2.5 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl font-medium text-sm shadow transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-2"
+              className="px-5 py-2.5 min-h-11 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl font-medium text-sm shadow transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-2"
             >
-              {guardando && <Loader2 className="w-4 h-4 animate-spin" />}
+              {guardando && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
               {guardando ? 'Evaluando...' : 'Guardar y Calcular Riesgo'}
             </button>
           </div>

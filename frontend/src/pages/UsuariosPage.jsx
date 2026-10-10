@@ -6,6 +6,7 @@ import { usuariosService } from '../services/usuarios';
 import { mensajeError } from '../services/api';
 import { useAuth } from '../context/useAuth';
 import { ROLES, etiquetaRol } from '../constants/roles';
+import { useDialogoAccesible } from '../hooks/useDialogoAccesible';
 
 const FORM_VACIO = { nombre: '', email: '', password: '', rol: ROLES.USUARIO, activo: true };
 
@@ -22,6 +23,13 @@ export default function UsuariosPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
   const [ocupadoId, setOcupadoId] = useState(null);
+
+  // Comportamiento de diálogo del modal de usuario (Escape, scroll, foco).
+  const { propsContenedor, alClicFondo } = useDialogoAccesible({
+    abierto: modalOpen,
+    onClose: () => setModalOpen(false),
+    ocupado: guardando,
+  });
 
   const cargar = async () => {
     setCargando(true);
@@ -175,15 +183,17 @@ export default function UsuariosPage() {
           <button
             onClick={() => abrirEditar(u)}
             title="Editar"
-            className="p-1.5 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition cursor-pointer inline-flex items-center justify-center"
+            aria-label={`Editar usuario ${u.nombre}`}
+            className="w-11 h-11 shrink-0 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition cursor-pointer inline-flex items-center justify-center"
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-4 h-4" aria-hidden="true" />
           </button>
           <button
             onClick={() => cambiarEstado(u)}
             disabled={ocupadoId === u.id}
             title={u.activo ? 'Desactivar' : 'Activar'}
-            className={`p-1.5 rounded-lg transition cursor-pointer inline-flex items-center justify-center disabled:opacity-50 ${
+            aria-label={`${u.activo ? 'Desactivar' : 'Activar'} usuario ${u.nombre}`}
+            className={`w-11 h-11 shrink-0 rounded-lg transition cursor-pointer inline-flex items-center justify-center disabled:opacity-50 ${
               u.activo
                 ? 'bg-rose-50 text-rose-600 hover:bg-rose-100'
                 : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
@@ -229,10 +239,18 @@ export default function UsuariosPage() {
       )}
 
       {modalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 lg:p-8 max-w-lg w-full shadow-2xl border border-slate-100">
+        <div
+          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50"
+          onClick={alClicFondo}
+        >
+          <div
+            {...propsContenedor}
+            aria-labelledby="titulo-modal-usuario"
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl p-6 lg:p-8 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+          >
             <div className="flex justify-between items-center mb-5 border-b pb-4">
-              <h3 className="text-lg font-bold text-slate-800">
+              <h3 id="titulo-modal-usuario" className="text-lg font-bold text-slate-800">
                 {editando ? 'Editar Usuario' : 'Nuevo Usuario'}
               </h3>
               <button
@@ -248,8 +266,11 @@ export default function UsuariosPage() {
               {errorForm && <Alerta>{errorForm}</Alerta>}
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Nombre *</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="usu-nombre">
+                  Nombre *
+                </label>
                 <input
+                  id="usu-nombre"
                   type="text"
                   required
                   minLength={2}
@@ -260,8 +281,11 @@ export default function UsuariosPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Email *</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="usu-email">
+                  Email *
+                </label>
                 <input
+                  id="usu-email"
                   type="email"
                   required
                   value={form.email}
@@ -271,10 +295,11 @@ export default function UsuariosPage() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
+                <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="usu-password">
                   Contraseña {editando ? '(dejar vacío para no cambiar)' : '*'}
                 </label>
                 <input
+                  id="usu-password"
                   type="password"
                   required={!editando}
                   minLength={6}
@@ -286,8 +311,11 @@ export default function UsuariosPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Rol</label>
+                  <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="usu-rol">
+                    Rol
+                  </label>
                   <select
+                    id="usu-rol"
                     value={form.rol}
                     onChange={(e) => setForm({ ...form, rol: e.target.value })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none"
@@ -299,8 +327,11 @@ export default function UsuariosPage() {
 
                 {editando && (
                   <div>
-                    <label className="block text-xs font-medium text-slate-700 mb-1">Estado</label>
+                    <label className="block text-xs font-medium text-slate-700 mb-1" htmlFor="usu-estado">
+                      Estado
+                    </label>
                     <select
+                      id="usu-estado"
                       value={form.activo ? '1' : '0'}
                       onChange={(e) => setForm({ ...form, activo: e.target.value === '1' })}
                       className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none"

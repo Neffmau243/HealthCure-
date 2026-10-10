@@ -48,29 +48,40 @@ export default function LoginPage() {
             onSubmit={handleLogin}
             className="w-full max-w-[340px] flex flex-col gap-5 my-6"
           >
+            {/* Etiquetas reales (ocultas visualmente): el placeholder solo no
+                da nombre accesible al campo, así que un lector de pantalla
+                anunciaba "cuadro de edición, en blanco". */}
             <div className="relative flex items-center">
-              <Mail className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" />
+              <Mail className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" />
+              <label htmlFor="login-email" className="sr-only">
+                Correo electrónico
+              </label>
               <input
+                id="login-email"
                 type="email"
                 required
                 autoComplete="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@healthcure.com"
-                className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus:border-blue-900 transition-colors"
+                className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17324c] focus:border-blue-900 transition-colors"
               />
             </div>
 
             <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" />
+              <Lock className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" />
+              <label htmlFor="login-password" className="sr-only">
+                Contraseña
+              </label>
               <input
+                id="login-password"
                 type="password"
                 required
                 autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
-                className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus:border-blue-900 transition-colors"
+                className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17324c] focus:border-blue-900 transition-colors"
               />
             </div>
 
@@ -89,7 +100,9 @@ export default function LoginPage() {
               {enviando ? 'Ingresando...' : 'Iniciar Sesión'}
             </button>
 
-            <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+            {/* text-slate-500 en vez de slate-400: el gris anterior daba
+                2.63:1 de contraste (WCAG AA exige 4.5:1 para texto normal). */}
+            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
               Cuentas de prueba: <br />
               admin@healthcure.com / admin123 · dr.garcia@healthcure.com / doctor123
             </p>

@@ -6,11 +6,17 @@ import { mensajeError } from '../services/api';
 import { Cargando, Alerta } from '../components/ui/Feedback';
 import { clasesClasificacion, nombreCompleto } from '../utils/triaje';
 
-const LIMITE_EVALUACIONES = 200;
+// Solo para la lista de "últimas evaluaciones". Los KPIs NO se calculan
+// contando esta página: vienen del resumen agregado del backend.
+const LIMITE_RECIENTES = 20;
 
 export default function DashboardPage() {
   const [pacientes, setPacientes] = useState([]);
   const [evaluaciones, setEvaluaciones] = useState([]);
+  // Conteos exactos (COUNT en SQL). Antes los KPIs se contaban en el cliente
+  // sobre un máximo de 200 evaluaciones: a partir de la 201 el número era
+  // falso sin avisar.
+  const [resumen, setResumen] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,13 +24,15 @@ export default function DashboardPage() {
     let activo = true;
     (async () => {
       try {
-        const [listaPacientes, listaEvaluaciones] = await Promise.all([
+        const [listaPacientes, listaEvaluaciones, datosResumen] = await Promise.all([
           pacientesService.listar(),
-          evaluacionesService.listar({ limit: LIMITE_EVALUACIONES }),
+          evaluacionesService.listar({ limit: LIMITE_RECIENTES }),
+          evaluacionesService.resumen(),
         ]);
         if (!activo) return;
         setPacientes(listaPacientes);
         setEvaluaciones(listaEvaluaciones);
+        setResumen(datosResumen);
       } catch (e) {
         if (activo) setError(mensajeError(e, 'No se pudieron cargar las métricas'));
       } finally {
@@ -41,11 +49,20 @@ export default function DashboardPage() {
 
   const pacientesPorId = Object.fromEntries(pacientes.map((p) => [p.id, p]));
 
+  const clasificaciones = resumen?.por_clasificacion ?? {};
+  const totalEvaluaciones = resumen?.total_evaluaciones ?? evaluaciones.length;
+
   const metricas = [
     { titulo: 'Pacientes registrados', valor: pacientes.length, icono: Users, color: 'text-sky-600 bg-sky-50' },
-    { titulo: 'Evaluaciones realizadas', valor: evaluaciones.length, icono: Activity, color: 'text-indigo-600 bg-indigo-50' },
-    { titulo: 'Riesgo alto', valor: conteo('alto'), icono: AlertTriangle, color: 'text-rose-600 bg-rose-50' },
-    { titulo: 'Riesgo moderado', valor: conteo('moderado'), icono: TrendingUp, color: 'text-amber-600 bg-amber-50' },
+    {
+      titulo: 'Evaluaciones realizadas',
+      valor: totalEvaluaciones,
+      pie: resumen ? 'total histórico' : 'últimas cargadas',
+      icono: Activity,
+      color: 'text-indigo-600 bg-indigo-50',
+    },
+    { titulo: 'Riesgo alto', valor: clasificaciones.alto ?? conteo('alto'), icono: AlertTriangle, color: 'text-rose-600 bg-rose-50' },
+    { titulo: 'Riesgo moderado', valor: clasificaciones.moderado ?? conteo('moderado'), icono: TrendingUp, color: 'text-amber-600 bg-amber-50' },
   ];
 
   const recientes = evaluaciones.slice(0, 6);
@@ -79,6 +96,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-2xl font-bold text-slate-800">{m.valor}</p>
                     <p className="text-xs text-slate-500">{m.titulo}</p>
+                    {m.pie && <p className="text-[10px] text-slate-400">{m.pie}</p>}
                   </div>
                 </div>
               );
@@ -88,8 +106,9 @@ export default function DashboardPage() {
           <div className="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 className="font-semibold text-slate-800">Últimas evaluaciones</h2>
-              <span className="text-xs text-slate-400">
-                Mostrando {recientes.length} de {evaluaciones.length}
+              <span className="text-xs text-slate-500">
+                Mostrando {recientes.length} de {totalEvaluaciones}
+                {typeof resumen?.total_hoy === 'number' && ` · ${resumen.total_hoy} hoy`}
               </span>
             </div>
 
@@ -120,8 +139,11 @@ export default function DashboardPage() {
                         >
                           {ev.clasificacion}
                         </span>
-                        <span className="text-xs font-bold text-slate-600">
-                          {(ev.probabilidad * 100).toFixed(1)}%
+                        <span
+                          className="text-xs font-bold text-slate-600"
+                          title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
+                        >
+                          índice {(ev.probabilidad * 100).toFixed(1)}
                         </span>
                       </div>
                     </li>
