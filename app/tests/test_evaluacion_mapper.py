@@ -100,6 +100,17 @@ def test_create_to_model_une_request_y_prediccion():
     assert result["clasificacion"] == ClasificacionEnum.alto
     assert result["modelo_version"] == "1.0.0"
 
+    # Triaje clínico generado por las reglas de negocio
+    assert result["nivel_alerta"] == "ALTA PRIORIDAD - RIESGO ELEVADO"
+    assert result["codigo_color"] == "rojo"
+    assert result["accion_sugerida"]
+    assert "Hipertensión Arterial" in result["factores_riesgo_detectados"]
+    assert "Dislipidemia (Colesterol Alto)" in result["factores_riesgo_detectados"]
+    assert "Diabetes Mellitus" in result["factores_riesgo_detectados"]
+    assert "Realiza Actividad Física Regular" in result["factores_protectores"]
+    assert "No Fumador" in result["factores_protectores"]
+    assert len(result["recomendaciones_medicas"]) >= 1
+
 
 def test_create_to_model_guardar_clasificacion_enum():
     """La clasificación debe persistirse como Enum (no string suelto)."""
@@ -160,3 +171,29 @@ def test_to_response_pasa_campos_esenciales():
     assert response.edad == 55
     assert response.presion_alta is True
     assert response.modelo_version == "1.0.0"
+
+
+def test_to_response_incluye_triaje_clinico_recalculado():
+    """Evaluación sin triaje persistido → se recalcula en la respuesta."""
+    response = EvaluacionMapper.to_response(_build_evaluacion_orm())
+    assert response.triaje_clinico is not None
+    assert response.triaje_clinico.codigo_color == "rojo"
+    assert response.triaje_clinico.nivel_alerta == "ALTA PRIORIDAD - RIESGO ELEVADO"
+    assert "Hipertensión Arterial" in response.triaje_clinico.factores_riesgo_detectados
+
+
+def test_to_response_usa_triaje_persistido_si_existe():
+    """Si la BD ya tiene triaje guardado, se devuelve tal cual."""
+    orm = _build_evaluacion_orm(
+        nivel_alerta="RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
+        codigo_color="amarillo",
+        accion_sugerida="Programar consulta de control.",
+        factores_riesgo_detectados=["Diabetes Mellitus"],
+        factores_protectores=["No Fumador"],
+        recomendaciones_medicas=["Solicitar perfil lipídico."],
+    )
+    response = EvaluacionMapper.to_response(orm)
+    assert response.triaje_clinico is not None
+    assert response.triaje_clinico.codigo_color == "amarillo"
+    assert response.triaje_clinico.factores_riesgo_detectados == ["Diabetes Mellitus"]
+    assert response.triaje_clinico.recomendaciones_medicas == ["Solicitar perfil lipídico."]

@@ -14,5 +14,6 @@ from app.models.paciente import Paciente
 from app.models.evaluacion import Evaluacion
 from app.models.distrito import Distrito
 from app.models.localidad import Localidad
+from app.models.atencion import Atencion
 
-__all__ = ["Usuario", "Paciente", "Evaluacion", "Distrito", "Localidad"]
+__all__ = ["Usuario", "Paciente", "Evaluacion", "Distrito", "Localidad", "Atencion"]

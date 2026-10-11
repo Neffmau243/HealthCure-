@@ -41,3 +41,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+
+# --- Dataset Kaggle (grande, se descarga aparte, NO se commitea) ---
+heart_disease_health_indicators*.csv
+*.BRFSS2015*.csv

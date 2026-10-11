@@ -13,7 +13,7 @@ valores de presión, colesterol, etc. en diferentes evaluaciones.
 """
 from sqlalchemy import (
     Column, BigInteger, SmallInteger, Boolean, Enum,
-    String, Numeric, DateTime, ForeignKey, Index, func
+    String, Text, JSON, Numeric, DateTime, ForeignKey, Index, func
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -72,6 +72,27 @@ class Evaluacion(Base):
     modelo_version = Column(String(50), nullable=True)
     # Versión del modelo que se usó (ej: "1.0.0")
     # Útil para auditoría: saber con qué versión se hizo cada predicción
+
+    # --- Triaje clínico (interpretación para médicos/enfermeros) ---
+    # Traduce la probabilidad del ML en información accionable.
+    # NULL para evaluaciones viejas: el mapper lo recalcula on-the-fly.
+    nivel_alerta = Column(String(100), nullable=True)
+    # Ej: "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO"
+
+    codigo_color = Column(String(20), nullable=True)
+    # Semáforo visual: "verde", "amarillo" o "rojo" (lo pinta el frontend)
+
+    accion_sugerida = Column(Text, nullable=True)
+    # Protocolo de triaje en texto plano (sin HTML)
+
+    factores_riesgo_detectados = Column(JSON, nullable=True)
+    # Lista de nombres de factores presentes, ej: ["Hipertensión Arterial"]
+
+    factores_protectores = Column(JSON, nullable=True)
+    # Hábitos que reducen riesgo, ej: ["Realiza Actividad Física Regular"]
+
+    recomendaciones_medicas = Column(JSON, nullable=True)
+    # Lista de exámenes/controles sugeridos, ej: ["Solicitar perfil lipídico"]
 
     # --- Timestamp ---
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

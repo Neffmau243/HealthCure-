@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "HealthCure - CardioPredict API",
-    "description": "Coleccion completa de endpoints para probar la API de HealthCure.\n\nPASOS PARA USAR:\n1. Levanta el servidor: uvicorn main:app --reload --port 8000\n2. Importa esta coleccion en Postman (File - Import)\n3. IMPORTANTE: No necesitas crear un Environment - las variables son de coleccion\n4. Haz clic en \"Login - Obtener Token\" (admin o medico)\n5. El token se guarda automaticamente\n6. Todos los demas requests usan el token automaticamente\n\nCredenciales de prueba:\n  Admin:   admin@healthcure.com / admin123\n  Medico:  dr.garcia@healthcure.com / doctor123",
+    "description": "Coleccion completa de endpoints para probar la API de HealthCure.\n\nPASOS PARA USAR:\n1. Levanta el servidor: python -m uvicorn main:app --reload --port 8000\n2. Importa esta coleccion en Postman (File - Import)\n3. IMPORTANTE: No necesitas crear un Environment - las variables son de coleccion\n4. Haz clic en \"Login - Obtener Token\" (admin o medico)\n5. El token se guarda automaticamente\n6. Todos los demas requests usan el token automaticamente\n\nCredenciales de prueba:\n  Admin:   admin@healthcure.com / admin123\n  Medico:  dr.garcia@healthcure.com / doctor123",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -16,6 +16,14 @@
     {
       "key": "test_user_id",
       "value": ""
+    },
+    {
+      "key": "paciente_id",
+      "value": "1"
+    },
+    {
+      "key": "evaluacion_id",
+      "value": "8"
     }
   ],
   "item": [
@@ -521,6 +529,61 @@
       "name": "Evaluaciones",
       "item": [
         {
+          "name": "1 - Crear Evaluacion (Prediccion ML)",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", ""]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paciente_id\": 1,\n  \"edad\": 55,\n  \"presion_alta\": true,\n  \"colesterol_alto\": true,\n  \"tabaquismo\": false,\n  \"actividad_fisica\": true,\n  \"antecedente_acv\": false,\n  \"diabetes\": true,\n  \"salud_general\": 3,\n  \"dificultad_para_caminar\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Crea una evaluacion cardiaca (nueva instantanea de riesgo).\n\nFLUJO DE RE-EVALUACION (paciente que vuelve despues de tiempo X):\n1. Busca al paciente existente: GET /pacientes/search?documento=...\n   (o GET /pacientes/by-documento/{doc}) y copia su ID.\n2. Cambia la variable de coleccion paciente_id a ese ID.\n3. Ejecuta ESTE request con los datos clinicos NUEVOS de la visita.\n   Cada evaluacion se guarda con su propio created_at (nueva visita).\n4. Ver el historial completo: GET /evaluaciones/by-paciente/{{paciente_id}}\n   (las evaluaciones se ordenan de mas reciente a mas antigua).\n\nRESPUESTA 201 (ejemplo del nuevo triaje clinico):\n{\n  \"id\": 7,\n  \"paciente_id\": 1,\n  \"usuario_id\": 2,\n  \"edad\": 55,\n  \"probabilidad\": 0.459186,\n  \"clasificacion\": \"moderado\",\n  \"triaje_clinico\": {\n    \"nivel_alerta\": \"RIESGO MODERADO - SEGUIMIENTO PREVENTIVO\",\n    \"codigo_color\": \"amarillo\",\n    \"accion_sugerida\": \"Programar consulta medica de control en los proximos 15 a 30 dias.\",\n    \"factores_riesgo_detectados\": [\"Hipertension Arterial\", \"Dislipidemia (Colesterol Alto)\", \"Diabetes Mellitus\"],\n    \"factores_protectores\": [\"Realiza Actividad Fisica Regular\", \"No Fumador\"],\n    \"recomendaciones_medicas\": [\"Solicitar perfil lipidico y examen de glucosa en ayunas.\"]\n  },\n  \"created_at\": \"2026-09-05T08:02:08\"\n}\n\nNOTA: mientras el modelo ML no este entrenado (falta modelo_cardiaco.joblib)\neste endpoint responde 500 'Modelo ML no disponible' - es esperado por ahora."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Crear evaluacion (201 cuando hay modelo ML)', function () {",
+                  "    if (pm.response.code === 201) {",
+                  "        var r = pm.response.json();",
+                  "        pm.expect(r.clasificacion).to.be.oneOf(['bajo', 'moderado', 'alto']);",
+                  "        pm.expect(r.probabilidad).to.be.a('number');",
+                  "        pm.expect(r.triaje_clinico).to.be.an('object');",
+                  "        pm.expect(r.triaje_clinico.codigo_color).to.be.oneOf(['verde', 'amarillo', 'rojo']);",
+                  "        pm.expect(r.triaje_clinico.nivel_alerta).to.be.a('string');",
+                  "        pm.expect(r.triaje_clinico.accion_sugerida).to.be.a('string');",
+                  "        pm.expect(r.triaje_clinico.factores_riesgo_detectados).to.be.an('array');",
+                  "        pm.expect(r.triaje_clinico.factores_protectores).to.be.an('array');",
+                  "        pm.expect(r.triaje_clinico.recomendaciones_medicas).to.be.an('array');",
+                  "        console.log('Riesgo: ' + r.clasificacion + ' (' + (r.probabilidad * 100).toFixed(1) + '%) - Triaje: ' + r.triaje_clinico.codigo_color);",
+                  "    } else {",
+                  "        console.log('El modelo ML aun no esta entrenado -> 500 esperado por ahora');",
+                  "        pm.expect(pm.response.code).to.be.oneOf([201, 500]);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
           "name": "Listar Todas las Evaluaciones",
           "request": {
             "method": "GET",
@@ -559,13 +622,13 @@
           "response": []
         },
         {
-          "name": "Historial por Paciente (ID 1)",
+          "name": "Historial por Paciente ({{paciente_id}})",
           "request": {
             "method": "GET",
             "url": {
-              "raw": "{{base_url}}/api/v1/evaluaciones/by-paciente/1",
+              "raw": "{{base_url}}/api/v1/evaluaciones/by-paciente/{{paciente_id}}",
               "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", "by-paciente", "1"]
+              "path": ["api", "v1", "evaluaciones", "by-paciente", "{{paciente_id}}"]
             },
             "header": [
               {
@@ -573,7 +636,7 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "description": "Historial de evaluaciones del paciente 1 (Juan Perez)."
+            "description": "Historial cronologico de evaluaciones del paciente con ID {{paciente_id}} (de mas reciente a mas antigua). Cambia la variable paciente_id para ver el historial de otro paciente (ej: el id 10 de Carmen Rosa Vasquez)."
           },
           "event": [
             {
@@ -585,6 +648,40 @@
                   "    var response = pm.response.json();",
                   "    pm.expect(response).to.be.an('array');",
                   "    console.log(response.length + ' evaluaciones para este paciente');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Descargar FUA en PDF",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/v1/evaluaciones/{{evaluacion_id}}/fua",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "evaluaciones", "{{evaluacion_id}}", "fua"]
+            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "description": "Descarga el Formato Unico de Atencion (FUA) en PDF para una evaluacion.\nEl PDF se genera 100% en el backend (ReportLab) en tamano oficio peruano (215x330mm)\ncon: datos del paciente, atencion, factores de riesgo, resultado del modelo ML, triaje\nclinico con semaforo de color, factores detectados/protectores, recomendaciones y firmas.\n\nIMPORTANTE: cambia la variable evaluacion_id (ej: 1, 8, etc.) al ID que quieras imprimir.\nDescarga: fua_<id>.pdf"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('FUA en PDF (200)', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(pm.response.headers.get('content-type')).to.eql('application/pdf');",
+                  "    pm.expect(pm.response.headers.get('content-disposition')).to.include('attachment');",
+                  "    console.log('PDF descargado - tamano: ' + pm.response.responseSize + ' bytes');",
                   "});"
                 ]
               }
@@ -613,12 +710,16 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test('Evaluacion ID 1 (200)', function () {",
+                "exec": [                  "    pm.test('Evaluacion ID 1 (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
                   "    pm.expect(response.id).to.eql(1);",
-                  "    console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%)');",
+                  "    if (response.triaje_clinico) {",
+                  "        pm.expect(response.triaje_clinico.nivel_alerta).to.be.a('string');",
+                  "        console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%) - Triaje: ' + response.triaje_clinico.codigo_color);",
+                  "    } else {",
+                  "        console.log('Riesgo: ' + response.clasificacion + ' (' + (response.probabilidad * 100).toFixed(1) + '%)');",
+                  "    }",
                   "});"
                 ]
               }

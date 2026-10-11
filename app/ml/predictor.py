@@ -16,12 +16,9 @@ Solo recibe datos → devuelve predicción.
 from typing import Dict
 from app.ml.model_loader import load_model
 from app.ml.preprocessor import preprocess
+from app.ml.metadata import get_model_version, get_classification_thresholds
 from app.schemas.evaluacion import PredictionResult, ClasificacionEnum
 from app.exceptions.ml_exceptions import PredictionError
-
-
-# Versión del modelo (se actualiza cuando se reentrena)
-MODEL_VERSION = "1.0.0"
 
 
 def predict(data: Dict) -> PredictionResult:
@@ -68,7 +65,9 @@ def predict(data: Dict) -> PredictionResult:
     return PredictionResult(
         probabilidad=round(probabilidad, 6),  # 6 decimales
         clasificacion=clasificacion,
-        modelo_version=MODEL_VERSION,
+        # Versión leída de la ficha técnica (app/ml/metadata.py);
+        # NO hardcodeada → reentrenar actualiza la versión sin tocar código.
+        modelo_version=get_model_version(),
     )
 
 
@@ -76,18 +75,20 @@ def _classify(probabilidad: float) -> ClasificacionEnum:
     """
     Convierte una probabilidad (0.0-1.0) en un nivel de riesgo legible.
 
-    Umbrales (ajustables según el modelo entrenado):
-      - < 0.30 (30%)  → bajo riesgo
-      - 0.30-0.60 (30-60%) → riesgo moderado
-      - > 0.60 (60%)  → alto riesgo
+    Los umbrales NO están hardcodeados: se leen de la ficha técnica del
+    modelo (app/ml/metadata.py), con fallback a los valores del MVP:
+      - < 0.30 (30%)        → bajo riesgo
+      - 0.30 - 0.60 (30-60%) → riesgo moderado
+      - >= 0.60 (60%)       → alto riesgo
 
-    NOTA: Estos umbrales son ARBITRARIOS para el MVP.
-    En producción se deberían ajustar con análisis de ROC curve,
-    Youden's J statistic, o criterio clínico del equipo médico.
+    Esto mantiene coherentes el entrenamiento (que guarda los umbrales en
+    la metadata) y la inferencia (que los aplica). Si no hay ficha técnica,
+    se comporta igual que antes (0.30 / 0.60).
     """
-    if probabilidad < 0.30:
+    umbrales = get_classification_thresholds()
+    if probabilidad < umbrales["bajo_max"]:
         return ClasificacionEnum.bajo
-    elif probabilidad < 0.60:
+    elif probabilidad < umbrales["moderado_max"]:
         return ClasificacionEnum.moderado
     else:
         return ClasificacionEnum.alto

@@ -4,6 +4,7 @@ evaluacion_repository.py — REPOSITORY: OPERACIONES DE BD PARA EVALUACIONES
 Maneja la persistencia de las evaluaciones cardíacas (predicciones ML).
 Cada evaluación se guarda con TODOS los datos para auditoría futura.
 """
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.models.evaluacion import Evaluacion
@@ -53,6 +54,52 @@ class EvaluacionRepository:
             .order_by(Evaluacion.created_at.desc())  # Más recientes primero
             .all()
         )
+
+    # ── AGREGADOS (para el resumen del dashboard y la cola de triaje) ──────
+    # Se resuelven con COUNT en SQL: no traen filas al cliente y son exactos
+    # a diferencia de contar una página en el navegador.
+
+    def contar(self) -> int:
+        """Total de evaluaciones registradas (sin paginar)."""
+        return int(self.db.query(func.count(Evaluacion.id)).scalar() or 0)
+
+    def contar_por_clasificacion(self) -> dict[str, int]:
+        """
+        Cuántas evaluaciones hay de cada nivel de riesgo.
+        Agrupa por la columna `clasificacion` (enum bajo/moderado/alto).
+        """
+        filas = (
+            self.db.query(Evaluacion.clasificacion, func.count(Evaluacion.id))
+            .group_by(Evaluacion.clasificacion)
+            .all()
+        )
+        return {
+            (nivel.value if hasattr(nivel, "value") else str(nivel)): int(total)
+            for nivel, total in filas
+        }
+
+    def contar_hoy(self, hoy: str) -> int:
+        """Evaluaciones creadas HOY. `hoy` en formato 'YYYY-MM-DD'."""
+        return int(
+            self.db.query(func.count(Evaluacion.id))
+            .filter(func.date(Evaluacion.created_at) == hoy)
+            .scalar()
+            or 0
+        )
+
+    def pacientes_evaluados_hoy(self, hoy: str) -> list[int]:
+        """
+        IDs (únicos) de los pacientes que YA tienen una evaluación de HOY.
+        Es lo que define la cola de 'pendientes de triaje': un paciente con
+        una evaluación de la semana pasada vuelve a estar pendiente hoy.
+        """
+        filas = (
+            self.db.query(Evaluacion.paciente_id)
+            .filter(func.date(Evaluacion.created_at) == hoy)
+            .distinct()
+            .all()
+        )
+        return [int(pid) for (pid,) in filas]
 
     def list_all(self, limit: int = 50, offset: int = 0) -> list[Evaluacion]:
         """

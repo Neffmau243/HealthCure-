@@ -14,7 +14,7 @@ Los DTOs:
   - XUpdate   → lo que el admin envía al editar (todo opcional)
   - XResponse → lo que la API retorna
 """
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -53,8 +53,8 @@ class DistritoResponse(BaseModel):
     activo: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ============================================================
@@ -111,5 +111,5 @@ class LocalidadResponse(BaseModel):
             return v.nombre
         return v
 
-    class Config:
-        from_attributes = True
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)

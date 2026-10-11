@@ -11,7 +11,7 @@ Separación clave:
   - EvaluacionResponse incluye TODO + el resultado de la predicción
   - PredictionResult es solo el output del modelo ML (sin DB)
 """
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -72,6 +72,32 @@ class EvaluacionCreate(BaseModel):
     dificultad_para_caminar: bool = False
 
 
+class TriajeClinico(BaseModel):
+    """
+    Interpretación clínica del resultado ML, lista para consumir.
+
+    TODO es texto plano / listas de strings — SIN HTML ni estilos.
+    El frontend renderiza colores y tarjetas a partir de codigo_color
+    ("verde" / "amarillo" / "rojo").
+
+    Ejemplo JSON:
+    {
+        "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
+        "codigo_color": "amarillo",
+        "accion_sugerida": "Programar consulta médica de control...",
+        "factores_riesgo_detectados": ["Hipertensión Arterial", ...],
+        "factores_protectores": ["Realiza Actividad Física Regular"],
+        "recomendaciones_medicas": ["Solicitar perfil lipídico..."]
+    }
+    """
+    nivel_alerta: str
+    codigo_color: str  # "verde" | "amarillo" | "rojo" (semáforo)
+    accion_sugerida: str
+    factores_riesgo_detectados: list[str]
+    factores_protectores: list[str]
+    recomendaciones_medicas: list[str]
+
+
 class EvaluacionResponse(BaseModel):
     """
     DTO de SALIDA — resultado completo de la evaluación.
@@ -94,6 +120,14 @@ class EvaluacionResponse(BaseModel):
         "probabilidad": 0.734521,
         "clasificacion": "alto",
         "modelo_version": "1.0.0",
+        "triaje_clinico": {
+            "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
+            "codigo_color": "rojo",
+            "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
+            "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
+            "factores_protectores": ["No Fumador"],
+            "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
+        },
         "created_at": "2025-01-15T10:30:00"
     }
     """
@@ -117,10 +151,41 @@ class EvaluacionResponse(BaseModel):
     clasificacion: ClasificacionEnum
     modelo_version: Optional[str] = None
 
+    # Interpretación clínica para médicos/enfermeros (triaje)
+    triaje_clinico: Optional[TriajeClinico] = None
+    # None si la evaluación es antigua y no tiene triaje persistido
+
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResumenEvaluaciones(BaseModel):
+    """
+    DTO de SALIDA — agregados para el dashboard (SOLO LECTURA).
+
+    Existe para que los KPIs y la cola de triaje no se calculen contando
+    una página de resultados en el navegador: si el front pide `limit=200`
+    y hay 201 evaluaciones, el número mostrado sería falso sin avisar.
+
+    Aquí los conteos se hacen con COUNT en SQL, así que son exactos y no
+    traen filas al cliente.
+
+    Ejemplo JSON:
+    {
+        "total_evaluaciones": 39,
+        "total_hoy": 5,
+        "por_clasificacion": {"bajo": 17, "moderado": 10, "alto": 12},
+        "pacientes_evaluados_hoy": [1, 4, 7]
+    }
+    """
+    total_evaluaciones: int
+    total_hoy: int
+    # Claves siempre presentes (con 0 si no hay casos de ese nivel)
+    por_clasificacion: dict[str, int]
+    # IDs de pacientes ya triados HOY: define la cola de "pendientes"
+    pacientes_evaluados_hoy: list[int]
 
 
 class PredictionResult(BaseModel):
