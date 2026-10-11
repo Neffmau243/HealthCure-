@@ -1,9 +1,11 @@
 import axios from 'axios'
 
 // URL base del backend FastAPI.
+// Por defecto es relativa: el backend sirve esta interfaz en el mismo puerto
+// (http://localhost:8000), así que no hay CORS ni host fijo que configurar y
+// funciona igual entrando por localhost, 127.0.0.1 o la IP de la red local.
 // Se puede sobreescribir con VITE_API_URL (ver frontend/.env.example).
-export const BASE_URL =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1'
+export const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
 
 export const api = axios.create({ baseURL: BASE_URL })
 

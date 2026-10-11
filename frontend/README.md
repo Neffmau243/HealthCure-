@@ -5,22 +5,40 @@ Interfaz del sistema de triaje cardíaco. Consume la API del backend FastAPI
 
 ## Levantar
 
+La interfaz se sirve **desde el backend, en el mismo puerto**: el backend publica
+el build de `frontend/dist`, así que el usuario final solo abre
+<http://localhost:8000> y no hay un segundo servidor.
+
 ```bash
-npm install
+# 1) compilar la interfaz (repetir tras cada cambio del frontend)
+npm install && npm run build
+
+# 2) levantar todo — desde la raíz del repo
+python -m uvicorn main:app --reload --port 8000
+```
+
+→ App en <http://localhost:8000> · Swagger en <http://localhost:8000/docs>
+
+### Modo desarrollo (recarga instantánea)
+
+Si estás tocando este frontend y quieres ver los cambios al instante:
+
+```bash
 npm run dev        # http://localhost:5173
 ```
 
-Requiere el backend corriendo en `http://localhost:8000`:
+Requiere el backend corriendo en `http://localhost:8000` (las llamadas a `/api/*`
+se redirigen allí con el proxy configurado en `vite.config.js`).
 
-```bash
-# desde la raíz del repo
-uvicorn main:app --reload --port 8000
-```
+> **Nota Windows:** levanta el backend con `python -m uvicorn`, nunca con el
+> comando `uvicorn` — ese `.exe` puede estar bloqueado por el Control inteligente
+> de aplicaciones de Windows.
 
 ## Configuración
 
-La URL del backend se define con `VITE_API_URL` (por defecto
-`http://localhost:8000/api/v1`). Copia la plantilla:
+La URL del backend es **relativa** (`/api/v1`) por defecto, así que funciona sin
+configurar nada en los dos modos. Solo si el backend vive en otro host, defínela
+con `VITE_API_URL`. Copia la plantilla:
 
 ```bash
 cp .env.example .env

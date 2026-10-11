@@ -303,12 +303,18 @@ UsuariosPage (admin)  → CRUD de usuarios + activar/desactivar
 ## 8. Cómo levantar y verificar
 
 ```bash
-# 1) Backend (raíz del repo) → http://localhost:8000/docs
-uvicorn main:app --reload --port 8000
+# 1) Compilar la interfaz (repetir tras cada cambio del frontend)
+cd frontend && npm install && npm run build && cd ..
 
-# 2) Frontend (otra terminal) → http://localhost:5173
-cd frontend && npm install && npm run dev
+# 2) Levantar todo en un solo puerto (raíz del repo)
+#    App: http://localhost:8000   ·   Swagger: http://localhost:8000/docs
+python -m uvicorn main:app --reload --port 8000
 ```
+
+> Solo si estás tocando el frontend y quieres recarga instantánea, usa el modo
+desarrollo de Vite en otra terminal (`cd frontend && npm run dev` →
+<http://localhost:5173>); sus llamadas a `/api/*` se redirigen al 8000 con el
+proxy de `vite.config.js`.
 
 | Rol | Email | Password |
 |-----|-------|----------|

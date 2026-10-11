@@ -488,7 +488,7 @@ python entrenar_modelo.py
 python entrenar_modelo.py heart_disease_health_indicators_BRFSS2015.csv
 
 # 4. Reinicia uvicorn (o usa reload_model()/reload_metadata() si el server sigue vivo)
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 ```
 
 **Versionado:** la versión **no está hardcodeada** en la API. `predictor.py` la

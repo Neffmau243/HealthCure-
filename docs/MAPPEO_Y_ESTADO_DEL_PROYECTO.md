@@ -618,7 +618,7 @@ Si el archivo `.joblib` NO existe:
 python entrenar_modelo.py heart_disease_health_indicators_BRFSS2015.csv
 
 # 3. Reiniciar el servidor
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 
 # 4. Probar
 # POST /api/v1/evaluaciones/ → ahora responde 201 con predicción
@@ -857,7 +857,7 @@ pip install -r requirements-dev.txt
 
 ### 4. Ejecutar el Servidor
 ```bash
-uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload --port 8000
 ```
 
 ### 5. Verificar

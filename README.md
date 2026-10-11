@@ -10,23 +10,38 @@ Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación →
 
 ---
 
-## 🚀 Levantar el proyecto (2 comandos)
+## 🚀 Levantar el proyecto (1 comando, 1 puerto)
 
-**1) Backend (FastAPI) — desde la raíz del repo:**
-
-```bash
-uvicorn main:app --reload --port 8000
-```
-
-→ API en <http://localhost:8000> · Swagger en <http://localhost:8000/docs>
-
-**2) Frontend (React + Vite) — en otra terminal:**
+**1) Todo en un solo puerto — desde la raíz del repo:**
 
 ```bash
-cd frontend && npm install && npm run dev
+python -m uvicorn main:app --reload --port 8000
 ```
 
-→ App en <http://localhost:5173>
+→ **App en <http://localhost:8000>** · API en `/api/v1` · Swagger en <http://localhost:8000/docs>
+
+El backend sirve la interfaz React ya compilada (`frontend/dist`) desde el mismo
+puerto: no hay que levantar un segundo servidor. Si cambias algo del frontend,
+reconstruye:
+
+```bash
+cd frontend && npm install && npm run build
+```
+
+> **Nota Windows:** usa siempre `python -m uvicorn` y no el comando `uvicorn`:
+> el `uvicorn.exe` que instala pip puede quedar bloqueado por el Control
+> inteligente de aplicaciones (Smart App Control) con el error
+> _«Una directiva de Control de aplicaciones bloqueó este archivo»_.
+
+**2) Opcional — modo desarrollo del frontend (recarga instantánea), en otra terminal:**
+
+```bash
+cd frontend && npm run dev
+```
+
+→ App en <http://localhost:5173>. Es el mismo frontend sin compilar: las llamadas a
+`/api/*` se redirigen al backend del 8000 (proxy de Vite). Úsalo solo si estás
+tocando el frontend y quieres ver los cambios al instante.
 
 > **Requisito:** crea la base de datos `healthcure_db` en MySQL y pon tus credenciales en `.env` antes del primer arranque (ver [Instalación](#-instalación)). El backend siembra solo los datos y usuarios de prueba la primera vez que se levanta.
 
@@ -181,17 +196,27 @@ JWT_SECRET_KEY=cambia-esta-clave-super-secreta
 DEBUG=True
 ```
 
-### 6. Levantar el servidor
+### 6. Compilar el frontend (una sola vez)
 
 ```bash
-uvicorn main:app --reload --port 8000
+cd frontend && npm install && npm run build && cd ..
 ```
 
-### 7. Verificar
+Genera `frontend/dist`, que el backend sirve en el mismo puerto. Repítelo cada
+vez que cambies algo del frontend.
 
-Abre **http://localhost:8000/docs** → Swagger UI con todos los endpoints.
+### 7. Levantar el servidor
 
-### 8. Correr los tests
+```bash
+python -m uvicorn main:app --reload --port 8000
+```
+
+### 8. Verificar
+
+- **http://localhost:8000** → interfaz del sistema (login)
+- **http://localhost:8000/docs** → Swagger UI con todos los endpoints
+
+### 9. Correr los tests
 
 ```bash
 python -m pytest app/tests -v
@@ -398,8 +423,11 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 - **Figuras del modelo:** `python scripts/generar_figuras.py` — genera ROC, precision-recall, matriz de confusión, calibración, importancia de variables, barrido de umbral y distribución de riesgo en `docs/figuras/`. No reentrena: carga el `.joblib` y **verifica** que las métricas coincidan con la ficha técnica.
 - **Modelo actual (v2.0.0):** XGBoost · ROC AUC 0.840 · PR AUC 0.354 · Recall 0.82 · F1 0.36 · PPV banda `alto` 27.2% (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
 - **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
-- **Frontend:** vive en `frontend/`; `npm install && npm run dev` (puerto 5173). La URL del
-  backend se configura con `VITE_API_URL` (ver `frontend/.env.example`).
+- **Frontend:** vive en `frontend/`. El backend sirve su build (`frontend/dist`) en el mismo
+  puerto 8000, así que para el uso normal solo hay que compilar: `cd frontend && npm run build`.
+  Con `npm run dev` (puerto 5173) queda el modo desarrollo con recarga instantánea y las
+  peticiones `/api/*` se redirigen al 8000. La URL del backend se puede forzar con
+  `VITE_API_URL` (ver `frontend/.env.example`); por defecto es relativa (`/api/v1`).
 - **BD nueva:** `schema.sql` ya incluye las columnas de triaje y la tabla `atenciones`
 - **BD existente:** aplicar `app/resources/migrations/001_triaje_clinico.sql` y `002_atenciones.sql`
 

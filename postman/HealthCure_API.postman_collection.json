@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "HealthCure - CardioPredict API",
-    "description": "Coleccion completa de endpoints para probar la API de HealthCure.\n\nPASOS PARA USAR:\n1. Levanta el servidor: uvicorn main:app --reload --port 8000\n2. Importa esta coleccion en Postman (File - Import)\n3. IMPORTANTE: No necesitas crear un Environment - las variables son de coleccion\n4. Haz clic en \"Login - Obtener Token\" (admin o medico)\n5. El token se guarda automaticamente\n6. Todos los demas requests usan el token automaticamente\n\nCredenciales de prueba:\n  Admin:   admin@healthcure.com / admin123\n  Medico:  dr.garcia@healthcure.com / doctor123",
+    "description": "Coleccion completa de endpoints para probar la API de HealthCure.\n\nPASOS PARA USAR:\n1. Levanta el servidor: python -m uvicorn main:app --reload --port 8000\n2. Importa esta coleccion en Postman (File - Import)\n3. IMPORTANTE: No necesitas crear un Environment - las variables son de coleccion\n4. Haz clic en \"Login - Obtener Token\" (admin o medico)\n5. El token se guarda automaticamente\n6. Todos los demas requests usan el token automaticamente\n\nCredenciales de prueba:\n  Admin:   admin@healthcure.com / admin123\n  Medico:  dr.garcia@healthcure.com / doctor123",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
