@@ -1,0 +1,166 @@
+{
+  "url_descarga": "https://topofire.dbs.umt.edu/public_data/federal_public_datasets/CDC%20Behavioral%20Risk%20Factor%20Surveillance%20System%20/2017%20Annual%20Survey%20Data/Data%20Files/LLCP2017.ASC%20",
+  "url_documentacion_oficial": "https://www.cdc.gov/brfss/annual_data/annual_2017.html",
+  "consultado_utc": "2026-10-15T16:12:49.314396+00:00",
+  "filas": 450016,
+  "prefijo_reanudado": {
+    "filas_validadas": 249848,
+    "csv_parcial_sha256": "2893433ddc0ddc621ab87d04fdc29ef6aa3fc35fc1bc033afd4901d4e740f15f",
+    "nota": "Prefijo conservado de descarga interrumpida; no hash del ASCII original completo"
+  },
+  "segmentos_ascii_sha256": [
+    {
+      "inicio_fila": 249848,
+      "fin_exclusivo": 259848,
+      "ascii_sha256": "dd604e696b3720ec68d294321b91e9a91871913adcb5f476ee7ee1c451eefa0b"
+    },
+    {
+      "inicio_fila": 259848,
+      "fin_exclusivo": 269848,
+      "ascii_sha256": "4a8ad0619846f4a9c8080e9bde11bbf35bb409f53a796e2130e88a3f46b42855"
+    },
+    {
+      "inicio_fila": 269848,
+      "fin_exclusivo": 279848,
+      "ascii_sha256": "43d62c91c6cd96abcad541b5a96178b635074825f4a770930df6a93dcb704636"
+    },
+    {
+      "inicio_fila": 279848,
+      "fin_exclusivo": 289848,
+      "ascii_sha256": "5b10f89f1fbd95e35bf1282486ee19973d855d6a2d62137b8d1d266ea4e560f0"
+    },
+    {
+      "inicio_fila": 289848,
+      "fin_exclusivo": 299848,
+      "ascii_sha256": "0c04d671824d68db20ac476ef8ecf72a2497d6aa46aa31fff234a9bd1304e951"
+    },
+    {
+      "inicio_fila": 299848,
+      "fin_exclusivo": 309848,
+      "ascii_sha256": "710274ee6382d1bb4a017d46a801eb1abd624f69588aaaf57cd180499df6dbb7"
+    },
+    {
+      "inicio_fila": 309848,
+      "fin_exclusivo": 319848,
+      "ascii_sha256": "84779dc6df9926b6b7a70da4c9862b53de225b3b03926aa9a013c11129d60af6"
+    },
+    {
+      "inicio_fila": 319848,
+      "fin_exclusivo": 329848,
+      "ascii_sha256": "95da74e5286c28ef8eebc4fd265d1c99720af577026ecc9b0caabc3cbc25382f"
+    },
+    {
+      "inicio_fila": 329848,
+      "fin_exclusivo": 339848,
+      "ascii_sha256": "0d94680198b00b7a09b86122d5ef7da337ee834b5a8bea356de551f66bd02155"
+    },
+    {
+      "inicio_fila": 339848,
+      "fin_exclusivo": 349848,
+      "ascii_sha256": "f7282c689b06101188c2f17176400a4f669b86126b3c0a96a5cc40e4e26e635e"
+    },
+    {
+      "inicio_fila": 349848,
+      "fin_exclusivo": 359848,
+      "ascii_sha256": "ae80eb0ec4074ef850559dafcf8e09656ffa390187c5495a97ca78e4bf25bc61"
+    },
+    {
+      "inicio_fila": 359848,
+      "fin_exclusivo": 369848,
+      "ascii_sha256": "d6b383a7b31151f977f5e5e8d75cbe618ae0bb18fcf38a49e418e6539de7b97c"
+    },
+    {
+      "inicio_fila": 369848,
+      "fin_exclusivo": 379848,
+      "ascii_sha256": "895850afbae0a0a9c90fe8797e7acfaa487e7e770962dd36d401ddb98124e9fd"
+    },
+    {
+      "inicio_fila": 379848,
+      "fin_exclusivo": 389848,
+      "ascii_sha256": "69ab12d212bee66d1716a42a6bc2b0f9d588bc92bdae35642f030d9edb6f372f"
+    },
+    {
+      "inicio_fila": 389848,
+      "fin_exclusivo": 399848,
+      "ascii_sha256": "109fce65412cb476979b4a2ca751ae9f85dc5cd29c18d8f3d1855e97b4f82082"
+    },
+    {
+      "inicio_fila": 399848,
+      "fin_exclusivo": 409848,
+      "ascii_sha256": "9269848d35e78770453e58a214e449cc10c8bc4b1b6b0fa901cb8bd2d7d8eabe"
+    },
+    {
+      "inicio_fila": 409848,
+      "fin_exclusivo": 419848,
+      "ascii_sha256": "e0d4a5a25385751982058d42ea9f0daeaed77711aa0983300823a6d6e41b3000"
+    },
+    {
+      "inicio_fila": 419848,
+      "fin_exclusivo": 429848,
+      "ascii_sha256": "7e805fd78328d60fc59d1a80668cb9709d4a174920dab0f7040063803f8deca4"
+    },
+    {
+      "inicio_fila": 429848,
+      "fin_exclusivo": 439848,
+      "ascii_sha256": "7ca8f3b384dd46d24685908f6a50a9c878eed3ca3b510d6fc301dec10802ad56"
+    },
+    {
+      "inicio_fila": 439848,
+      "fin_exclusivo": 449848,
+      "ascii_sha256": "9636d83c38668794391af70a21865937ec84269005dd8794a43ad53be5cfdf65"
+    },
+    {
+      "inicio_fila": 449848,
+      "fin_exclusivo": 450016,
+      "ascii_sha256": "3155badcbbd3b7474a38de61a8c30676317378205dbe6e5a621a6820373cbf14"
+    }
+  ],
+  "csv_extraido_sha256": "658032bbb71248d60d80448891e8a47975c99a221a7aa01fd611b99e557eec6a",
+  "procedencia": "Copia archivada pública de University of Montana; CDC directo devolvió HTTP403",
+  "layout_1_based": {
+    "GENHLTH": [
+      90,
+      1
+    ],
+    "BPHIGH4": [
+      101,
+      1
+    ],
+    "TOLDHI2": [
+      104,
+      1
+    ],
+    "CVDSTRK3": [
+      108,
+      1
+    ],
+    "DIABETE3": [
+      117,
+      1
+    ],
+    "SEX": [
+      125,
+      1
+    ],
+    "DIFFWALK": [
+      195,
+      1
+    ],
+    "SMOKE100": [
+      198,
+      1
+    ],
+    "EXERANY2": [
+      233,
+      1
+    ],
+    "_MICHD": [
+      1953,
+      1
+    ],
+    "_AGEG5YR": [
+      2028,
+      2
+    ]
+  }
+}

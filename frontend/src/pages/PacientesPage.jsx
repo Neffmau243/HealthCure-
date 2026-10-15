@@ -164,6 +164,9 @@ export default function PacientesPage() {
     setIsModalOpen(true);
   };
 
+  // EXPO-ML 01 | Registrar al paciente: aquí comienza el recorrido de la demo.
+  // Guardamos identidad, nacimiento y datos administrativos; todavía no se predice.
+  // Para continuar la exposición, abrir ModalTriaje.jsx (EXPO-ML 02).
   const handleSubmit = async (e) => {
     e.preventDefault();
     setGuardando(true);

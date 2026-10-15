@@ -80,6 +80,11 @@ def mapear_edad_cdc(edad_anios: int) -> int:
         return 13
 
 
+# EXPO-ML 09 | Adaptar los datos a la representación usada en entrenamiento.
+# Ejemplo: 55 años -> código CDC 8; se arma una tabla de 1 fila y 9 columnas.
+# El CSV ya contiene Age en categorías: convertir otra vez al entrenar sería un error.
+# Los booleanos ya vienen como 0/1 del mapper. Aquí se validan y ordenan los datos.
+# Siguiente: predict_proba en predictor.py, EXPO-ML 10.
 def preprocess(data: Dict) -> pd.DataFrame:
     """
     Convierte un diccionario de datos crudos en un DataFrame

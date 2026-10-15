@@ -94,6 +94,12 @@ export const etiquetaSexo = (sexo) =>
  *
  * `datos` es lo que captura el ModalTriaje (signos vitales + antecedentes).
  */
+// EXPO-ML 03 | Convertir el formulario al JSON que entiende nuestra API.
+// Se envían 9 predictores y paciente_id, que vincula la evaluación al paciente.
+// La edad aún va en años: su categoría CDC se calcula en backend (EXPO-ML 09).
+// La presión se resume en un booleano y prediabetes/diabetes se agrupan en true;
+// temperatura, saturación, frecuencia cardíaca e IMC no entran a este vector.
+// Siguiente: services/evaluaciones.js, EXPO-ML 04.
 export const construirPayloadEvaluacion = (paciente, datos, edad) => ({
   paciente_id: paciente.id,
   edad: Number(edad),

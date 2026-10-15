@@ -276,8 +276,14 @@ def _json_safe(valor):
 # 4. PIPELINE PRINCIPAL
 # ══════════════════════════════════════════════════════════════════════════
 def main(csv_path: str):
+    # EXPO-ML E1 | Etapa previa a usar la aplicación: aprendizaje supervisado offline.
+    # X contiene las 9 variables; y es HeartDiseaseorAttack (antecedente declarado).
+    # cargar_dataset renombra columnas y agrupa diabetes/prediabetes en 0/1.
+    # Este script se ejecuta aparte; no se llama al registrar o evaluar pacientes.
     X, y, info = cargar_dataset(csv_path)
 
+    # EXPO-ML E2 | Separar 80% para entrenamiento y 20% para test.
+    # stratify conserva la proporción de etiquetas; random_state fija la partición.
     # ── Split estratificado (proporción de positivos igual en train/test) ──
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
@@ -288,17 +294,26 @@ def main(csv_path: str):
     neg, pos = int((y_train == 0).sum()), int((y_train == 1).sum())
     scale_pos_weight = round(neg / pos, 2)
 
+    # EXPO-ML E3 | Comparar Random Forest y XGBoost dentro del conjunto de train.
+    # RandomizedSearchCV prueba parámetros con 3 folds; elegimos por ROC AUC de CV.
+    # La ponderación da más peso a positivos; no calibra la salida como probabilidad.
     # ── 1) Comparación de familias con CV ─────────────────────────────────
     resultados = buscar_hiperparametros(X_train, y_train, scale_pos_weight)
     mejor = max(resultados, key=lambda r: r["cv_roc_auc"])
     print(f"[TRAIN] MEJOR FAMILIA: {mejor['familia']} "
           f"(CV ROC AUC={mejor['cv_roc_auc']})")
 
+    # EXPO-ML E4 | fit es donde el estimador aprende sus parámetros de los datos.
+    # El candidato ganador se ajusta con todo train; el test no entra en este fit.
     # ── 2) Reajuste del mejor modelo en TODO el train ─────────────────────
     estimador_ganador = _espacios_busqueda(scale_pos_weight)[mejor["familia"]][0]
     model = estimador_ganador.set_params(**mejor["parametros"])
     model.fit(X_train, y_train)
 
+    # EXPO-ML E5 | Medir resultados y explorar un corte binario de referencia.
+    # Limitación de esta versión: el corte F1 se elige y evalúa en el mismo test.
+    # Mejora pendiente: elegirlo en validación independiente. La app usa 0.30/0.60,
+    # no este corte F1; tampoco debe explicarse ROC AUC como porcentaje de aciertos.
     # ── 3) Optimización del umbral de decisión (F1) ───────────────────────
     proba_test = model.predict_proba(X_test)[:, 1]
     umbral_optimo, f1_optimo = optimizar_umbral(y_test, proba_test)
@@ -323,6 +338,10 @@ def main(csv_path: str):
           f"F1={metricas_optimo['f1']} | Precision={metricas_optimo['precision']} "
           f"| Recall={metricas_optimo['recall']}")
 
+    # EXPO-ML E6 | Exportar lo aprendido y documentarlo en la metadata JSON.
+    # joblib guarda el estimador; el JSON registra versión, métricas y cortes.
+    # Con esto preparado empieza el recorrido del paciente (EXPO-ML 01).
+    # La API recupera el artefacto en EXPO-ML 08 para predecir sin volver a hacer fit.
     # ── 5) Guardar modelo ─────────────────────────────────────────────────
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, OUTPUT_PATH)

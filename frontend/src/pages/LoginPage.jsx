@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import logoImage from '../assets/logo.png';
 import { useAuth } from '../context/useAuth';
-import { mensajeError } from '../services/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,13 +14,20 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (enviando) return;
     setError(null);
     setEnviando(true);
     try {
       await login(email.trim(), password);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(mensajeError(err, 'No se pudo iniciar sesión'));
+      if (err.response?.status === 401) {
+        setError('El correo o la contraseña no coinciden. Revisa tus datos y vuelve a intentarlo.');
+      } else if (!err.response) {
+        setError('No pudimos conectar con el servidor. Comprueba tu conexión y vuelve a intentarlo.');
+      } else {
+        setError('No pudimos iniciar sesión en este momento. Vuelve a intentarlo en unos instantes.');
+      }
     } finally {
       setEnviando(false);
     }
@@ -30,7 +36,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-screen items-center justify-center bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 p-4 font-lexend">
       {/* Contenedor principal con una altura óptima y uniforme */}
-      <div className="flex w-full max-w-[460px] lg:max-w-[1150px] lg:h-[580px] bg-[#fcf6f4] rounded-xl shadow-2xl overflow-hidden flex-col lg:flex-row">
+      <div className="flex w-full max-w-[460px] lg:max-w-[1150px] lg:min-h-[580px] bg-[#fcf6f4] rounded-xl shadow-2xl overflow-hidden flex-col lg:flex-row">
         {/* Panel del Formulario Izquierdo con distribución equilibrada */}
         <div className="w-full lg:flex-1 bg-[#fcf6f4] flex flex-col justify-between items-center p-8 lg:p-12">
           <div className="text-center w-full mt-2">
@@ -61,6 +67,7 @@ export default function LoginPage() {
                 type="email"
                 required
                 autoComplete="username"
+                aria-describedby={error ? 'login-error' : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@healthcure.com"
@@ -78,6 +85,7 @@ export default function LoginPage() {
                 type="password"
                 required
                 autoComplete="current-password"
+                aria-describedby={error ? 'login-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
@@ -86,7 +94,7 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2.5" role="alert">
+              <p id="login-error" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2.5" role="alert">
                 {error}
               </p>
             )}

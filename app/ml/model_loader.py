@@ -22,6 +22,10 @@ from app.exceptions.ml_exceptions import ModelNotFoundError, ModelLoadError
 _model_instance = None  # Variable global que cachea el modelo (singleton)
 
 
+# EXPO-ML 08 | Recuperar el modelo que se entrenó previamente, fuera de la consulta.
+# Se carga el archivo configurado en MODEL_PATH; en esta entrega es XGBoost v2.
+# La caché se reutiliza por proceso. Registrar pacientes no actualiza sus árboles.
+# Volver a predict: el siguiente paso es preprocess, EXPO-ML 09.
 def load_model():
     """
     Retorna el modelo ML cargado. Lo cachea en memoria para no

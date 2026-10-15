@@ -16,6 +16,9 @@ import { clasesSemaforo, clasesClasificacion } from '../../utils/triaje';
  * semáforo del triaje clínico, factores y recomendaciones, y permite
  * descargar el PDF FUA.
  */
+// EXPO-ML 15a | Final visible del recorrido: interpretar la respuesta del backend.
+// El índice se muestra sobre 100; esta tarjeta no recalcula el riesgo del paciente.
+// Las recomendaciones provienen de reglas y la decisión corresponde al profesional.
 export default function TarjetaTriaje({ evaluacion, compacta = false }) {
   const [descargando, setDescargando] = useState(false);
   const [error, setError] = useState(null);

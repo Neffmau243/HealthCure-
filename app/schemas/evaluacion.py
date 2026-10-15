@@ -30,6 +30,10 @@ class ClasificacionEnum(str, Enum):
     alto = "alto"
 
 
+# EXPO-ML 05a | Contrato de entrada que FastAPI valida antes de ejecutar la ruta.
+# Recibe paciente_id y las 9 variables; no recibe la clasificación del frontend.
+# En esta versión, los booleanos omitidos usan False y salud_general usa 3.
+# Estas validaciones de formato/rango no constituyen una validación clínica.
 class EvaluacionCreate(BaseModel):
     """
     DTO de ENTRADA — lo que el frontend envía para hacer una evaluación.

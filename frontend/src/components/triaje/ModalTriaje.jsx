@@ -125,6 +125,10 @@ function Casilla({ name, label, checked, onChange }) {
   );
 }
 
+// EXPO-ML 02 | Capturar las respuestas de la evaluación del paciente seleccionado.
+// Las secciones indican qué datos utiliza el modelo. Los campos complementarios
+// de este modal no se envían ni se guardan mediante el POST de evaluación.
+// Al guardar, TriajePage llama a construirPayloadEvaluacion: EXPO-ML 03.
 export default function ModalTriaje({
   paciente,
   ultimaEvaluacion,

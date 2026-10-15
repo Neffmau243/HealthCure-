@@ -144,8 +144,10 @@ export default function TriajePage() {
       const edad = calcularEdad(pacienteSeleccionado.fecha_nacimiento);
       const payload = construirPayloadEvaluacion(pacienteSeleccionado, datos, edad);
       const evaluacion = await evaluacionesService.crear(payload);
-      // El backend devuelve el nombre del paciente en la evaluación, así que
-      // guardamos contexto para mostrarlo en el resultado.
+      // EXPO-ML 15 | Recibir el JSON y mostrar el resultado al profesional.
+      // Añadimos el nombre desde el paciente seleccionado para acompañar la respuesta.
+      // TarjetaTriaje.jsx presenta índice, banda, factores, recomendaciones y PDF.
+      // Después se actualizan listas y conteos; no se vuelve a entrenar el modelo.
       setResultado({
         ...evaluacion,
         _pacienteNombre: nombreCompleto(pacienteSeleccionado),

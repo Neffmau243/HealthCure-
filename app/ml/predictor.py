@@ -40,7 +40,8 @@ def predict(data: Dict) -> PredictionResult:
     Excepciones:
       PredictionError si algo falla (modelo no encontrado, datos inválidos, etc.)
     """
-    # 1. Cargar el modelo (de la caché o del disco)
+    # Ruta de exposición: load_model (08) -> preprocess (09) -> inferencia (10).
+    # El entrenamiento se explica aparte en entrenar_modelo.py, EXPO-ML E1 a E6.
     try:
         model = load_model()
     except Exception as e:
@@ -52,10 +53,12 @@ def predict(data: Dict) -> PredictionResult:
         df = preprocess(data)
         # df es un DataFrame de pandas con las columnas en orden correcto
 
-        # 2b. Ejecutar la predicción
+        # EXPO-ML 10 | Aquí se ejecuta el ML: los árboles calculan el puntaje.
+        # predict_proba devuelve dos valores por fila; [0][1] toma la clase 1.
+        # Esa clase corresponde al antecedente cardiovascular declarado del dataset.
+        # Con el modelo actual ponderado, el valor se interpreta como índice;
+        # no como porcentaje clínico calibrado ni predicción de un infarto futuro.
         probabilidad = float(model.predict_proba(df)[0][1])
-        # predict_proba retorna [[prob_no_enfermo, prob_enfermo]]
-        # [0][1] = tomamos la probabilidad de ENFERMEDAD (clase 1)
 
         # 2c. Convertir probabilidad a nivel de riesgo
         clasificacion = _classify(probabilidad)
@@ -71,6 +74,11 @@ def predict(data: Dict) -> PredictionResult:
     )
 
 
+# EXPO-ML 11 | Convertir el puntaje binario en tres bandas del producto.
+# Se leen los cortes de metadata.py: actualmente 0.30 y 0.60.
+# Ejemplo: 0.513150 -> moderado. El umbral F1=0.7026 no se usa en este paso.
+# Los colores no son tres clases aprendidas por XGBoost ni urgencias validadas.
+# Sigue create_to_model -> generar_triaje_clinico, EXPO-ML 12.
 def _classify(probabilidad: float) -> ClasificacionEnum:
     """
     Convierte una probabilidad (0.0-1.0) en un nivel de riesgo legible.

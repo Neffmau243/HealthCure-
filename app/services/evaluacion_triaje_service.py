@@ -106,14 +106,35 @@ def _nivel_de_alerta(clasificacion: str) -> dict:
         return {
             "nivel_alerta": "BAJO RIESGO - CONTROL DE RUTINA",
             "codigo_color": "verde",
-            "accion_sugerida": "Mantener controles anuales de salud preventiva.",
+            "accion_sugerida": (
+                "Mantener seguimiento preventivo; acordar con el profesional de salud "
+                "la fecha del próximo control."
+            ),
+            # Orientación general escrita por el equipo; no es salida aprendida de ML.
+            # Referencias y alcance: docs/TRIAGE_CLINICO.md, sección 6.2.
+            # Una banda baja del índice no define un intervalo clínico de seguimiento.
             "recomendaciones_medicas": [
-                "Continuar promoviendo la actividad física y hábitos saludables.",
-                "Reevaluación de triaje anual o según síntomas.",
+                "Revisar con el profesional de salud los antecedentes y las mediciones "
+                "disponibles, aunque el índice se encuentre en la banda baja.",
+                "Mantener actividad física regular, adaptada a la capacidad del paciente "
+                "y a las indicaciones del profesional de salud.",
+                "Favorecer una alimentación variada con frutas y verduras, moderar la sal "
+                "y evitar el consumo de tabaco.",
+                "Acordar la fecha del próximo control según los antecedentes y la evaluación "
+                "clínica; actualizar los datos si cambian los hábitos o el estado de salud.",
+                "La banda baja no descarta enfermedad ni evalúa los síntomas actuales. "
+                "Si aparecen molestias, solicitar valoración profesional sin esperar "
+                "a la siguiente evaluación del sistema.",
             ],
         }
 
 
+# EXPO-ML 12 | Añadir color, acciones y recomendaciones mediante reglas escritas.
+# XGBoost ya terminó: los textos de _nivel_de_alerta no se aprenden del dataset.
+# Los factores listan respuestas presentes; no miden su contribución al modelo.
+# Ejemplo: moderado -> amarillo y texto fijo de control en 15 a 30 días.
+# En la exposición: reglas del prototipo pendientes de validación clínica.
+# El mapper reúne todo y el repositorio lo registra: EXPO-ML 13.
 def generar_triaje_clinico(data: dict, probabilidad: float, clasificacion) -> dict:
     """
     Construye la interpretación clínica completa de una evaluación.

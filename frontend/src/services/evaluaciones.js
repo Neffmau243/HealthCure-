@@ -3,6 +3,10 @@ import { api, descargarBlob } from './api'
 export const evaluacionesService = {
   /** POST /evaluaciones/ → predicción ML + triaje clínico */
   async crear(payload) {
+    // EXPO-ML 04 | Enviar los datos al backend y esperar su resultado.
+    // La URL base /api/v1 y el JWT se añaden en services/api.js.
+    // React no ejecuta XGBoost: la predicción ocurre en Python.
+    // Siguiente: app/api/v1/evaluaciones.py, EXPO-ML 05.
     const { data } = await api.post('/evaluaciones/', payload)
     return data
   },

@@ -55,6 +55,10 @@ class EvaluacionMapper:
     # ---------------------------------------------------------------
     # REQUEST → ML INPUT VECTOR
     # ---------------------------------------------------------------
+    # EXPO-ML 07 | Separar los datos del modelo de los datos administrativos.
+    # True/False pasan a 1/0; paciente_id queda fuera de las 9 variables.
+    # Ejemplo: edad=55 sigue en años hasta preprocess (EXPO-ML 09).
+    # Después el servicio invoca predict, que carga el modelo (EXPO-ML 08).
     @staticmethod
     def request_to_model_input(data: EvaluacionCreate) -> dict:
         """
@@ -86,6 +90,10 @@ class EvaluacionMapper:
     # ---------------------------------------------------------------
     # ORM MODEL → RESPONSE DTO
     # ---------------------------------------------------------------
+    # EXPO-ML 14 | Construir la respuesta con la evaluación ya registrada.
+    # Incluye inputs, puntaje, banda, versión, fecha y textos del triaje.
+    # No se vuelve a ejecutar XGBoost al convertir o consultar el registro.
+    # El endpoint devuelve este objeto como JSON; sigue TriajePage.jsx (15).
     @staticmethod
     def to_response(evaluacion: Evaluacion) -> EvaluacionResponse:
         """
@@ -185,6 +193,9 @@ class EvaluacionMapper:
         las reglas clínicas son lógica del negocio, no del modelo.
         Se guarda persistido para auditoría y renderizado inmediato.
         """
+        # EXPO-ML 12a | Unir los inputs originales y la predicción con el triaje.
+        # Los textos se generan en evaluacion_triaje_service.py (EXPO-ML 12).
+        # Se preparan para guardarlos junto al resultado; no se entrena aquí.
         triaje = generar_triaje_clinico(
             data={
                 "presion_alta":            data.presion_alta,

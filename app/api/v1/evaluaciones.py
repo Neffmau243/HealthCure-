@@ -35,6 +35,10 @@ from app.api.deps import get_current_user
 router = APIRouter(prefix="/evaluaciones", tags=["Evaluaciones Cardíacas"])
 
 
+# EXPO-ML 05 | Puerta de entrada: POST /api/v1/evaluaciones/.
+# FastAPI valida EvaluacionCreate (05a) y get_current_user comprueba JWT/usuario.
+# Delegamos el recorrido al servicio; si termina bien, se responde con JSON y 201.
+# Siguiente: EvaluacionService.evaluate, EXPO-ML 06.
 @router.post("/", response_model=EvaluacionResponse, status_code=status.HTTP_201_CREATED)
 def create_evaluacion(
     data: EvaluacionCreate,

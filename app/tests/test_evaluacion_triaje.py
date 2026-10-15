@@ -31,7 +31,7 @@ def test_bajo_riesgo_es_verde():
     triaje = generar_triaje_clinico({}, probabilidad=0.1, clasificacion="bajo")
     assert triaje["codigo_color"] == "verde"
     assert "BAJO RIESGO" in triaje["nivel_alerta"]
-    assert "anuales" in triaje["accion_sugerida"].lower()
+    assert "profesional de salud" in triaje["accion_sugerida"].lower()
 
 
 def test_moderado_es_amarillo():

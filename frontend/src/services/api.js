@@ -5,7 +5,7 @@ import axios from 'axios'
 // (http://localhost:8000), así que no hay CORS ni host fijo que configurar y
 // funciona igual entrando por localhost, 127.0.0.1 o la IP de la red local.
 // Se puede sobreescribir con VITE_API_URL (ver frontend/.env.example).
-export const BASE_URL = import.meta.env.VITE_API_URL ?? '/api/v1'
+export const BASE_URL = import.meta.env?.VITE_API_URL ?? '/api/v1'
 
 export const api = axios.create({ baseURL: BASE_URL })
 
@@ -16,11 +16,12 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// Si el token expira (401), limpiamos la sesión y volvemos al login.
+// Un 401 de una petición protegida invalida la sesión. El login gestiona su propio
+// 401 en el formulario para conservar los campos y mostrar un mensaje recuperable.
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    if (error.response?.status === 401 && !error.config?.skipAuthRedirect) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       if (window.location.pathname !== '/login') {

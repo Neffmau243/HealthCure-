@@ -73,15 +73,17 @@ class EvaluacionService:
            → Guardamos todo en MySQL
            → La evaluación queda registrada para auditoría
         """
-        # PASO 1: Validar que el paciente exista
+        # EXPO-ML 06 | Orquestar la evaluación y comprobar que el paciente exista.
+        # Este servicio conecta las capas; los cálculos del modelo van en predictor.
+        # La edad se toma del request: aquí no se recalcula desde el nacimiento.
         paciente = self.paciente_repo.get_by_id(data.paciente_id)
         if not paciente:
             raise ValueError("Paciente no encontrado")
 
-        # PASO 2: Mapper traduce request → input del modelo
+        # Continuar en EvaluacionMapper.request_to_model_input, EXPO-ML 07.
         model_input = EvaluacionMapper.request_to_model_input(data)
 
-        # PASO 3: Predictor ejecuta el modelo ML
+        # El predictor recorre EXPO-ML 08 a 11: cargar, preparar, inferir y clasificar.
         # Import LAZY: solo se importa cuando se ejecuta evaluate().
         # Por qué: si el modelo .joblib no existe, el server sigue
         # funcionando para auth, pacientes, etc. Solo falla al predecir.
@@ -96,15 +98,16 @@ class EvaluacionService:
         except (ImportError, MLException) as e:
             raise MLException(f"Modelo ML no disponible: {e}")
 
-        # PASO 4: Mapper crea dict para persistir en BD
+        # EXPO-ML 12 comienza en create_to_model: añadir las reglas de triaje.
         evaluacion_data = EvaluacionMapper.create_to_model(
             data=data,
             prediction=prediction,
             usuario_id=usuario_id,
         )
 
-        # PASO 5: Repository guarda en MySQL
+        # Continuar en EvaluacionRepository.create, EXPO-ML 13 (persistencia).
         evaluacion = self.evaluacion_repo.create(**evaluacion_data)
+        # Luego to_response arma la salida de la API: EXPO-ML 14.
         return EvaluacionMapper.to_response(evaluacion)
 
     def get_by_id(self, evaluacion_id: int) -> Optional[EvaluacionResponse]:

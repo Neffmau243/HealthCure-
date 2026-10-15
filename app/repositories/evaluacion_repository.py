@@ -26,6 +26,10 @@ class EvaluacionRepository:
             .first()
         )
 
+    # EXPO-ML 13 | Registrar la evaluación y su trazabilidad.
+    # kwargs contiene inputs, puntaje, banda, versión, autor y textos del triaje.
+    # flush envía el INSERT y obtiene el ID; get_db gestiona commit/rollback.
+    # Guardar estos datos no reentrena el modelo. Sigue el mapper to_response (14).
     def create(self, **kwargs) -> Evaluacion:
         """
         Guarda una nueva evaluación en la BD.
