@@ -6,7 +6,7 @@ de pandas listo para que el modelo ML lo procese.
 
 RESPONSABILIDADES:
   - Validar que no falten variables predictoras
-  - Validar rangos (edad 1-120, salud_general 1-5)
+  - Validar rangos (edad 18-120, salud_general 1-5)
   - Convertir la EDAD de años reales (55) al rango CDC 1-13 que usa
     el dataset BRFSS de entrenamiento (ver mapear_edad_cdc)
   - Ordenar las columnas en el orden exacto que espera el modelo
@@ -52,6 +52,8 @@ def mapear_edad_cdc(edad_anios: int) -> int:
     DEBE ser identica a la logica con la que se entreno el modelo
     (el CSV ya viene codificado 1-13; el formulario manda años reales).
     """
+    if not 18 <= edad_anios <= 120:
+        raise ValueError("Edad fuera de rango válido (18-120)")
     if edad_anios < 25:
         return 1
     elif edad_anios <= 29:
@@ -102,8 +104,8 @@ def preprocess(data: Dict) -> pd.DataFrame:
     # Ejemplo de error: "Faltan variables predictoras: ['edad', 'diabetes']"
 
     # --- PASO 2: Validar rangos de valores ---
-    if not (1 <= data["edad"] <= 120):
-        raise ValueError("Edad fuera de rango válido (1-120)")
+    if not (18 <= data["edad"] <= 120):
+        raise ValueError("Edad fuera de rango válido (18-120)")
     if not (1 <= data["salud_general"] <= 5):
         raise ValueError("Salud general fuera de rango (1-5)")
 

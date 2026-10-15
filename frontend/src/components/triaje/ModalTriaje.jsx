@@ -1,6 +1,6 @@
 import { cloneElement, useId, useState } from 'react';
 import { Loader2, Info, BrainCircuit } from 'lucide-react';
-import { calcularIMC, edadACategoria, obtenerEdad, nombreCompleto } from '../../utils/triaje';
+import { calcularIMC, edadACategoria, obtenerEdad, nombreCompleto, diabetesFormulario } from '../../utils/triaje';
 import { Alerta } from '../ui/Feedback';
 import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
 
@@ -54,7 +54,7 @@ const formInicialTriaje = (paciente, ultimaEvaluacion) => ({
         dificultadCaminar: Boolean(ultimaEvaluacion.dificultad_para_caminar),
         fuma: Boolean(ultimaEvaluacion.tabaquismo),
         actividadFisica: Boolean(ultimaEvaluacion.actividad_fisica),
-        diabetes: ultimaEvaluacion.diabetes ? '2' : '0',
+        diabetes: diabetesFormulario(ultimaEvaluacion),
         saludGeneral: String(ultimaEvaluacion.salud_general ?? 3),
       }
     : {}),
@@ -203,16 +203,14 @@ export default function ModalTriaje({
             )}
 
             <Seccion
-              titulo="Signos vitales que sí entran al modelo"
-              usadaPorModelo
-              nota="La presión alta se deduce de este campo o del diagnóstico previo."
+              titulo="Presión medida en esta consulta"
+              nota="Se guarda por separado. El modelo utiliza el diagnóstico previo de hipertensión."
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Campo label="Presión Arterial (mmHg)">
                   <input
                     type="text"
                     name="presionArterial"
-                    required
                     pattern="\d{2,3}\s*/\s*\d{2,3}"
                     title="Formato: 120/80"
                     value={form.presionArterial}
@@ -266,8 +264,9 @@ export default function ModalTriaje({
                 <Casilla name="dificultadCaminar" label="Dificultad seria para caminar o subir escaleras" checked={form.dificultadCaminar} onChange={handleChange} />
               </div>
               <Campo label="Diabetes">
-                <select name="diabetes" value={form.diabetes} onChange={handleChange} className={inputClass}>
-                  <option value="0">No tiene</option>
+                <select name="diabetes" required value={form.diabetes} onChange={handleChange} className={inputClass}>
+                  <option value="" disabled>Confirma el antecedente (histórico sin detalle)</option>
+                  <option value="0">Sin prediabetes ni diabetes</option>
                   <option value="1">Prediabetes</option>
                   <option value="2">Diabetes</option>
                 </select>
@@ -318,8 +317,8 @@ export default function ModalTriaje({
             <div className="flex items-start gap-2.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
               <BrainCircuit className="w-4 h-4 mt-0.5 shrink-0 text-indigo-600" aria-hidden="true" />
               <span>
-                El modelo recibe 9 variables: presión alta, colesterol alto, tabaquismo, actividad
-                física, antecedente de ACV, diabetes, salud general, dificultad para caminar y edad.
+                Prototipo académico: el modelo clasifica perfiles asociados con antecedentes declarados de enfermedad coronaria o infarto. Recibe 9 variables: diagnóstico previo de hipertensión, colesterol alto, antecedente de tabaco, actividad
+                física, antecedente de ACV, prediabetes o diabetes, salud general, dificultad para caminar y edad. El índice no es una probabilidad clínica ni determina urgencias.
               </span>
             </div>
           </div>

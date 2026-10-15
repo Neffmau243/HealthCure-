@@ -1,0 +1,45 @@
+{
+  "politica": {
+    "reglas_version": "bandas-academicas-3.0.0",
+    "semantica_score": "calibracion_sigmoid_interna",
+    "umbrales": {
+      "bajo_max": 0.055574,
+      "moderado_max": 0.242261
+    },
+    "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+    "criterios": {
+      "bajo_max": "mayor umbral con recall validation >=0.90",
+      "moderado_max": "max F1 validation; empate mayor umbral"
+    },
+    "decimales_score": 6
+  },
+  "decisiones": {
+    "umbrales": {
+      "xgb_raw": {
+        "umbral": 0.7310636043548584,
+        "f1_validation": 0.42456608811748997,
+        "seleccionado_en": "validation",
+        "criterio": "max F1; empate mayor umbral"
+      },
+      "xgb_sigmoid": {
+        "umbral": 0.24226144655353818,
+        "f1_validation": 0.42456608811748997,
+        "seleccionado_en": "validation",
+        "criterio": "max F1; empate mayor umbral"
+      },
+      "logistic": {
+        "umbral": 0.2117398785277881,
+        "f1_validation": 0.4247548190733852,
+        "seleccionado_en": "validation",
+        "criterio": "max F1; empate mayor umbral"
+      }
+    },
+    "brier_validation": {
+      "xgb_raw": 0.19870664179325104,
+      "xgb_sigmoid": 0.08198532859622208
+    },
+    "variante_xgb_seleccionada": "xgb_sigmoid",
+    "scale_pos_weight_train": 9.840212143877066,
+    "baseline_prevalencia_train": 0.09224911715079628
+  }
+}

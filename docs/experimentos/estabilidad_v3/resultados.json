@@ -1,0 +1,684 @@
+{
+  "protocolo": {
+    "semillas": [
+      20261016,
+      20261017,
+      20261018,
+      20261019,
+      20261020
+    ],
+    "unidad": "perfil nueve features sin target ni sexo",
+    "seleccion_semilla": "Ninguna; todas se reportan; candidato original ya congelado",
+    "bandas": "En validation de cada repetición: recall>=0.90 / máximo F1",
+    "dataset_sha256": "953fb23bb131736d7879539a071d3f6d1eaae8d4867ab05335d0ba89b94d5f99",
+    "script_sha256": "2951903798f37dfa835897170c553d17be3e65f0a61ba8070b0227dff97218af",
+    "intervalos": "Recall por bootstrap de perfiles, 200 réplicas, modelo/umbral fijos"
+  },
+  "repeticiones": [
+    {
+      "seed": 20261016,
+      "particiones": {
+        "train": {
+          "n": 151778,
+          "positivos": 14662,
+          "prevalencia": 0.09660161551740042,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 43352,
+          "positivos": 3731,
+          "prevalencia": 0.08606292673925078,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 24712,
+          "positivos": 2063,
+          "prevalencia": 0.0834817092910327,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 33838,
+          "positivos": 3437,
+          "prevalencia": 0.10157219693835333,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "politica": {
+        "reglas_version": "bandas-academicas-3.0.0",
+        "semantica_score": "calibracion_sigmoid_interna",
+        "umbrales": {
+          "bajo_max": 0.042584,
+          "moderado_max": 0.214074
+        },
+        "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+        "criterios": {
+          "bajo_max": "mayor umbral con recall validation >=0.90",
+          "moderado_max": "max F1 validation; empate mayor umbral"
+        },
+        "decimales_score": 6
+      },
+      "metricas": {
+        "bajo_max": {
+          "n": 33838,
+          "positivos": 3437,
+          "prevalencia": 0.10157219693835333,
+          "umbral": 0.042584,
+          "roc_auc": 0.8261067511360154,
+          "average_precision": 0.33736660973246113,
+          "precision": 0.18395685104429654,
+          "recall": 0.9327902240325866,
+          "specificity": 0.5321864412354856,
+          "f1": 0.3073088904864606,
+          "alert_rate": 0.5150422601808617,
+          "brier": 0.07771444969165328,
+          "log_loss": 0.26032177138992296,
+          "ece_10_uniform": 0.005631390389502928,
+          "matriz_confusion": [
+            [
+              16179,
+              14222
+            ],
+            [
+              231,
+              3206
+            ]
+          ],
+          "aviso": null
+        },
+        "moderado_max": {
+          "n": 33838,
+          "positivos": 3437,
+          "prevalencia": 0.10157219693835333,
+          "umbral": 0.214074,
+          "roc_auc": 0.8261067511360154,
+          "average_precision": 0.33736660973246113,
+          "precision": 0.32037582903463524,
+          "recall": 0.5059645039278441,
+          "specificity": 0.8786553073912042,
+          "f1": 0.39232938522278626,
+          "alert_rate": 0.16041137183048643,
+          "brier": 0.07771444969165328,
+          "log_loss": 0.26032177138992296,
+          "ece_10_uniform": 0.005631390389502928,
+          "matriz_confusion": [
+            [
+              26712,
+              3689
+            ],
+            [
+              1698,
+              1739
+            ]
+          ],
+          "aviso": null
+        }
+      },
+      "recall_sexo_estandarizado_edad": {
+        "bajo_max": {
+          "pesos": {
+            "18_44": 0.03171370381146348,
+            "45_64": 0.30317137038114633,
+            "65_mas": 0.6651149258073902
+          },
+          "recall": {
+            "0": 0.9354321352190277,
+            "1": 0.9308926016337259
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        },
+        "moderado_max": {
+          "pesos": {
+            "18_44": 0.03171370381146348,
+            "45_64": 0.30317137038114633,
+            "65_mas": 0.6651149258073902
+          },
+          "recall": {
+            "0": 0.587068005995917,
+            "1": 0.44894501052985825
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        }
+      }
+    },
+    {
+      "seed": 20261017,
+      "particiones": {
+        "train": {
+          "n": 159427,
+          "positivos": 14707,
+          "prevalencia": 0.09224911715079628,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 33303,
+          "positivos": 3395,
+          "prevalencia": 0.10194276791880612,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 20185,
+          "positivos": 2215,
+          "prevalencia": 0.10973495169680456,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 40765,
+          "positivos": 3576,
+          "prevalencia": 0.08772231080583834,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "politica": {
+        "reglas_version": "bandas-academicas-3.0.0",
+        "semantica_score": "calibracion_sigmoid_interna",
+        "umbrales": {
+          "bajo_max": 0.055574,
+          "moderado_max": 0.242261
+        },
+        "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+        "criterios": {
+          "bajo_max": "mayor umbral con recall validation >=0.90",
+          "moderado_max": "max F1 validation; empate mayor umbral"
+        },
+        "decimales_score": 6
+      },
+      "metricas": {
+        "bajo_max": {
+          "n": 40765,
+          "positivos": 3576,
+          "prevalencia": 0.08772231080583834,
+          "umbral": 0.055574,
+          "roc_auc": 0.8451214841679087,
+          "average_precision": 0.3638814301160058,
+          "precision": 0.2058381186765108,
+          "recall": 0.8420022371364653,
+          "specificity": 0.6876226841270268,
+          "f1": 0.33080641617226986,
+          "alert_rate": 0.3588372378265669,
+          "brier": 0.06630740442718698,
+          "log_loss": 0.2288984027788285,
+          "ece_10_uniform": 0.008694269520421934,
+          "matriz_confusion": [
+            [
+              25572,
+              11617
+            ],
+            [
+              565,
+              3011
+            ]
+          ],
+          "aviso": null
+        },
+        "moderado_max": {
+          "n": 40765,
+          "positivos": 3576,
+          "prevalencia": 0.08772231080583834,
+          "umbral": 0.242261,
+          "roc_auc": 0.8451214841679087,
+          "average_precision": 0.3638814301160058,
+          "precision": 0.353860819828408,
+          "recall": 0.5190156599552572,
+          "specificity": 0.9088709026862782,
+          "f1": 0.4208139666704455,
+          "alert_rate": 0.1286642953514044,
+          "brier": 0.06630740442718698,
+          "log_loss": 0.2288984027788285,
+          "ece_10_uniform": 0.008694269520421934,
+          "matriz_confusion": [
+            [
+              33800,
+              3389
+            ],
+            [
+              1720,
+              1856
+            ]
+          ],
+          "aviso": null
+        }
+      },
+      "recall_sexo_estandarizado_edad": {
+        "bajo_max": {
+          "pesos": {
+            "18_44": 0.02936241610738255,
+            "45_64": 0.29082774049217003,
+            "65_mas": 0.6798098434004475
+          },
+          "recall": {
+            "0": 0.8716130776499005,
+            "1": 0.8218545617179419
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        },
+        "moderado_max": {
+          "pesos": {
+            "18_44": 0.02936241610738255,
+            "45_64": 0.29082774049217003,
+            "65_mas": 0.6798098434004475
+          },
+          "recall": {
+            "0": 0.5766092678777494,
+            "1": 0.4786152542456379
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        }
+      }
+    },
+    {
+      "seed": 20261018,
+      "particiones": {
+        "train": {
+          "n": 148612,
+          "positivos": 14299,
+          "prevalencia": 0.0962169945899389,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 36889,
+          "positivos": 3560,
+          "prevalencia": 0.09650573341646561,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 24592,
+          "positivos": 2531,
+          "prevalencia": 0.10291964866623292,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 43587,
+          "positivos": 3503,
+          "prevalencia": 0.08036799963291807,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "politica": {
+        "reglas_version": "bandas-academicas-3.0.0",
+        "semantica_score": "calibracion_sigmoid_interna",
+        "umbrales": {
+          "bajo_max": 0.053255,
+          "moderado_max": 0.221725
+        },
+        "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+        "criterios": {
+          "bajo_max": "mayor umbral con recall validation >=0.90",
+          "moderado_max": "max F1 validation; empate mayor umbral"
+        },
+        "decimales_score": 6
+      },
+      "metricas": {
+        "bajo_max": {
+          "n": 43587,
+          "positivos": 3503,
+          "prevalencia": 0.08036799963291807,
+          "umbral": 0.053255,
+          "roc_auc": 0.8364981533356032,
+          "average_precision": 0.33748972109803427,
+          "precision": 0.18403393264117499,
+          "recall": 0.829860119897231,
+          "specificity": 0.6784502544656222,
+          "f1": 0.3012591325975439,
+          "alert_rate": 0.36240163351458005,
+          "brier": 0.062275590931329575,
+          "log_loss": 0.21940212581141133,
+          "ece_10_uniform": 0.006292925459425978,
+          "matriz_confusion": [
+            [
+              27195,
+              12889
+            ],
+            [
+              596,
+              2907
+            ]
+          ],
+          "aviso": null
+        },
+        "moderado_max": {
+          "n": 43587,
+          "positivos": 3503,
+          "prevalencia": 0.08036799963291807,
+          "umbral": 0.221725,
+          "roc_auc": 0.8364981533356032,
+          "average_precision": 0.33748972109803427,
+          "precision": 0.34239802224969096,
+          "recall": 0.47445047102483584,
+          "specificity": 0.9203672288194791,
+          "f1": 0.39775038889553666,
+          "alert_rate": 0.11136347993667836,
+          "brier": 0.062275590931329575,
+          "log_loss": 0.21940212581141133,
+          "ece_10_uniform": 0.006292925459425978,
+          "matriz_confusion": [
+            [
+              36892,
+              3192
+            ],
+            [
+              1841,
+              1662
+            ]
+          ],
+          "aviso": null
+        }
+      },
+      "recall_sexo_estandarizado_edad": {
+        "bajo_max": {
+          "pesos": {
+            "18_44": 0.036825578075934916,
+            "45_64": 0.3591207536397374,
+            "65_mas": 0.6040536682843277
+          },
+          "recall": {
+            "0": 0.857071605521321,
+            "1": 0.8084225425529336
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        },
+        "moderado_max": {
+          "pesos": {
+            "18_44": 0.036825578075934916,
+            "45_64": 0.3591207536397374,
+            "65_mas": 0.6040536682843277
+          },
+          "recall": {
+            "0": 0.535418691863216,
+            "1": 0.42719686136362817
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        }
+      }
+    },
+    {
+      "seed": 20261019,
+      "particiones": {
+        "train": {
+          "n": 147013,
+          "positivos": 14770,
+          "prevalencia": 0.10046730561242884,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 36575,
+          "positivos": 3549,
+          "prevalencia": 0.09703349282296651,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 27435,
+          "positivos": 2027,
+          "prevalencia": 0.07388372516858029,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 42657,
+          "positivos": 3547,
+          "prevalencia": 0.0831516515460534,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "politica": {
+        "reglas_version": "bandas-academicas-3.0.0",
+        "semantica_score": "calibracion_sigmoid_interna",
+        "umbrales": {
+          "bajo_max": 0.037025,
+          "moderado_max": 0.224547
+        },
+        "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+        "criterios": {
+          "bajo_max": "mayor umbral con recall validation >=0.90",
+          "moderado_max": "max F1 validation; empate mayor umbral"
+        },
+        "decimales_score": 6
+      },
+      "metricas": {
+        "bajo_max": {
+          "n": 42657,
+          "positivos": 3547,
+          "prevalencia": 0.0831516515460534,
+          "umbral": 0.037025,
+          "roc_auc": 0.8561500468883461,
+          "average_precision": 0.35169990480292157,
+          "precision": 0.17788330331313792,
+          "recall": 0.9188046236255991,
+          "specificity": 0.6148811045768345,
+          "f1": 0.2980610938357417,
+          "alert_rate": 0.42949574512975597,
+          "brier": 0.06333640224868939,
+          "log_loss": 0.216528618411298,
+          "ece_10_uniform": 0.0055898430034929765,
+          "matriz_confusion": [
+            [
+              24048,
+              15062
+            ],
+            [
+              288,
+              3259
+            ]
+          ],
+          "aviso": null
+        },
+        "moderado_max": {
+          "n": 42657,
+          "positivos": 3547,
+          "prevalencia": 0.0831516515460534,
+          "umbral": 0.224547,
+          "roc_auc": 0.8561500468883461,
+          "average_precision": 0.35169990480292157,
+          "precision": 0.3188069594034797,
+          "recall": 0.5424302227234282,
+          "specificity": 0.894886218358476,
+          "f1": 0.4015863076601962,
+          "alert_rate": 0.1414773659657266,
+          "brier": 0.06333640224868939,
+          "log_loss": 0.216528618411298,
+          "ece_10_uniform": 0.0055898430034929765,
+          "matriz_confusion": [
+            [
+              34999,
+              4111
+            ],
+            [
+              1623,
+              1924
+            ]
+          ],
+          "aviso": null
+        }
+      },
+      "recall_sexo_estandarizado_edad": {
+        "bajo_max": {
+          "pesos": {
+            "18_44": 0.03721454750493375,
+            "45_64": 0.3292923597406259,
+            "65_mas": 0.6334930927544403
+          },
+          "recall": {
+            "0": 0.9190196718487902,
+            "1": 0.9192393304750421
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        },
+        "moderado_max": {
+          "pesos": {
+            "18_44": 0.03721454750493375,
+            "45_64": 0.3292923597406259,
+            "65_mas": 0.6334930927544403
+          },
+          "recall": {
+            "0": 0.6027722476017278,
+            "1": 0.49638316718536574
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        }
+      }
+    },
+    {
+      "seed": 20261020,
+      "particiones": {
+        "train": {
+          "n": 148781,
+          "positivos": 14360,
+          "prevalencia": 0.0965177005128343,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 35962,
+          "positivos": 3462,
+          "prevalencia": 0.09626828318780935,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 18137,
+          "positivos": 1612,
+          "prevalencia": 0.0888790869493301,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 50800,
+          "positivos": 4459,
+          "prevalencia": 0.0877755905511811,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "politica": {
+        "reglas_version": "bandas-academicas-3.0.0",
+        "semantica_score": "calibracion_sigmoid_interna",
+        "umbrales": {
+          "bajo_max": 0.040349,
+          "moderado_max": 0.241542
+        },
+        "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+        "criterios": {
+          "bajo_max": "mayor umbral con recall validation >=0.90",
+          "moderado_max": "max F1 validation; empate mayor umbral"
+        },
+        "decimales_score": 6
+      },
+      "metricas": {
+        "bajo_max": {
+          "n": 50800,
+          "positivos": 4459,
+          "prevalencia": 0.0877755905511811,
+          "umbral": 0.040349,
+          "roc_auc": 0.845124569917575,
+          "average_precision": 0.34055641279424137,
+          "precision": 0.18027844284827524,
+          "recall": 0.911863646557524,
+          "specificity": 0.6010444314969465,
+          "f1": 0.30104023988450007,
+          "alert_rate": 0.4439763779527559,
+          "brier": 0.06744135296508735,
+          "log_loss": 0.22969684799489903,
+          "ece_10_uniform": 0.00440813196850394,
+          "matriz_confusion": [
+            [
+              27853,
+              18488
+            ],
+            [
+              393,
+              4066
+            ]
+          ],
+          "aviso": null
+        },
+        "moderado_max": {
+          "n": 50800,
+          "positivos": 4459,
+          "prevalencia": 0.0877755905511811,
+          "umbral": 0.241542,
+          "roc_auc": 0.845124569917575,
+          "average_precision": 0.34055641279424137,
+          "precision": 0.3348136399682791,
+          "recall": 0.47342453464902445,
+          "specificity": 0.9094969897067392,
+          "f1": 0.39223337049424006,
+          "alert_rate": 0.12411417322834646,
+          "brier": 0.06744135296508735,
+          "log_loss": 0.22969684799489903,
+          "ece_10_uniform": 0.00440813196850394,
+          "matriz_confusion": [
+            [
+              42147,
+              4194
+            ],
+            [
+              2348,
+              2111
+            ]
+          ],
+          "aviso": null
+        }
+      },
+      "recall_sexo_estandarizado_edad": {
+        "bajo_max": {
+          "pesos": {
+            "18_44": 0.02399641175151379,
+            "45_64": 0.326082081184122,
+            "65_mas": 0.6499215070643642
+          },
+          "recall": {
+            "0": 0.9126256928493112,
+            "1": 0.9110974077523432
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        },
+        "moderado_max": {
+          "pesos": {
+            "18_44": 0.02399641175151379,
+            "45_64": 0.326082081184122,
+            "65_mas": 0.6499215070643642
+          },
+          "recall": {
+            "0": 0.5313033442967035,
+            "1": 0.4330287046611626
+          },
+          "nota": "Misma composición de edad entre positivos; asociación descriptiva, no causal"
+        }
+      }
+    }
+  ]
+}

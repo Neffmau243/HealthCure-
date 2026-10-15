@@ -106,9 +106,9 @@ def test_create_to_model_une_request_y_prediccion():
     assert result["accion_sugerida"]
     assert "Hipertensión Arterial" in result["factores_riesgo_detectados"]
     assert "Dislipidemia (Colesterol Alto)" in result["factores_riesgo_detectados"]
-    assert "Diabetes Mellitus" in result["factores_riesgo_detectados"]
-    assert "Realiza Actividad Física Regular" in result["factores_protectores"]
-    assert "No Fumador" in result["factores_protectores"]
+    assert "Prediabetes o diabetes (sin detalle registrado)" in result["factores_riesgo_detectados"]
+    assert "Actividad física declarada en los últimos 30 días" in result["factores_protectores"]
+    assert "No declara haber fumado 100 cigarrillos en la vida" in result["factores_protectores"]
     assert len(result["recomendaciones_medicas"]) >= 1
 
 

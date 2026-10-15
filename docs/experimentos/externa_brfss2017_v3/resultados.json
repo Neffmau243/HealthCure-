@@ -1,0 +1,1113 @@
+{
+  "flujo": {
+    "filas_origen": 450016,
+    "incluidas": 373536,
+    "excluidas": 76480,
+    "invalidas_por_variable_no_excluyentes": {
+      "GENHLTH": 1149,
+      "BPHIGH4": 1399,
+      "TOLDHI2": 31864,
+      "CVDSTRK3": 1350,
+      "DIABETE3": 797,
+      "SEX": 284,
+      "DIFFWALK": 15550,
+      "SMOKE100": 18316,
+      "EXERANY2": 34203,
+      "_MICHD": 4144,
+      "_AGEG5YR": 6101
+    }
+  },
+  "fuente": {
+    "url_descarga": "https://topofire.dbs.umt.edu/public_data/federal_public_datasets/CDC%20Behavioral%20Risk%20Factor%20Surveillance%20System%20/2017%20Annual%20Survey%20Data/Data%20Files/LLCP2017.ASC%20",
+    "url_documentacion_oficial": "https://www.cdc.gov/brfss/annual_data/annual_2017.html",
+    "consultado_utc": "2026-10-15T16:12:49.314396+00:00",
+    "filas": 450016,
+    "prefijo_reanudado": {
+      "filas_validadas": 249848,
+      "csv_parcial_sha256": "2893433ddc0ddc621ab87d04fdc29ef6aa3fc35fc1bc033afd4901d4e740f15f",
+      "nota": "Prefijo conservado de descarga interrumpida; no hash del ASCII original completo"
+    },
+    "segmentos_ascii_sha256": [
+      {
+        "inicio_fila": 249848,
+        "fin_exclusivo": 259848,
+        "ascii_sha256": "dd604e696b3720ec68d294321b91e9a91871913adcb5f476ee7ee1c451eefa0b"
+      },
+      {
+        "inicio_fila": 259848,
+        "fin_exclusivo": 269848,
+        "ascii_sha256": "4a8ad0619846f4a9c8080e9bde11bbf35bb409f53a796e2130e88a3f46b42855"
+      },
+      {
+        "inicio_fila": 269848,
+        "fin_exclusivo": 279848,
+        "ascii_sha256": "43d62c91c6cd96abcad541b5a96178b635074825f4a770930df6a93dcb704636"
+      },
+      {
+        "inicio_fila": 279848,
+        "fin_exclusivo": 289848,
+        "ascii_sha256": "5b10f89f1fbd95e35bf1282486ee19973d855d6a2d62137b8d1d266ea4e560f0"
+      },
+      {
+        "inicio_fila": 289848,
+        "fin_exclusivo": 299848,
+        "ascii_sha256": "0c04d671824d68db20ac476ef8ecf72a2497d6aa46aa31fff234a9bd1304e951"
+      },
+      {
+        "inicio_fila": 299848,
+        "fin_exclusivo": 309848,
+        "ascii_sha256": "710274ee6382d1bb4a017d46a801eb1abd624f69588aaaf57cd180499df6dbb7"
+      },
+      {
+        "inicio_fila": 309848,
+        "fin_exclusivo": 319848,
+        "ascii_sha256": "84779dc6df9926b6b7a70da4c9862b53de225b3b03926aa9a013c11129d60af6"
+      },
+      {
+        "inicio_fila": 319848,
+        "fin_exclusivo": 329848,
+        "ascii_sha256": "95da74e5286c28ef8eebc4fd265d1c99720af577026ecc9b0caabc3cbc25382f"
+      },
+      {
+        "inicio_fila": 329848,
+        "fin_exclusivo": 339848,
+        "ascii_sha256": "0d94680198b00b7a09b86122d5ef7da337ee834b5a8bea356de551f66bd02155"
+      },
+      {
+        "inicio_fila": 339848,
+        "fin_exclusivo": 349848,
+        "ascii_sha256": "f7282c689b06101188c2f17176400a4f669b86126b3c0a96a5cc40e4e26e635e"
+      },
+      {
+        "inicio_fila": 349848,
+        "fin_exclusivo": 359848,
+        "ascii_sha256": "ae80eb0ec4074ef850559dafcf8e09656ffa390187c5495a97ca78e4bf25bc61"
+      },
+      {
+        "inicio_fila": 359848,
+        "fin_exclusivo": 369848,
+        "ascii_sha256": "d6b383a7b31151f977f5e5e8d75cbe618ae0bb18fcf38a49e418e6539de7b97c"
+      },
+      {
+        "inicio_fila": 369848,
+        "fin_exclusivo": 379848,
+        "ascii_sha256": "895850afbae0a0a9c90fe8797e7acfaa487e7e770962dd36d401ddb98124e9fd"
+      },
+      {
+        "inicio_fila": 379848,
+        "fin_exclusivo": 389848,
+        "ascii_sha256": "69ab12d212bee66d1716a42a6bc2b0f9d588bc92bdae35642f030d9edb6f372f"
+      },
+      {
+        "inicio_fila": 389848,
+        "fin_exclusivo": 399848,
+        "ascii_sha256": "109fce65412cb476979b4a2ca751ae9f85dc5cd29c18d8f3d1855e97b4f82082"
+      },
+      {
+        "inicio_fila": 399848,
+        "fin_exclusivo": 409848,
+        "ascii_sha256": "9269848d35e78770453e58a214e449cc10c8bc4b1b6b0fa901cb8bd2d7d8eabe"
+      },
+      {
+        "inicio_fila": 409848,
+        "fin_exclusivo": 419848,
+        "ascii_sha256": "e0d4a5a25385751982058d42ea9f0daeaed77711aa0983300823a6d6e41b3000"
+      },
+      {
+        "inicio_fila": 419848,
+        "fin_exclusivo": 429848,
+        "ascii_sha256": "7e805fd78328d60fc59d1a80668cb9709d4a174920dab0f7040063803f8deca4"
+      },
+      {
+        "inicio_fila": 429848,
+        "fin_exclusivo": 439848,
+        "ascii_sha256": "7ca8f3b384dd46d24685908f6a50a9c878eed3ca3b510d6fc301dec10802ad56"
+      },
+      {
+        "inicio_fila": 439848,
+        "fin_exclusivo": 449848,
+        "ascii_sha256": "9636d83c38668794391af70a21865937ec84269005dd8794a43ad53be5cfdf65"
+      },
+      {
+        "inicio_fila": 449848,
+        "fin_exclusivo": 450016,
+        "ascii_sha256": "3155badcbbd3b7474a38de61a8c30676317378205dbe6e5a621a6820373cbf14"
+      }
+    ],
+    "csv_extraido_sha256": "658032bbb71248d60d80448891e8a47975c99a221a7aa01fd611b99e557eec6a",
+    "procedencia": "Copia archivada pública de University of Montana; CDC directo devolvió HTTP403",
+    "layout_1_based": {
+      "GENHLTH": [
+        90,
+        1
+      ],
+      "BPHIGH4": [
+        101,
+        1
+      ],
+      "TOLDHI2": [
+        104,
+        1
+      ],
+      "CVDSTRK3": [
+        108,
+        1
+      ],
+      "DIABETE3": [
+        117,
+        1
+      ],
+      "SEX": [
+        125,
+        1
+      ],
+      "DIFFWALK": [
+        195,
+        1
+      ],
+      "SMOKE100": [
+        198,
+        1
+      ],
+      "EXERANY2": [
+        233,
+        1
+      ],
+      "_MICHD": [
+        1953,
+        1
+      ],
+      "_AGEG5YR": [
+        2028,
+        2
+      ]
+    }
+  },
+  "politica": {
+    "reglas_version": "bandas-academicas-3.0.0",
+    "semantica_score": "calibracion_sigmoid_interna",
+    "umbrales": {
+      "bajo_max": 0.051065,
+      "moderado_max": 0.210469
+    },
+    "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+    "criterios": {
+      "bajo_max": "mayor umbral con recall validation >=0.90",
+      "moderado_max": "max F1 validation; empate mayor umbral"
+    },
+    "decimales_score": 6
+  },
+  "metricas": {
+    "bajo_max": {
+      "n": 373536,
+      "positivos": 34408,
+      "prevalencia": 0.09211428081898398,
+      "umbral": 0.051065,
+      "roc_auc": 0.8397729240638699,
+      "average_precision": 0.35088717565881766,
+      "precision": 0.18570612122123628,
+      "recall": 0.8971460125552198,
+      "specificity": 0.6008704677879738,
+      "f1": 0.30771607861119554,
+      "alert_rate": 0.4450039621348411,
+      "brier": 0.07038879950078626,
+      "log_loss": 0.23957489445346086,
+      "ece_10_uniform": 0.009615146532061171,
+      "matriz_confusion": [
+        [
+          203772,
+          135356
+        ],
+        [
+          3539,
+          30869
+        ]
+      ],
+      "aviso": null,
+      "recall_ic95_perfiles": [
+        0.884887184898761,
+        0.9107203428691374
+      ]
+    },
+    "moderado_max": {
+      "n": 373536,
+      "positivos": 34408,
+      "prevalencia": 0.09211428081898398,
+      "umbral": 0.210469,
+      "roc_auc": 0.8397729240638699,
+      "average_precision": 0.35088717565881766,
+      "precision": 0.29911365094174586,
+      "recall": 0.5963148105091839,
+      "specificity": 0.8582305206293789,
+      "f1": 0.3983922954448371,
+      "alert_rate": 0.18363959564807675,
+      "brier": 0.07038879950078626,
+      "log_loss": 0.23957489445346086,
+      "ece_10_uniform": 0.009615146532061171,
+      "matriz_confusion": [
+        [
+          291050,
+          48078
+        ],
+        [
+          13890,
+          20518
+        ]
+      ],
+      "aviso": null,
+      "recall_ic95_perfiles": [
+        0.5676503894739809,
+        0.6261646384635847
+      ]
+    },
+    "referencia_0_5": {
+      "n": 373536,
+      "positivos": 34408,
+      "prevalencia": 0.09211428081898398,
+      "umbral": 0.5,
+      "roc_auc": 0.8397729240638699,
+      "average_precision": 0.35088717565881766,
+      "precision": 0.7237569060773481,
+      "recall": 0.0076145082538944435,
+      "specificity": 0.9997051260880847,
+      "f1": 0.015070463042853035,
+      "alert_rate": 0.000969116765184614,
+      "brier": 0.07038879950078626,
+      "log_loss": 0.23957489445346086,
+      "ece_10_uniform": 0.009615146532061171,
+      "matriz_confusion": [
+        [
+          339028,
+          100
+        ],
+        [
+          34146,
+          262
+        ]
+      ],
+      "aviso": null
+    }
+  },
+  "subgrupos": {
+    "bajo_max": [
+      {
+        "n": 211098,
+        "positivos": 15389,
+        "prevalencia": 0.07289979061857525,
+        "umbral": 0.051065,
+        "roc_auc": 0.8431099717836261,
+        "average_precision": 0.31021463966720797,
+        "precision": 0.14621358004018753,
+        "recall": 0.9078562609656248,
+        "specificity": 0.5831515157708639,
+        "f1": 0.25186360317646317,
+        "alert_rate": 0.45264284834531826,
+        "brier": 0.059330063664810515,
+        "log_loss": 0.20935207253310942,
+        "ece_10_uniform": 0.027106876720764766,
+        "matriz_confusion": [
+          [
+            114128,
+            81581
+          ],
+          [
+            1418,
+            13971
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer",
+        "recall_ic95_wilson": [
+          0.9031842475521068,
+          0.9123247040330889
+        ],
+        "fpr_ic95_wilson": [
+          0.4146657857349837,
+          0.4190344469252829
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 162438,
+        "positivos": 19019,
+        "prevalencia": 0.11708467230574127,
+        "umbral": 0.051065,
+        "roc_auc": 0.8420619988299305,
+        "average_precision": 0.4070925815976322,
+        "precision": 0.2391012126271702,
+        "recall": 0.8884799411115201,
+        "specificity": 0.6250496796100935,
+        "f1": 0.37680060652009095,
+        "alert_rate": 0.4350767677513882,
+        "brier": 0.08476029519454516,
+        "log_loss": 0.2788512784383803,
+        "ece_10_uniform": 0.019575564467673827,
+        "matriz_confusion": [
+          [
+            89644,
+            53775
+          ],
+          [
+            2121,
+            16898
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre",
+        "recall_ic95_wilson": [
+          0.8839276822752206,
+          0.8928753012321703
+        ],
+        "fpr_ic95_wilson": [
+          0.3724482329462179,
+          0.37745910653221054
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 94187,
+        "positivos": 1317,
+        "prevalencia": 0.01398282140847463,
+        "umbral": 0.051065,
+        "roc_auc": 0.8251528638876742,
+        "average_precision": 0.15431823541988415,
+        "precision": 0.12430011198208286,
+        "recall": 0.4214123006833713,
+        "specificity": 0.9578981371810057,
+        "f1": 0.19197509512279487,
+        "alert_rate": 0.04740569293002219,
+        "brier": 0.012745516171161986,
+        "log_loss": 0.06099818792868889,
+        "ece_10_uniform": 0.003423077813286332,
+        "matriz_confusion": [
+          [
+            88960,
+            3910
+          ],
+          [
+            762,
+            555
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_18_44",
+        "recall_ic95_wilson": [
+          0.3950105063654354,
+          0.44827121483006765
+        ],
+        "fpr_ic95_wilson": [
+          0.040829112159462604,
+          0.04341249275239737
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 142027,
+        "positivos": 10352,
+        "prevalencia": 0.0728875495504376,
+        "umbral": 0.051065,
+        "roc_auc": 0.8298665867850008,
+        "average_precision": 0.30778720190084297,
+        "precision": 0.16551697260220585,
+        "recall": 0.8205177743431221,
+        "specificity": 0.6747750142396051,
+        "f1": 0.2754661910167018,
+        "alert_rate": 0.36132566343019284,
+        "brier": 0.05813063391071926,
+        "log_loss": 0.2082511730149999,
+        "ece_10_uniform": 0.006873685397846893,
+        "matriz_confusion": [
+          [
+            88851,
+            42824
+          ],
+          [
+            1858,
+            8494
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_45_64",
+        "recall_ic95_wilson": [
+          0.813006805677811,
+          0.8277909533828705
+        ],
+        "fpr_ic95_wilson": [
+          0.3226998403513866,
+          0.3277603285710912
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 137322,
+        "positivos": 22739,
+        "prevalencia": 0.1655889078224902,
+        "umbral": 0.051065,
+        "roc_auc": 0.748225956163102,
+        "average_precision": 0.3765115024757481,
+        "precision": 0.19756976512558627,
+        "recall": 0.959584854215225,
+        "specificity": 0.22656938638366947,
+        "f1": 0.32767436796540045,
+        "alert_rate": 0.8042556910036265,
+        "brier": 0.12260358235588426,
+        "log_loss": 0.39445480038396724,
+        "ece_10_uniform": 0.019922110841671413,
+        "matriz_confusion": [
+          [
+            25961,
+            88622
+          ],
+          [
+            919,
+            21820
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_65_mas",
+        "recall_ic95_wilson": [
+          0.9569466416247281,
+          0.9620678112458325
+        ],
+        "fpr_ic95_wilson": [
+          0.7709976563034217,
+          0.7758452377169934
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 49498,
+        "positivos": 638,
+        "prevalencia": 0.012889409673118106,
+        "umbral": 0.051065,
+        "roc_auc": 0.8268449648859194,
+        "average_precision": 0.14294183391859697,
+        "precision": 0.11797040169133192,
+        "recall": 0.4373040752351097,
+        "specificity": 0.9573065902578797,
+        "f1": 0.18581418581418582,
+        "alert_rate": 0.047779708271041256,
+        "brier": 0.011821686367182472,
+        "log_loss": 0.05715459381158729,
+        "ece_10_uniform": 0.004400495333144772,
+        "matriz_confusion": [
+          [
+            46774,
+            2086
+          ],
+          [
+            359,
+            279
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_18_44",
+        "recall_ic95_wilson": [
+          0.3993012012353358,
+          0.4760574268174698
+        ],
+        "fpr_ic95_wilson": [
+          0.04093649625640499,
+          0.04452222606569948
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 79354,
+        "positivos": 4455,
+        "prevalencia": 0.05614083726088162,
+        "umbral": 0.051065,
+        "roc_auc": 0.8411231217485862,
+        "average_precision": 0.27432363448339875,
+        "precision": 0.1344294354108572,
+        "recall": 0.8332210998877666,
+        "specificity": 0.6808902655576176,
+        "f1": 0.23150804540351752,
+        "alert_rate": 0.3479723769438214,
+        "brier": 0.04675649416965364,
+        "log_loss": 0.17339762645665915,
+        "ece_10_uniform": 0.017833660924465054,
+        "matriz_confusion": [
+          [
+            50998,
+            23901
+          ],
+          [
+            743,
+            3712
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_45_64",
+        "recall_ic95_wilson": [
+          0.8219884775063057,
+          0.8438795573677716
+        ],
+        "fpr_ic95_wilson": [
+          0.3157808357136315,
+          0.32245718740733226
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 82246,
+        "positivos": 10296,
+        "prevalencia": 0.125185419351701,
+        "umbral": 0.051065,
+        "roc_auc": 0.7691472240985792,
+        "average_precision": 0.33294940682459706,
+        "precision": 0.1521944673193644,
+        "recall": 0.9693084693084693,
+        "specificity": 0.22732453092425295,
+        "f1": 0.2630815869250033,
+        "alert_rate": 0.7972910536682635,
+        "brier": 0.10005341426175957,
+        "log_loss": 0.3356390641887344,
+        "ece_10_uniform": 0.04978579504170417,
+        "matriz_confusion": [
+          [
+            16356,
+            55594
+          ],
+          [
+            316,
+            9980
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_65_mas",
+        "recall_ic95_wilson": [
+          0.9657978507845862,
+          0.9724690185295849
+        ],
+        "fpr_ic95_wilson": [
+          0.769598611628722,
+          0.775723211424408
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 44689,
+        "positivos": 679,
+        "prevalencia": 0.015193895589518674,
+        "umbral": 0.051065,
+        "roc_auc": 0.8224696388791006,
+        "average_precision": 0.16771764595371164,
+        "precision": 0.13142857142857142,
+        "recall": 0.406480117820324,
+        "specificity": 0.9585548738922972,
+        "f1": 0.1986326016552717,
+        "alert_rate": 0.046991429658305175,
+        "brier": 0.013768759645783885,
+        "log_loss": 0.06525539264591898,
+        "ece_10_uniform": 0.002402056210700622,
+        "matriz_confusion": [
+          [
+            42186,
+            1824
+          ],
+          [
+            403,
+            276
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_18_44",
+        "recall_ic95_wilson": [
+          0.370161982223923,
+          0.44385048236875685
+        ],
+        "fpr_ic95_wilson": [
+          0.03962263654593569,
+          0.04334765956505825
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 62673,
+        "positivos": 5897,
+        "prevalencia": 0.09409155457693105,
+        "umbral": 0.051065,
+        "roc_auc": 0.8200151160035354,
+        "average_precision": 0.3503402198235891,
+        "precision": 0.20172959291288758,
+        "recall": 0.8109208071900966,
+        "specificity": 0.6667077638438776,
+        "f1": 0.32308627795419226,
+        "alert_rate": 0.3782330509150671,
+        "brier": 0.07253210639508288,
+        "log_loss": 0.25238131412186526,
+        "ece_10_uniform": 0.015761255069966337,
+        "matriz_confusion": [
+          [
+            37853,
+            18923
+          ],
+          [
+            1115,
+            4782
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_45_64",
+        "recall_ic95_wilson": [
+          0.8007255022736035,
+          0.8207112920531607
+        ],
+        "fpr_ic95_wilson": [
+          0.32942618098510573,
+          0.3371808486641599
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 55076,
+        "positivos": 12443,
+        "prevalencia": 0.22592417750018157,
+        "umbral": 0.051065,
+        "roc_auc": 0.7292121786603449,
+        "average_precision": 0.4388931109634235,
+        "precision": 0.2638851742890256,
+        "recall": 0.951539017921723,
+        "specificity": 0.22529495930382568,
+        "f1": 0.41318420547538864,
+        "alert_rate": 0.8146561115549422,
+        "brier": 0.15627816157495206,
+        "log_loss": 0.4822854169703771,
+        "ece_10_uniform": 0.041398560244026425,
+        "matriz_confusion": [
+          [
+            9605,
+            33028
+          ],
+          [
+            603,
+            11840
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_65_mas",
+        "recall_ic95_wilson": [
+          0.9476245982352521,
+          0.9551747213492904
+        ],
+        "fpr_ic95_wilson": [
+          0.7707146991333764,
+          0.7786458819645992
+        ],
+        "positivos_insuficientes": false
+      }
+    ],
+    "moderado_max": [
+      {
+        "n": 211098,
+        "positivos": 15389,
+        "prevalencia": 0.07289979061857525,
+        "umbral": 0.210469,
+        "roc_auc": 0.8431099717836261,
+        "average_precision": 0.31021463966720797,
+        "precision": 0.24723181633482325,
+        "recall": 0.6325947105075054,
+        "specificity": 0.8485455446606952,
+        "f1": 0.35551903588058065,
+        "alert_rate": 0.1865294791992345,
+        "brier": 0.059330063664810515,
+        "log_loss": 0.20935207253310942,
+        "ece_10_uniform": 0.027106876720764766,
+        "matriz_confusion": [
+          [
+            166068,
+            29641
+          ],
+          [
+            5654,
+            9735
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer",
+        "recall_ic95_wilson": [
+          0.6249455965392783,
+          0.6401776434367581
+        ],
+        "fpr_ic95_wilson": [
+          0.149873038557329,
+          0.15304955465071476
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 162438,
+        "positivos": 19019,
+        "prevalencia": 0.11708467230574127,
+        "umbral": 0.210469,
+        "roc_auc": 0.8420619988299305,
+        "average_precision": 0.4070925815976322,
+        "precision": 0.3690280629705681,
+        "recall": 0.5669593564330406,
+        "specificity": 0.8714466005201542,
+        "f1": 0.44706565227305706,
+        "alert_rate": 0.1798840172865955,
+        "brier": 0.08476029519454516,
+        "log_loss": 0.2788512784383803,
+        "ece_10_uniform": 0.019575564467673827,
+        "matriz_confusion": [
+          [
+            124982,
+            18437
+          ],
+          [
+            8236,
+            10783
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre",
+        "recall_ic95_wilson": [
+          0.5599045567170694,
+          0.5739871127011701
+        ],
+        "fpr_ic95_wilson": [
+          0.126831107552284,
+          0.13029558916993222
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 94187,
+        "positivos": 1317,
+        "prevalencia": 0.01398282140847463,
+        "umbral": 0.210469,
+        "roc_auc": 0.8251528638876742,
+        "average_precision": 0.15431823541988415,
+        "precision": 0.3096960926193922,
+        "recall": 0.1624905087319666,
+        "specificity": 0.9948637880908797,
+        "f1": 0.21314741035856574,
+        "alert_rate": 0.007336468939450243,
+        "brier": 0.012745516171161986,
+        "log_loss": 0.06099818792868889,
+        "ece_10_uniform": 0.003423077813286332,
+        "matriz_confusion": [
+          [
+            92393,
+            477
+          ],
+          [
+            1103,
+            214
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_18_44",
+        "recall_ic95_wilson": [
+          0.1435534654301962,
+          0.18339073815822032
+        ],
+        "fpr_ic95_wilson": [
+          0.004696493161346602,
+          0.005616867886019906
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 142027,
+        "positivos": 10352,
+        "prevalencia": 0.0728875495504376,
+        "umbral": 0.210469,
+        "roc_auc": 0.8298665867850008,
+        "average_precision": 0.30778720190084297,
+        "precision": 0.30216633466135456,
+        "recall": 0.46889489953632146,
+        "specificity": 0.9148661477121701,
+        "f1": 0.3675045427013931,
+        "alert_rate": 0.11310525463468214,
+        "brier": 0.05813063391071926,
+        "log_loss": 0.2082511730149999,
+        "ece_10_uniform": 0.006873685397846893,
+        "matriz_confusion": [
+          [
+            120465,
+            11210
+          ],
+          [
+            5498,
+            4854
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_45_64",
+        "recall_ic95_wilson": [
+          0.45929510322414574,
+          0.47851777247882604
+        ],
+        "fpr_ic95_wilson": [
+          0.08363853605645909,
+          0.08665337424891213
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 137322,
+        "positivos": 22739,
+        "prevalencia": 0.1655889078224902,
+        "umbral": 0.210469,
+        "roc_auc": 0.748225956163102,
+        "average_precision": 0.3765115024757481,
+        "precision": 0.29802665843637277,
+        "recall": 0.6794494041074806,
+        "specificity": 0.6824048942687834,
+        "f1": 0.414320193081255,
+        "alert_rate": 0.3775141637902157,
+        "brier": 0.12260358235588426,
+        "log_loss": 0.39445480038396724,
+        "ece_10_uniform": 0.019922110841671413,
+        "matriz_confusion": [
+          [
+            78192,
+            36391
+          ],
+          [
+            7289,
+            15450
+          ]
+        ],
+        "aviso": null,
+        "grupo": "edad_65_mas",
+        "recall_ic95_wilson": [
+          0.6733537136871781,
+          0.6854844734749981
+        ],
+        "fpr_ic95_wilson": [
+          0.3149057178640618,
+          0.3202967236394671
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 49498,
+        "positivos": 638,
+        "prevalencia": 0.012889409673118106,
+        "umbral": 0.210469,
+        "roc_auc": 0.8268449648859194,
+        "average_precision": 0.14294183391859697,
+        "precision": 0.28157894736842104,
+        "recall": 0.1677115987460815,
+        "specificity": 0.9944126074498567,
+        "f1": 0.21021611001964635,
+        "alert_rate": 0.0076770778617317875,
+        "brier": 0.011821686367182472,
+        "log_loss": 0.05715459381158729,
+        "ece_10_uniform": 0.004400495333144772,
+        "matriz_confusion": [
+          [
+            48587,
+            273
+          ],
+          [
+            531,
+            107
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_18_44",
+        "recall_ic95_wilson": [
+          0.14072837564019028,
+          0.19867235303967937
+        ],
+        "fpr_ic95_wilson": [
+          0.004964209325840628,
+          0.006288312833803026
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 79354,
+        "positivos": 4455,
+        "prevalencia": 0.05614083726088162,
+        "umbral": 0.210469,
+        "roc_auc": 0.8411231217485862,
+        "average_precision": 0.27432363448339875,
+        "precision": 0.25775871797765487,
+        "recall": 0.512682379349046,
+        "specificity": 0.9121884137304904,
+        "f1": 0.343045959747672,
+        "alert_rate": 0.11166418832068957,
+        "brier": 0.04675649416965364,
+        "log_loss": 0.17339762645665915,
+        "ece_10_uniform": 0.017833660924465054,
+        "matriz_confusion": [
+          [
+            68322,
+            6577
+          ],
+          [
+            2171,
+            2284
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_45_64",
+        "recall_ic95_wilson": [
+          0.4980001917986527,
+          0.5273427142103643
+        ],
+        "fpr_ic95_wilson": [
+          0.08580578637880829,
+          0.08985966505876469
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 82246,
+        "positivos": 10296,
+        "prevalencia": 0.125185419351701,
+        "umbral": 0.210469,
+        "roc_auc": 0.7691472240985792,
+        "average_precision": 0.33294940682459706,
+        "precision": 0.2437033349925336,
+        "recall": 0.7132867132867133,
+        "specificity": 0.683238359972203,
+        "f1": 0.3632855976849447,
+        "alert_rate": 0.3664007976071785,
+        "brier": 0.10005341426175957,
+        "log_loss": 0.3356390641887344,
+        "ece_10_uniform": 0.04978579504170417,
+        "matriz_confusion": [
+          [
+            49159,
+            22791
+          ],
+          [
+            2952,
+            7344
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_0_mujer__edad_65_mas",
+        "recall_ic95_wilson": [
+          0.70447329346728,
+          0.7219410370405678
+        ],
+        "fpr_ic95_wilson": [
+          0.31337223375098816,
+          0.32017061169819544
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 44689,
+        "positivos": 679,
+        "prevalencia": 0.015193895589518674,
+        "umbral": 0.210469,
+        "roc_auc": 0.8224696388791006,
+        "average_precision": 0.16771764595371164,
+        "precision": 0.3440514469453376,
+        "recall": 0.15758468335787923,
+        "specificity": 0.9953646898432175,
+        "f1": 0.21616161616161617,
+        "alert_rate": 0.006959206963682338,
+        "brier": 0.013768759645783885,
+        "log_loss": 0.06525539264591898,
+        "ece_10_uniform": 0.002402056210700622,
+        "matriz_confusion": [
+          [
+            43806,
+            204
+          ],
+          [
+            572,
+            107
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_18_44",
+        "recall_ic95_wilson": [
+          0.13211517274101603,
+          0.18690684328729995
+        ],
+        "fpr_ic95_wilson": [
+          0.004042497216258964,
+          0.005314592398516257
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 62673,
+        "positivos": 5897,
+        "prevalencia": 0.09409155457693105,
+        "umbral": 0.210469,
+        "roc_auc": 0.8200151160035354,
+        "average_precision": 0.3503402198235891,
+        "precision": 0.3567957795363043,
+        "recall": 0.43581482109547226,
+        "specificity": 0.9183986191348457,
+        "f1": 0.39236641221374047,
+        "alert_rate": 0.11492987410846776,
+        "brier": 0.07253210639508288,
+        "log_loss": 0.25238131412186526,
+        "ece_10_uniform": 0.015761255069966337,
+        "matriz_confusion": [
+          [
+            52143,
+            4633
+          ],
+          [
+            3327,
+            2570
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_45_64",
+        "recall_ic95_wilson": [
+          0.42320471829134854,
+          0.4485084932425045
+        ],
+        "fpr_ic95_wilson": [
+          0.07937778474571487,
+          0.08388159077655745
+        ],
+        "positivos_insuficientes": false
+      },
+      {
+        "n": 55076,
+        "positivos": 12443,
+        "prevalencia": 0.22592417750018157,
+        "umbral": 0.210469,
+        "roc_auc": 0.7292121786603449,
+        "average_precision": 0.4388931109634235,
+        "precision": 0.37344513037869714,
+        "recall": 0.651450614803504,
+        "specificity": 0.6809982877113973,
+        "f1": 0.47474303786348065,
+        "alert_rate": 0.3941099571501198,
+        "brier": 0.15627816157495206,
+        "log_loss": 0.4822854169703771,
+        "ece_10_uniform": 0.041398560244026425,
+        "matriz_confusion": [
+          [
+            29033,
+            13600
+          ],
+          [
+            4337,
+            8106
+          ]
+        ],
+        "aviso": null,
+        "grupo": "sexo_1_hombre__edad_65_mas",
+        "recall_ic95_wilson": [
+          0.6430324708331785,
+          0.659775274607254
+        ],
+        "fpr_ic95_wilson": [
+          0.31459388802946053,
+          0.3234421514153134
+        ],
+        "positivos_insuficientes": false
+      }
+    ]
+  },
+  "perfiles_compartidos_2015": 371792,
+  "alcance": "Validación temporal EEUU, misma encuesta; no clínica/local, sin identificación de personas"
+}

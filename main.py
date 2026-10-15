@@ -65,7 +65,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="Sistema de triaje cardíaco con predicción ML — CardioPredict",
+    description="Prototipo académico de clasificación de perfiles asociados con antecedentes declarados de enfermedad coronaria o infarto. Índice calibrado internamente y reglas experimentales sin validación clínica.",
     docs_url="/docs",     # Swagger UI interactivo (para probar la API)
     redoc_url="/redoc",   # Documentación alternativa
     lifespan=lifespan,    # Seed automático al iniciar

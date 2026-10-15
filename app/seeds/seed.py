@@ -9,7 +9,7 @@ Qué crea:
   2. Médico → dr.garcia@healthcure.com / doctor123
   3. Catálogos: distritos + localidades (los gestiona el admin)
   4. Pacientes de prueba con datos detallados (formato peruano)
-  5. Evaluaciones de ejemplo (si existe el modelo ML)
+  5. Evaluaciones con resultados fijos de demostración, no calculados por el modelo actual
 
 IMPORTANTE: Si la BD ya tiene datos, NO crea nada (idempotente),
 pero SÍ hace backfill de usuario_creador_id en pacientes legacy.

@@ -1,12 +1,16 @@
 # HealthCure — CardioPredict
 
-Sistema web de triaje cardíaco con **predicción automática usando Machine Learning** y **triaje clínico determinista** que traduce los resultados del modelo en instrucciones accionables para médicos y enfermeros.
 
-> 🩺 **Lo que hace:** Un médico/técnico de salud ingresa los datos de un paciente → el sistema predice el **riesgo cardíaco** con ML (Random Forest/XGBoost) → y genera automáticamente un **triaje clínico** con nivel de alerta, código de color, factores de riesgo/protectores y recomendaciones médicas.
+Prototipo académico que clasifica perfiles asociados con **antecedentes declarados de enfermedad coronaria o infarto** e integra gestión de pacientes, evaluaciones, atenciones y reglas experimentales de priorización.
 
+> El XGBoost incluido entrega un **score con calibración interna (v3.0.0)**, mostrado como índice del modelo de **0 a 100**. No es probabilidad clínica, diagnóstico ni predicción de eventos futuros. Las bandas y orientaciones no están validadas clínicamente y no determinan urgencias ni tratamiento.
+
+```text
+Paciente adulto → Nueve respuestas → XGBoost → Índice + banda experimental
+ → Orientación para revisión humana → Historial y PDF académico
 ```
-Paciente → Datos clínicos → Modelo ML → Probabilidad + Clasificación → TRIAJE CLÍNICO
-```
+
+La referencia vigente del experimento es [MODELO_ML](docs/MODELO_ML.md) y sus usos y límites están en [MODEL_CARD](docs/MODEL_CARD.md). La [segunda etapa experimental](docs/SEGUNDA_ETAPA_EXPERIMENTAL.md) ya fue ejecutada: el candidato calibrado se integró como v3.0.0 con [bandas versionadas, estabilidad y evaluación externa](docs/INTEGRACION_V3_Y_GENERALIZACION.md). Los relatos anteriores se conservan en `docs/historico/`.
 
 ---
 
@@ -69,8 +73,8 @@ Al levantar el backend con la BD vacía se crean estas cuentas:
 
 | Feature | Estado |
 |---------|--------|
-| Predicción ML (probabilidad + clasificación) | ✅ Funcionando |
-| **Triaje Clínico Automático** | ✅ **Implementado** |
+| Clasificación ML (índice + banda experimental) | ✅ Funcionando |
+| **Reglas experimentales de priorización** | ✅ **Implementado** |
 | Endpoints REST (FastAPI + Swagger) | ✅ Funcionando |
 | Autenticación JWT + roles (admin/usuario) | ✅ Funcionando |
 | Gestión de pacientes | ✅ Funcionando |
@@ -159,10 +163,50 @@ source venv/bin/activate
 
 ### 3. Instalar dependencias
 
+**Opción recomendada** — el entorno exacto ya verificado (incluye las
+dependencias indirectas):
+
+```bash
+pip install -r requirements-lock.txt
+```
+
+**Opción por partes** — si prefieres ver solo las dependencias directas:
+
 ```bash
 pip install -r requirements.txt
 pip install -r requirements-dev.txt   # pytest + httpx + matplotlib (figuras del modelo)
 ```
+
+> En esta opción las dependencias indirectas (numpy, scipy, starlette…) las
+> elige pip, así que pueden quedar versiones más nuevas que las probadas.
+> Si estás en Windows con Smart App Control, usa el lock.
+
+Las versiones están **fijadas** (`==`), no con rangos: así cualquier máquina
+instala exactamente lo que corren los tests (ver la cabecera de
+`requirements.txt`). El lock (`requirements-lock.txt`) añade todas las
+dependencias indirectas con su versión exacta; se regenera con
+`pip freeze > requirements-lock.txt`.
+
+> **⚠️ Windows — Control inteligente de aplicaciones (Smart App Control)**
+>
+> Si al instalar o al arrancar ves el error _«Una directiva de Control de
+> aplicaciones bloqueó este archivo»_, no es un problema del proyecto: Windows
+> está bloqueando un binario recién descargado que aún no tiene reputación.
+> Suele pasar con `uvicorn.exe` y con las DLL compiladas de paquetes muy nuevos
+> (SQLAlchemy 2.1, pandas, scikit-learn, xgboost).
+>
+> Soluciones, de menor a mayor:
+>
+> 1. Usa `python -m uvicorn` en vez del comando `uvicorn` (ver
+>    [Levantar el proyecto](#-levantar-el-proyecto-1-comando-1-puerto)).
+> 2. Si falla el `import` de un paquete, crea el entorno virtual reutilizando
+>    los que ya tienes instalados y permitidos:
+>    ```bash
+>    python -m venv venv --system-site-packages
+>    ```
+> 3. Desactivar Smart App Control en **Seguridad de Windows → Control de
+>    aplicaciones y navegador**. Ojo: es **irreversible** sin reinstalar Windows
+>    y no admite exclusiones, así que agota las opciones 1 y 2 primero.
 
 ### 4. Configurar base de datos
 
@@ -182,6 +226,8 @@ mysql -u root -p healthcure_db < app/resources/schema.sql
 > ```bash
 > mysql -u root -p healthcure_db < app/resources/migrations/001_triaje_clinico.sql
 > mysql -u root -p healthcure_db < app/resources/migrations/002_atenciones.sql
+> python scripts/aplicar_migracion_003.py
+python scripts/aplicar_migracion_004.py
 > ```
 
 ### 5. Configurar variables de entorno
@@ -223,6 +269,17 @@ python -m pytest app/tests -v
 ```
 
 Los tests usan **SQLite en memoria** — no necesitan MySQL levantado.
+
+Validación del formulario y frontend:
+
+```bash
+cd frontend
+npm test
+npm run lint
+npm run build
+```
+
+Los nueve predictores son obligatorios. Solo se admiten adultos de 18 a 120 años y la edad debe coincidir con nacimiento a la fecha de consulta (America/Lima). `presion_alta` es el diagnóstico previo, no una lectura aislada. La presión medida se guarda aparte. `estado_diabetes` conserva la respuesta original; el booleano `diabetes` agrupa prediabetes y diabetes solo para ML.
 
 ---
 
@@ -308,7 +365,7 @@ Al levantar el servidor con la BD vacía se crean, además de las [credenciales 
 
 ---
 
-## 📋 Ejemplo de Evaluación + Triaje Clínico
+## 📋 Ejemplo de evaluación académica
 
 ### Request
 
@@ -323,6 +380,9 @@ POST /api/v1/evaluaciones/
     "actividad_fisica": true,
     "antecedente_acv": false,
     "diabetes": true,
+    "estado_diabetes": "prediabetes",
+    "presion_sistolica": 120,
+    "presion_diastolica": 80,
     "salud_general": 3,
     "dificultad_para_caminar": false
 }
@@ -330,69 +390,23 @@ POST /api/v1/evaluaciones/
 
 ### Response (201 Created)
 
-```json
-{
-    "id": 8,
-    "paciente_id": 1,
-    "usuario_id": 2,
-    "edad": 55,
-    "presion_alta": true,
-    "colesterol_alto": true,
-    "tabaquismo": false,
-    "actividad_fisica": true,
-    "antecedente_acv": false,
-    "diabetes": true,
-    "salud_general": 3,
-    "dificultad_para_caminar": false,
-    "probabilidad": 0.51315,
-    "clasificacion": "moderado",
-    "modelo_version": "2.0.0",
-    "triaje_clinico": {
-        "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
-        "codigo_color": "amarillo",
-        "accion_sugerida": "Programar consulta médica de control en los próximos 15 a 30 días.",
-        "factores_riesgo_detectados": [
-            "Hipertensión Arterial",
-            "Dislipidemia (Colesterol Alto)",
-            "Diabetes Mellitus"
-        ],
-        "factores_protectores": [
-            "Realiza Actividad Física Regular",
-            "No Fumador"
-        ],
-        "recomendaciones_medicas": [
-            "Solicitar perfil lipídico y examen de glucosa en ayunas.",
-            "Monitoreo ambulatorio de presión arterial durante 1 semana.",
-            "Reforzar cambios en el estilo de vida (dieta cardioprotectora)."
-        ]
-    },
-    "created_at": "2026-09-05T08:30:13"
-}
-```
+La respuesta incluye inputs, categoría original de diabetes, presión medida, score `probabilidad`, banda, versión, snapshot `politica_modelo` e interpretación experimental. Para ese perfil el predictor directo devuelve el resultado de v3.0.0 (ver [integración](docs/INTEGRACION_ML.md)). En la API la edad ilustrativa debe sustituirse por la edad real del paciente elegido; no se admite un perfil con edad diferente de su fecha de nacimiento.
+
+Ver [request y errores del contrato vigente](docs/INTEGRACION_ML.md).
 
 ---
 
-## 🎯 Clasificación de Riesgo
+## 🎯 Bandas experimentales
 
-| Probabilidad | Clasificación | Nivel de Alerta | Semáforo |
-|-------------|---------------|-----------------|----------|
-| < 30% | **Bajo** | BAJO RIESGO - CONTROL DE RUTINA | 🟢 Verde |
-| 30% - 60% | **Moderado** | RIESGO MODERADO - SEGUIMIENTO PREVENTIVO | 🟡 Amarillo |
-| > 60% | **Alto** | ALTA PRIORIDAD - RIESGO ELEVADO | 🔴 Rojo |
+| Score interno | Índice sobre 100 | Banda | Color |
+|---|---|---|---|
+| <0.051065 | <5.1065 | bajo | verde |
+| 0.051065 a <0.210469 | 5.1065 a <21.0469 | moderado | amarillo |
+| >=0.210469 | >=21.0469 | alto | rojo |
 
----
+Los cortes proceden de metadata y se conservan como decisión experimental. Los antecedentes listados proceden de respuestas; no explican contribuciones individuales del modelo. El personal de salud determina cualquier decisión clínica.
 
-## 🧠 ¿Qué es el triaje clínico?
-
-Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.459 → moderado"_, el sistema de triaje clínico traduce eso a información que un médico puede usar **inmediatamente**:
-
-- **¿Qué tan rápido actuar?** → `nivel_alerta`
-- **Semáforo visual** → `codigo_color` (verde/amarillo/rojo)
-- **¿Por qué dio ese riesgo?** → `factores_riesgo_detectados`
-- **¿Qué se está haciendo bien?** → `factores_protectores`
-- **Próximos pasos clínicos** → `accion_sugerida` + `recomendaciones_medicas`
-
-> **Diseño:** 100% determinista — mismos inputs → mismo triaje. Sin dependencias externas, sin HTML, sin estilos. El texto clínico vive en un solo archivo: `app/services/evaluacion_triaje_service.py`.
+Los textos históricos persistidos se conservan como fueron registrados. Las nuevas orientaciones son generales y no prescriben exámenes, plazos ni tratamientos. Ver [reglas vigentes](docs/TRIAGE_CLINICO.md).
 
 ---
 
@@ -408,6 +422,9 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
     "actividad_fisica": true,
     "antecedente_acv": false,
     "diabetes": true,
+    "estado_diabetes": "prediabetes",
+    "presion_sistolica": 120,
+    "presion_diastolica": 80,
     "salud_general": 3,
     "dificultad_para_caminar": false
 }
@@ -419,9 +436,9 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 
 - **Dependencias:** `requirements.txt` (producción) y `requirements-dev.txt` (tests). `bcrypt` está fijado a `4.0.1` por compatibilidad con passlib 1.7.4.
 - **Dataset:** Heart Disease Health Indicators (CDC/BRFSS 2015, Kaggle)
-- **Entrenamiento:** `entrenar_modelo.py` — compara Random Forest vs XGBoost con validación cruzada, optimiza el umbral de F1 y guarda **dos** artefactos: el modelo `app/resources/modelo_cardiaco.joblib` y su ficha técnica `app/resources/modelo_cardiaco_metadata.json` (versión, dataset, hiperparámetros y métricas).
-- **Figuras del modelo:** `python scripts/generar_figuras.py` — genera ROC, precision-recall, matriz de confusión, calibración, importancia de variables, barrido de umbral y distribución de riesgo en `docs/figuras/`. No reentrena: carga el `.joblib` y **verifica** que las métricas coincidan con la ficha técnica.
-- **Modelo actual (v2.0.0):** XGBoost · ROC AUC 0.840 · PR AUC 0.354 · Recall 0.82 · F1 0.36 · PPV banda `alto` 27.2% (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
+- **Entrenamiento experimental:** `entrenar_modelo.py` — separa train/calibration/validation/test, elige umbrales en validation, calibra con datos separados y compara particiones por filas, perfiles y deduplicación. Incluye logística, baseline de prevalencia, intervalos y subgrupos. Guarda candidatos versionados en `experimentos_ml/` sin reemplazar automáticamente el modelo activo v3.0.0. Ver [segunda etapa y pendientes](docs/SEGUNDA_ETAPA_EXPERIMENTAL.md).
+- **Figuras históricas v2 (archivada):** `python scripts/generar_figuras.py` — genera ROC, precision-recall, matriz de confusión, calibración, importancia de variables, barrido de umbral y distribución de riesgo en `docs/figuras/`. No reentrena: carga el `.joblib` y **verifica** que las métricas coincidan con la ficha técnica.
+- **Modelo actual (v3.0.0):** XGBoost + sigmoid · test interno por perfiles: ROC AUC 0.8285 · AP 0.3513 · F1 0.4048 y recall 0.6435 al corte superior · Brier 0.0773 (detalle completo en [`docs/MODELO_ML.md`](docs/MODELO_ML.md))
 - **Postman:** `postman/HealthCure_API.postman_collection.json` con todos los endpoints
 - **Frontend:** vive en `frontend/`. El backend sirve su build (`frontend/dist`) en el mismo
   puerto 8000, así que para el uso normal solo hay que compilar: `cd frontend && npm run build`.
@@ -429,14 +446,14 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
   peticiones `/api/*` se redirigen al 8000. La URL del backend se puede forzar con
   `VITE_API_URL` (ver `frontend/.env.example`); por defecto es relativa (`/api/v1`).
 - **BD nueva:** `schema.sql` ya incluye las columnas de triaje y la tabla `atenciones`
-- **BD existente:** aplicar `app/resources/migrations/001_triaje_clinico.sql` y `002_atenciones.sql`
+- **BD existente:** aplicar 001/002 si están pendientes y ejecutar `python scripts/aplicar_migracion_003.py` y `python scripts/aplicar_migracion_004.py` antes del arranque. El último script es repetible y no recalcula el historial
 
 ---
 
 ## 📚 Documentación Adicional
 
 - **Modelo ML (entrada, entrenamiento, métricas y entregables):** [`docs/MODELO_ML.md`](docs/MODELO_ML.md) — arquitectura del pipeline, qué datos espera, cómo se entrenó/versiona y qué métricas entrega.
-- **Ficha del modelo (Model Card):** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) — uso previsto y fuera de alcance, datos de entrenamiento, métricas con su interpretación clínica, calibración, evaluación por subgrupos, consideraciones éticas y limitaciones conocidas.
+- **Ficha del modelo (Model Card):** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) — uso previsto y fuera de alcance, datos de entrenamiento, métricas con su interpretación experimental, calibración, evaluación por subgrupos, consideraciones éticas y limitaciones conocidas.
 - **Triaje Clínico detallado:** [`docs/TRIAGE_CLINICO.md`](docs/TRIAGE_CLINICO.md) — Arquitectura, reglas clínicas, flujo completo, compatibilidad con evaluaciones antiguas y guía de extensión.
 - **Mapeo rutas Frontend ↔ Backend:** [`docs/MAPEO_RUTAS_FRONT_BACK.md`](docs/MAPEO_RUTAS_FRONT_BACK.md) — Rutas de ambos lados, contraste, desalineaciones y lo que falta para integrar.
 

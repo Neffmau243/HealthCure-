@@ -186,7 +186,7 @@ def fig_calibracion(y_test, proba) -> Path:
     Un modelo calibrado cumple: de los pacientes a los que les asignó 0.40,
     aproximadamente el 40% está enfermo. Con PONDERACIÓN DE CLASES
     (scale_pos_weight) las probabilidades se inflan a propósito, así que se
-    espera ver la curva POR ENCIMA de la diagonal. Consecuencia de producto:
+    espera ver la curva POR DEBAJO de la diagonal. Consecuencia de producto:
     las probabilidades sirven para ORDENAR riesgo y aplicar bandas de triaje,
     pero NO deben leerse como probabilidad clínica absoluta de enfermedad.
     """
@@ -207,7 +207,7 @@ def fig_calibracion(y_test, proba) -> Path:
     ax.set_xlabel("Probabilidad predicha (media por intervalo)")
     ax.set_ylabel("Fracción real de positivos")
     ax.set_title("Curva de calibración — ¿la probabilidad es interpretable?\n"
-                 "Por encima de la diagonal = sobreestima el riesgo (intencional)")
+                 "Por debajo de la diagonal = sobreestima el riesgo (intencional)")
     ax.legend(loc="upper left", frameon=False)
     ax.grid(alpha=0.25)
     ax.set_xlim(-0.02, 1.02)

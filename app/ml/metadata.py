@@ -1,24 +1,11 @@
-"""
-metadata.py — LEE LA FICHA TÉCNICA DEL MODELO (VERSIONADO DEL ARTEFACTO)
+"""Carga y valida metadata del bundle activo; falla si faltan datos o son incoherentes.
 
-El entrenamiento (`entrenar_modelo.py`) guarda DOS archivos juntos:
-
-  app/resources/modelo_cardiaco.joblib            → el modelo serializado
-  app/resources/modelo_cardiaco_metadata.json     → su ficha técnica
-
-La ficha técnica permite que la API conozca, sin hardcodear nada:
-  - la VERSIÓN real del modelo (no un string escrito a mano en el código),
-  - los UMBRALES de clasificación clínica con los que fue entrenado,
-  - el algoritmo, hiperparámetros, dataset y métricas.
-
-Patrón Singleton igual que `model_loader`: el JSON se lee UNA vez y se
-cachea en memoria (es un archivo pequeño y no cambia en caliente).
-
-DISEÑO DEFENSIVO: si la ficha no existe o está corrupta, se devuelven
-valores por defecto y la API sigue funcionando (nunca rompe una predicción
-por falta de metadata).
+Las releases 3.x exigen hash y política compatible. Las dos cachés deben recargarse
+juntas; reload_model también recarga metadata. No aplicar cortes legacy a v3.
 """
 import json
+import math
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict
 
@@ -51,16 +38,36 @@ def load_metadata() -> Dict[str, Any]:
         return _metadata_cache
 
     path = _metadata_path()
-    if not path.exists():
-        _metadata_cache = {}
-        return _metadata_cache
-
-    try:
-        with open(path, encoding="utf-8") as f:
-            _metadata_cache = json.load(f)
-    except Exception:
-        _metadata_cache = {}
+    with open(path, encoding="utf-8") as file:
+        meta = json.load(file)
+    validar_metadata(meta)
+    _metadata_cache = meta
     return _metadata_cache
+
+
+def validar_metadata(meta):
+    from app.ml.preprocessor import FEATURE_COLUMNS
+    if not isinstance(meta, dict) or not meta.get("model_version"):
+        raise ValueError("Metadata sin versión válida")
+    if meta.get("features") != FEATURE_COLUMNS:
+        raise ValueError("Features del modelo y aplicación no coinciden")
+    cuts = meta.get("umbrales_clasificacion_clinica", {})
+    low, high = cuts.get("bajo_max"), cuts.get("moderado_max")
+    if not all(isinstance(v, (int, float)) and math.isfinite(v) for v in (low, high)):
+        raise ValueError("Umbrales ausentes o no finitos")
+    if not 0 < low < high < 1:
+        raise ValueError("Umbrales desordenados")
+    if meta["model_version"].startswith("3."):
+        policy = meta.get("politica_modelo", {})
+        if (policy.get("reglas_version") != "bandas-academicas-3.0.0"
+                or policy.get("umbrales") != cuts or policy.get("decimales_score") != 6
+                or policy.get("semantica_score") != "calibracion_sigmoid_interna"
+                or len(meta.get("artifact_sha256", "")) != 64):
+            raise ValueError("Política, calibración o hash incompatibles con la release")
+
+
+def get_model_policy():
+    return deepcopy(load_metadata().get("politica_modelo"))
 
 
 def get_model_version() -> str:
@@ -70,8 +77,8 @@ def get_model_version() -> str:
 
 def get_classification_thresholds() -> Dict[str, float]:
     """
-    Umbrales clínicos (bajo/moderado/alto) con los que se entrenó el modelo.
-    Si la ficha no los trae, se usan los del MVP (0.30 / 0.60).
+    Cortes experimentales de la metadata validada del bundle activo.
+    load_metadata rechaza una ficha ausente, incompleta o incompatible.
     """
     valores = load_metadata().get("umbrales_clasificacion_clinica")
     if not isinstance(valores, dict):

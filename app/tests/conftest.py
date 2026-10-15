@@ -68,6 +68,7 @@ class TestEnv:
         documento: str,
         usuario_creador_id: int | None = None,
         nombre: str = "Paciente",
+        fecha_nacimiento: date | None = None,
     ) -> Paciente:
         """Crea un paciente directo en BD (sin pasar por la API)."""
         db = self.new_session()
@@ -78,7 +79,7 @@ class TestEnv:
                 apellido_paterno="Apellido",
                 apellido_materno="Materno",
                 nombres=nombre,
-                fecha_nacimiento=date(1980, 1, 1),
+                fecha_nacimiento=fecha_nacimiento or date(1980, 1, 1),
                 sexo="M",
                 tipo_seguro="SIS",
                 activo=True,

@@ -1,0 +1,89 @@
+# ============================================================
+# HealthCure - CardioPredict — ÁRBOL COMPLETO DE DEPENDENCIAS (lock)
+# ============================================================
+# No se edita a mano: es el resultado de resolver requirements.txt +
+# requirements-dev.txt en un entorno concreto. Sirve para reproducir
+# EXACTAMENTE el entorno probado (los 76 tests en verde).
+#
+# Instalar:   pip install -r requirements-lock.txt
+#
+# ES EL COMANDO RECOMENDADO EN WINDOWS. El Control inteligente de
+# aplicaciones (Smart App Control) bloquea binarios recién descargados sin
+# reputación con el error "Una directiva de Control de aplicaciones bloqueó
+# este archivo". Esto afecta a las DLL compiladas de versiones muy nuevas:
+# con ">=..." pip resuelve por ejemplo SQLAlchemy 2.1.4 o un numpy más nuevo
+# y el entorno queda inservible. Estas versiones ya están permitidas.
+#
+# Generado con Python 3.12.10 en Windows con:
+#   python -m venv venv
+#   venv\Scripts\python -m pip install -r requirements.txt -r requirements-dev.txt
+#   venv\Scripts\python -m pip freeze > requirements-lock.txt
+#
+# Verificado en un entorno limpio:
+#   python -c "import sqlalchemy, pandas, sklearn, xgboost, fastapi"   → OK
+#   python -m pytest app/tests -v                                      → 76 passed
+# ============================================================
+
+aiomysql==0.2.0
+annotated-types==0.7.0
+anyio==4.14.2
+bcrypt==4.0.1
+certifi==2026.6.17
+cffi==2.1.0
+charset-normalizer==3.5.1
+click==8.4.2
+colorama==0.4.6
+contourpy==1.4.0
+coverage==7.15.2
+cryptography==49.0.0
+cycler==0.12.1
+dnspython==2.8.0
+ecdsa==0.19.2
+email-validator==2.3.0
+fastapi==0.115.6
+fonttools==4.66.1
+greenlet==3.5.3
+h11==0.16.0
+httpcore==1.0.9
+httptools==0.8.0
+httpx==0.28.1
+idna==3.18
+iniconfig==2.3.0
+joblib==1.5.3
+kiwisolver==1.5.1
+matplotlib==3.11.2
+narwhals==2.25.0
+numpy==2.5.2
+packaging==26.2
+pandas==3.0.5
+passlib==1.7.4
+pillow==12.3.0
+pluggy==1.6.0
+pyasn1==0.6.4
+pycparser==3.0
+pydantic==2.10.3
+pydantic-settings==2.7.0
+pydantic_core==2.27.1
+PyMySQL==1.1.1
+pyparsing==3.3.3
+pytest==8.3.4
+pytest-cov==7.1.0
+python-dateutil==2.9.0.post0
+python-dotenv==1.0.1
+python-jose==3.3.0
+python-multipart==0.0.19
+PyYAML==6.0.3
+reportlab==5.0.1
+rsa==4.9.1
+scikit-learn==1.9.0
+scipy==1.18.1
+six==1.17.0
+SQLAlchemy==2.0.36
+starlette==0.41.3
+threadpoolctl==3.6.0
+typing_extensions==4.16.0
+tzdata==2026.3
+uvicorn==0.34.0
+watchfiles==1.2.0
+websockets==16.1
+xgboost==3.4.1

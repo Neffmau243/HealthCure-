@@ -1,6 +1,6 @@
 # HealthCure — Frontend (React + Vite)
 
-Interfaz del sistema de triaje cardíaco. Consume la API del backend FastAPI
+Interfaz del prototipo académico de clasificación de perfiles asociados con antecedentes declarados de enfermedad coronaria o infarto. El score se muestra como índice de 0 a 100; no es probabilidad clínica ni pronóstico. Las reglas son experimentales. Consume la API del backend FastAPI
 (`/api/v1`). No usa datos mock: todo viene de la API.
 
 ## Levantar
@@ -57,6 +57,7 @@ cp .env.example .env
 ```bash
 npm run dev      # servidor de desarrollo con HMR
 npm run build    # build de producción a dist/
+npm test         # regresiones del payload y antecedentes originales
 npm run lint     # ESLint
 npm run preview  # sirve el build
 ```
@@ -94,3 +95,11 @@ src/
 | `/dashboard/usuarios` | Gestión de usuarios (solo admin) |
 
 Documentación de la integración: [`../docs/MAPEO_RUTAS_FRONT_BACK.md`](../docs/MAPEO_RUTAS_FRONT_BACK.md).
+
+## Contrato vigente del formulario
+
+Nueve predictores obligatorios, edad adulta coherente con nacimiento. `presion_alta` solo refleja diagnóstico previo; la presión medida se envía y conserva aparte. `estado_diabetes` conserva ninguna/prediabetes/diabetes, mientras el booleano se agrupa para el modelo. Un positivo histórico sin categoría requiere confirmación al reabrir el formulario.
+
+El backend debe tener aplicada la migración 003: `python scripts/aplicar_migracion_003.py` desde la raíz. Consultar [integración ML](../docs/INTEGRACION_ML.md).
+
+La [integración v3 y generalización](../docs/INTEGRACION_V3_Y_GENERALIZACION.md) documenta bandas versionadas, migración 004 y estabilidad.

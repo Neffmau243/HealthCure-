@@ -25,7 +25,7 @@ Porque SRP (Single Responsibility Principle):
   - Predictor: solo ejecuta el modelo ML
   - Service: orquesta ambos sin que se conozcan entre sí
 """
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.repositories.evaluacion_repository import EvaluacionRepository
@@ -77,6 +77,16 @@ class EvaluacionService:
         paciente = self.paciente_repo.get_by_id(data.paciente_id)
         if not paciente:
             raise ValueError("Paciente no encontrado")
+
+        # La población del modelo es adulta. La edad debe corresponder al
+        # paciente, no a un perfil arbitrario enviado por un cliente.
+        hoy = datetime.now(timezone(timedelta(hours=-5))).date()  # America/Lima
+        nacimiento = paciente.fecha_nacimiento
+        edad_actual = hoy.year - nacimiento.year - ((hoy.month, hoy.day) < (nacimiento.month, nacimiento.day))
+        if not 18 <= edad_actual <= 120:
+            raise ValueError("El modelo solo admite pacientes adultos de 18 a 120 años")
+        if data.edad != edad_actual:
+            raise ValueError(f"La edad enviada no coincide con la fecha de nacimiento (edad actual: {edad_actual})")
 
         # PASO 2: Mapper traduce request → input del modelo
         model_input = EvaluacionMapper.request_to_model_input(data)

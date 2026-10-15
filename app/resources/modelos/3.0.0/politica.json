@@ -1,0 +1,14 @@
+{
+  "reglas_version": "bandas-academicas-3.0.0",
+  "semantica_score": "calibracion_sigmoid_interna",
+  "umbrales": {
+    "bajo_max": 0.051065,
+    "moderado_max": 0.210469
+  },
+  "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+  "criterios": {
+    "bajo_max": "mayor umbral con recall validation >=0.90",
+    "moderado_max": "max F1 validation; empate mayor umbral"
+  },
+  "decimales_score": 6
+}

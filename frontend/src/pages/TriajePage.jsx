@@ -229,7 +229,7 @@ export default function TriajePage() {
               )}`}
               title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
             >
-              {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}
+              {ev.clasificacion} · índice {(ev.probabilidad * 100).toFixed(1)} / 100
             </span>
             <span className="text-xs text-slate-500">
               {triadoHoy ? 'Triado hoy' : 'Sin triaje hoy'} · {lista.length}{' '}
@@ -278,8 +278,8 @@ export default function TriajePage() {
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Estación de Triaje</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Registra los signos vitales y el modelo de Machine Learning calcula el riesgo
-            cardiovascular y su triaje clínico.
+            Registra los antecedentes y consulta el índice del modelo. Las bandas y orientaciones
+            son experimentales y no determinan urgencias.
           </p>
         </div>
         <button
@@ -359,7 +359,7 @@ export default function TriajePage() {
             </span>
             <div>
               <p className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
-                <BrainCircuit className="w-4 h-4 text-indigo-600" /> El modelo ML calcula el riesgo
+                <BrainCircuit className="w-4 h-4 text-indigo-600" /> El modelo ML clasifica el perfil
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
                 Probabilidad, clasificación y triaje clínico con semáforo y recomendaciones.

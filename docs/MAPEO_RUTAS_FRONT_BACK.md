@@ -1,3 +1,7 @@
+> Bandas vigentes v3; cada evaluación conserva su snapshot y las antiguas usan su versión. Ver [integración v3](INTEGRACION_V3_Y_GENERALIZACION.md).
+
+> Estado vigente al 15/10/2026: [contrato ML y migración 003](INTEGRACION_ML.md). Los nueve predictores son obligatorios y la edad debe coincidir con nacimiento (18–120 años). La medición de presión se conserva aparte; el ML usa diagnóstico previo. Las orientaciones son reglas académicas sin validación clínica.
+
 # HealthCure — CardioPredict: Mapeo de Rutas Frontend ↔ Backend
 
 > Estado de la integración entre el backend FastAPI y el frontend React.
@@ -79,6 +83,8 @@ Routers registrados en `main.py`: `auth`, `pacientes`, `evaluaciones`, `atencion
 | `GET` | `/evaluaciones/by-paciente/{paciente_id}` | cualquiera | Historial del paciente |
 | `GET` | `/evaluaciones/{evaluacion_id}` | cualquiera | Ver una evaluación. 404 |
 | `GET` | `/evaluaciones/{evaluacion_id}/fua` | cualquiera | **PDF Formato Único de Atención** (oficio) |
+
+`GET /api/v1/evaluaciones/resumen` devuelve conteos exactos y pacientes evaluados hoy.
 
 ### 2.5 Atenciones del consultorio — `/api/v1/atenciones` (requiere JWT) ★ NUEVO
 
@@ -249,7 +255,7 @@ UsuariosPage (admin)  → CRUD de usuarios + activar/desactivar
 - ✅ FastAPI con **34 endpoints** y Swagger en `/docs`.
 - ✅ Autenticación JWT + bcrypt, roles `admin` / `usuario`.
 - ✅ CRUD de pacientes con permisos (creador o admin).
-- ✅ **Predicción ML** real (Random Forest entrenado).
+- ✅ **Clasificación ML** real (XGBoost + sigmoid v3.0.0; calibración interna).
 - ✅ **Triaje clínico** determinista (nivel de alerta, semáforo, factores, recomendaciones).
 - ✅ **Atenciones del consultorio** (diagnóstico/tratamiento/indicaciones) — nuevo.
 - ✅ **PDF FUA** descargable por evaluación.
@@ -278,7 +284,7 @@ UsuariosPage (admin)  → CRUD de usuarios + activar/desactivar
 ### Limitaciones conocidas del MVP
 - ⚠️ **Signos vitales no persistidos.** El modal de triaje captura temperatura, frecuencia
   cardíaca, saturación, IMC, frutas/verduras/alcohol y días de mala salud, pero el backend solo
-  guarda las **9 variables del modelo** (más `presion_alta`, derivada de la lectura de presión).
+  guarda las **9 variables del modelo**, además de la categoría original de diabetes y la lectura de presión separada.
   El resto se usa para el cálculo en pantalla y se descarta. Persistirlos requiere una tabla
   nueva de evolución clínica.
 - ⚠️ **Sin `DELETE`.** No hay borrado duro en ninguna entidad (solo soft delete en usuarios,
@@ -288,12 +294,12 @@ UsuariosPage (admin)  → CRUD de usuarios + activar/desactivar
 - ⚠️ **Sin refresh token.** El JWT dura 60 minutos; al expirar el frontend redirige al login.
 - ⚠️ **`GET /pacientes/` sin paginación.** El frontend carga la lista completa y filtra en
   cliente (adecuado para decenas de pacientes, no para miles).
-- ⚠️ **Sin endpoint de conteo.** El dashboard pide `limit=200` para calcular las métricas.
+- ✅ **Resumen agregado:** `GET /evaluaciones/resumen` proporciona conteos exactos y pacientes evaluados hoy; el dashboard y la cola lo consumen.
 
 ### Trabajo futuro sugerido
 - [ ] UI de administración de catálogos (distritos/localidades) — la API ya existe.
 - [ ] Paginación/búsqueda server-side en pacientes para volúmenes grandes.
-- [ ] Endpoint de estadísticas agregadas para el dashboard (contadores por clasificación).
+- [x] Endpoint de estadísticas agregadas para el dashboard (`/evaluaciones/resumen`).
 - [ ] Persistir signos vitales y construir una línea de tiempo clínica del paciente.
 - [ ] Refresh token o renovación silenciosa de sesión.
 - [ ] Notificaciones reales en la Topbar (hoy es un placeholder).
@@ -412,28 +418,9 @@ El **triaje es donde vive el modelo ML**. Ruta: sidebar → *Atención clínica*
 
 > **Solo 9 variables predictoras** (+ `paciente_id`).
 
-### 9.4 Response 201 (incluye triaje clínico)
+### 9.4 Response 201
 
-```json
-{
-  "id": 8,
-  "paciente_id": 1,
-  "usuario_id": 2,
-  "edad": 55,
-  "probabilidad": 0.459186,
-  "clasificacion": "moderado",
-  "modelo_version": "2.0.0",
-  "triaje_clinico": {
-    "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
-    "codigo_color": "amarillo",
-    "accion_sugerida": "Programar consulta médica de control en los próximos 15 a 30 días.",
-    "factores_riesgo_detectados": ["Hipertensión Arterial", "Diabetes Mellitus"],
-    "factores_protectores": ["Realiza Actividad Física Regular", "No Fumador"],
-    "recomendaciones_medicas": ["Solicitar perfil lipídico...", "..."]
-  },
-  "created_at": "2026-09-05T08:30:13"
-}
-```
+Devuelve las nueve variables, `estado_diabetes`, `presion_sistolica`, `presion_diastolica`, score `probabilidad`, banda, versión, `triaje_clinico` y fecha. El score se muestra como índice de 0 a 100, no como probabilidad clínica. Ver [contrato vigente](INTEGRACION_ML.md).
 
 ### 9.5 Crear atención — `POST /api/v1/atenciones/`
 
@@ -466,6 +453,6 @@ El **triaje es donde vive el modelo ML**. Ruta: sidebar → *Atención clínica*
 
 | Probabilidad | `clasificacion` | Semáforo |
 |--------------|-----------------|----------|
-| < 0.30 | `bajo` | 🟢 verde |
-| 0.30 – 0.60 | `moderado` | 🟡 amarillo |
-| > 0.60 | `alto` | 🔴 rojo |
+| < 0.051065 | `bajo` | 🟢 verde |
+| 0.051065 a <0.210469 | `moderado` | 🟡 amarillo |
+| >=0.210469 | `alto` | 🔴 rojo |

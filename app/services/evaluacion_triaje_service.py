@@ -1,14 +1,14 @@
 """
 evaluacion_triaje_service.py — SERVICIO DE REGLAS CLÍNICAS (TRIAGE)
 
-Traduce el resultado probabilístico del modelo ML en información clínica
+Traduce el índice no calibrado del modelo ML en información experimental
 estructurada y accionable para médicos y enfermeros.
 
 ¿POR QUÉ EXISTE?
   Un doctor NO lee "0.459" o "moderado" y sabe qué hacer. Necesita:
     1. NIVEL DE ALERTA → qué tan rápido actuar
     2. CÓDIGO DE COLOR  → semáforo visual (verde/amarillo/rojo)
-    3. FACTORES DE RIESGO → por qué dio ese riesgo
+    3. FACTORES DE RIESGO → antecedentes presentes en los inputs
     4. FACTORES PROTECTORES → qué se está haciendo bien
     5. ACCIÓN SUGERIDA + RECOMENDACIONES → próximos pasos clínicos
 
@@ -17,7 +17,7 @@ DISEÑO:
   - SIN dependencias externas: no toca BD, no toca ML, no toca FastAPI
   - Sin HTML ni estilos: el renderizado (colores, tarjetas) lo hace el frontend
 """
-from typing import Dict, List
+from typing import List
 
 
 def _normalizar_clasificacion(clasificacion) -> str:
@@ -30,7 +30,7 @@ def _factores_de_riesgo(data: dict) -> List[str]:
     Identifica los factores de riesgo PRESENTES en los inputs del paciente.
 
     Solo se listan los que están activos (True), así el médico ve de un
-    vistazo QUÉ disparó el riesgo.
+    vistazo qué antecedentes se registraron, sin atribuciones del modelo.
     """
     factores = []
 
@@ -39,9 +39,9 @@ def _factores_de_riesgo(data: dict) -> List[str]:
     if data.get("colesterol_alto"):
         factores.append("Dislipidemia (Colesterol Alto)")
     if data.get("diabetes"):
-        factores.append("Diabetes Mellitus")
+        factores.append(etiqueta_diabetes(data.get("estado_diabetes"), True))
     if data.get("tabaquismo"):
-        factores.append("Consumo de Tabaco Activo")
+        factores.append("Antecedente de haber fumado al menos 100 cigarrillos en la vida")
     if data.get("antecedente_acv"):
         factores.append("Antecedente de Accidente Cerebrovascular (ACV)")
     if data.get("dificultad_para_caminar"):
@@ -61,60 +61,59 @@ def _factores_protectores(data: dict) -> List[str]:
     protectores = []
 
     if data.get("actividad_fisica"):
-        protectores.append("Realiza Actividad Física Regular")
-    if not data.get("tabaquismo"):
-        protectores.append("No Fumador")
+        protectores.append("Actividad física declarada en los últimos 30 días")
+    if data.get("tabaquismo") is not None and not data["tabaquismo"]:
+        protectores.append("No declara haber fumado 100 cigarrillos en la vida")
 
     return protectores
 
 
-def _nivel_de_alerta(clasificacion: str) -> dict:
-    """
-    Define nivel_alerta, codigo_color, accion_sugerida y recomendaciones
-    según la clasificación de riesgo del modelo ML.
-
-    codigo_color es SEMÁNTICO ("verde"/"amarillo"/"rojo"), no un hex.
-    El frontend decide cómo pintarlo (card, chip, badge...).
-    """
-    if clasificacion == "alto":
-        return {
-            "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
-            "codigo_color": "rojo",
-            "accion_sugerida": (
-                "Priorizar atención médica. Evaluación por Cardiología requerida."
-            ),
-            "recomendaciones_medicas": [
-                "Realizar Electrocardiograma (ECG) de base de inmediato.",
-                "Solicitar perfil lipídico completo, HbA1c y función renal (Creatinina/Urea).",
-                "Evaluar inicio o ajuste de tratamiento antihipertensivo/hipolipemiante.",
-            ],
-        }
-    elif clasificacion == "moderado":
-        return {
-            "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
-            "codigo_color": "amarillo",
-            "accion_sugerida": (
-                "Programar consulta médica de control en los próximos 15 a 30 días."
-            ),
-            "recomendaciones_medicas": [
-                "Solicitar perfil lipídico y examen de glucosa en ayunas.",
-                "Monitoreo ambulatorio de presión arterial durante 1 semana.",
-                "Reforzar cambios en el estilo de vida (dieta cardioprotectora).",
-            ],
-        }
-    else:  # bajo
-        return {
-            "nivel_alerta": "BAJO RIESGO - CONTROL DE RUTINA",
-            "codigo_color": "verde",
-            "accion_sugerida": "Mantener controles anuales de salud preventiva.",
-            "recomendaciones_medicas": [
-                "Continuar promoviendo la actividad física y hábitos saludables.",
-                "Reevaluación de triaje anual o según síntomas.",
-            ],
-        }
+def etiqueta_diabetes(estado, agrupado: bool) -> str:
+    """No infiere un diagnóstico específico de un booleano histórico."""
+    estado = getattr(estado, "value", estado)
+    return {
+        "ninguna": "Sin prediabetes ni diabetes declarada",
+        "prediabetes": "Prediabetes declarada",
+        "diabetes": "Diabetes declarada",
+    }.get(estado, "Prediabetes o diabetes (sin detalle registrado)" if agrupado
+          else "Sin prediabetes ni diabetes declarada")
 
 
-def generar_triaje_clinico(data: dict, probabilidad: float, clasificacion) -> dict:
+def _nivel_de_alerta(clasificacion: str, politica=None) -> dict:
+    """Bandas experimentales del prototipo; no son un protocolo clínico."""
+    niveles = {
+        "alto": ("ALTA PRIORIDAD - RIESGO ELEVADO", "rojo",
+                 "Revisar el perfil con el profesional responsable; prioridad experimental alta."),
+        "moderado": ("RIESGO MODERADO - SEGUIMIENTO PREVENTIVO", "amarillo",
+                     "Revisar los antecedentes durante la consulta; prioridad experimental moderada."),
+        "bajo": ("BAJO RIESGO - CONTROL DE RUTINA", "verde",
+                 "Continuar la evaluación profesional; una banda baja no descarta enfermedad."),
+    }
+    nivel, color, accion = niveles[clasificacion]
+    if politica and politica.get("reglas_version") == "bandas-academicas-3.0.0":
+        nivel = {"bajo": "BANDA BAJA - REVISION EXPERIMENTAL",
+                 "moderado": "BANDA INTERMEDIA - REVISION EXPERIMENTAL",
+                 "alto": "BANDA ALTA - REVISION EXPERIMENTAL"}[clasificacion]
+        accion = {
+            "bajo": "Revisar los antecedentes; una banda baja no descarta enfermedad.",
+            "moderado": "Confirmar los antecedentes y revisar el perfil con el profesional responsable.",
+            "alto": "Revisar el perfil y los antecedentes con el profesional; la banda no establece urgencia.",
+        }[clasificacion]
+    return {
+        "nivel_alerta": nivel,
+        "codigo_color": color,
+        "accion_sugerida": accion,
+        "recomendaciones_medicas": [
+            "Verificar que los antecedentes registrados estén completos y actualizados.",
+            "El profesional determina los estudios, el seguimiento y cualquier tratamiento.",
+            "Regla académica sin validación clínica; no determina urgencia ni diagnóstico.",
+            *(["El rendimiento varía por edad y sexo; una banda no reemplaza la evaluación profesional."]
+              if politica else []),
+        ],
+    }
+
+
+def generar_triaje_clinico(data: dict, probabilidad: float, clasificacion, politica=None) -> dict:
     """
     Construye la interpretación clínica completa de una evaluación.
 
@@ -140,14 +139,16 @@ def generar_triaje_clinico(data: dict, probabilidad: float, clasificacion) -> di
     # Respaldo: si la clasificación es desconocida, derivarla de la
     # probabilidad con los mismos umbrales del predictor ML.
     if clasificacion not in ("bajo", "moderado", "alto"):
-        if probabilidad < 0.30:
+        # Fallback histórico: jamás aplicar cortes actuales a un score antiguo.
+        umbrales = politica["umbrales"] if politica else {"bajo_max": .30, "moderado_max": .60}
+        if probabilidad < umbrales["bajo_max"]:
             clasificacion = "bajo"
-        elif probabilidad < 0.60:
+        elif probabilidad < umbrales["moderado_max"]:
             clasificacion = "moderado"
         else:
             clasificacion = "alto"
 
-    nivel = _nivel_de_alerta(clasificacion)
+    nivel = _nivel_de_alerta(clasificacion, politica)
 
     return {
         "nivel_alerta": nivel["nivel_alerta"],

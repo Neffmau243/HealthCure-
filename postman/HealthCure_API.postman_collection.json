@@ -36,8 +36,12 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/health",
-              "host": ["{{base_url}}"],
-              "path": ["health"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
             },
             "description": "Verifica que el servidor este funcionando. No requiere autenticacion."
           },
@@ -69,8 +73,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             },
             "header": [
               {
@@ -116,8 +127,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             },
             "header": [
               {
@@ -162,8 +180,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/login",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "login"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
             },
             "header": [
               {
@@ -197,8 +222,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/register",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "register"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ]
             },
             "header": [
               {
@@ -236,8 +268,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/me",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
             },
             "header": [
               {
@@ -271,8 +310,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/auth/me",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "auth", "me"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "me"
+              ]
             },
             "description": "Prueba de acceso sin token. Debe retornar 401."
           },
@@ -301,8 +347,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                ""
+              ]
             },
             "header": [
               {
@@ -337,8 +390,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/search?documento=1032",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", "search"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                "search"
+              ],
               "query": [
                 {
                   "key": "documento",
@@ -376,8 +436,16 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/by-documento/1032456789",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", "by-documento", "1032456789"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                "by-documento",
+                "1032456789"
+              ]
             },
             "header": [
               {
@@ -410,8 +478,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", "1"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                "1"
+              ]
             },
             "header": [
               {
@@ -443,8 +518,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                ""
+              ]
             },
             "header": [
               {
@@ -487,8 +569,15 @@
             "method": "PUT",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", "1"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                "1"
+              ]
             },
             "header": [
               {
@@ -534,8 +623,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/evaluaciones/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "evaluaciones",
+                ""
+              ]
             },
             "header": [
               {
@@ -545,14 +641,14 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"paciente_id\": 1,\n  \"edad\": 55,\n  \"presion_alta\": true,\n  \"colesterol_alto\": true,\n  \"tabaquismo\": false,\n  \"actividad_fisica\": true,\n  \"antecedente_acv\": false,\n  \"diabetes\": true,\n  \"salud_general\": 3,\n  \"dificultad_para_caminar\": false\n}",
+              "raw": "{\n  \"paciente_id\": {{paciente_id}},\n  \"edad\": {{edad_paciente}},\n  \"presion_alta\": true,\n  \"colesterol_alto\": true,\n  \"tabaquismo\": false,\n  \"actividad_fisica\": true,\n  \"antecedente_acv\": false,\n  \"diabetes\": true,\n  \"salud_general\": 3,\n  \"dificultad_para_caminar\": false,\n  \"estado_diabetes\": \"prediabetes\",\n  \"presion_sistolica\": 120,\n  \"presion_diastolica\": 80\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
             },
-            "description": "Crea una evaluacion cardiaca (nueva instantanea de riesgo).\n\nFLUJO DE RE-EVALUACION (paciente que vuelve despues de tiempo X):\n1. Busca al paciente existente: GET /pacientes/search?documento=...\n   (o GET /pacientes/by-documento/{doc}) y copia su ID.\n2. Cambia la variable de coleccion paciente_id a ese ID.\n3. Ejecuta ESTE request con los datos clinicos NUEVOS de la visita.\n   Cada evaluacion se guarda con su propio created_at (nueva visita).\n4. Ver el historial completo: GET /evaluaciones/by-paciente/{{paciente_id}}\n   (las evaluaciones se ordenan de mas reciente a mas antigua).\n\nRESPUESTA 201 (ejemplo del nuevo triaje clinico):\n{\n  \"id\": 7,\n  \"paciente_id\": 1,\n  \"usuario_id\": 2,\n  \"edad\": 55,\n  \"probabilidad\": 0.459186,\n  \"clasificacion\": \"moderado\",\n  \"triaje_clinico\": {\n    \"nivel_alerta\": \"RIESGO MODERADO - SEGUIMIENTO PREVENTIVO\",\n    \"codigo_color\": \"amarillo\",\n    \"accion_sugerida\": \"Programar consulta medica de control en los proximos 15 a 30 dias.\",\n    \"factores_riesgo_detectados\": [\"Hipertension Arterial\", \"Dislipidemia (Colesterol Alto)\", \"Diabetes Mellitus\"],\n    \"factores_protectores\": [\"Realiza Actividad Fisica Regular\", \"No Fumador\"],\n    \"recomendaciones_medicas\": [\"Solicitar perfil lipidico y examen de glucosa en ayunas.\"]\n  },\n  \"created_at\": \"2026-09-05T08:02:08\"\n}\n\nNOTA: mientras el modelo ML no este entrenado (falta modelo_cardiaco.joblib)\neste endpoint responde 500 'Modelo ML no disponible' - es esperado por ahora."
+            "description": "Crea una evaluación académica con los nueve predictores obligatorios. El script previo obtiene la edad del paciente (America/Lima). diabetes agrupa prediabetes y diabetes; estado_diabetes conserva la respuesta original. La presión medida no cambia el antecedente presion_alta. probabilidad es un score no calibrado de 0 a 1, mostrado como índice sobre 100. Las bandas y textos son reglas experimentales, sin validación clínica. Requiere migración 003 en bases existentes."
           },
           "event": [
             {
@@ -579,6 +675,23 @@
                   "});"
                 ]
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({url: pm.collectionVariables.get('base_url') + '/api/v1/pacientes/' + pm.collectionVariables.get('paciente_id'), method: 'GET', header: {Authorization: 'Bearer ' + pm.collectionVariables.get('token')}}, function (err, response) {",
+                  "  if (err || response.code !== 200) throw new Error('No se pudo consultar el paciente. Revisa login y paciente_id.');",
+                  "  const nacimiento = response.json().fecha_nacimiento.split('-').map(Number);",
+                  "  const partes = new Intl.DateTimeFormat('en-CA', {timeZone:'America/Lima', year:'numeric', month:'2-digit', day:'2-digit'}).formatToParts(new Date());",
+                  "  const hoy = Object.fromEntries(partes.map(p => [p.type, Number(p.value)]));",
+                  "  const edad = hoy.year - nacimiento[0] - Number(hoy.month < nacimiento[1] || (hoy.month === nacimiento[1] && hoy.day < nacimiento[2]));",
+                  "  if (edad < 18 || edad > 120) throw new Error('El modelo solo admite adultos de 18 a 120 años.');",
+                  "  pm.collectionVariables.set('edad_paciente', edad);",
+                  "});"
+                ]
+              }
             }
           ],
           "response": []
@@ -589,11 +702,24 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/evaluaciones/?limit=10&offset=0",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", ""],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "evaluaciones",
+                ""
+              ],
               "query": [
-                { "key": "limit", "value": "10" },
-                { "key": "offset", "value": "0" }
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
               ]
             },
             "header": [
@@ -627,8 +753,16 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/evaluaciones/by-paciente/{{paciente_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", "by-paciente", "{{paciente_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "evaluaciones",
+                "by-paciente",
+                "{{paciente_id}}"
+              ]
             },
             "header": [
               {
@@ -661,8 +795,16 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/evaluaciones/{{evaluacion_id}}/fua",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", "{{evaluacion_id}}", "fua"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "evaluaciones",
+                "{{evaluacion_id}}",
+                "fua"
+              ]
             },
             "header": [
               {
@@ -695,8 +837,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/evaluaciones/1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "evaluaciones", "1"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "evaluaciones",
+                "1"
+              ]
             },
             "header": [
               {
@@ -710,7 +859,8 @@
             {
               "listen": "test",
               "script": {
-                "exec": [                  "    pm.test('Evaluacion ID 1 (200)', function () {",
+                "exec": [
+                  "    pm.test('Evaluacion ID 1 (200)', function () {",
                   "    pm.response.to.have.status(200);",
                   "    var response = pm.response.json();",
                   "    pm.expect(response.id).to.eql(1);",
@@ -739,8 +889,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios"
+              ]
             },
             "header": [
               {
@@ -774,8 +931,16 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios",
+                "{{test_user_id}}"
+              ]
             },
             "header": [
               {
@@ -810,8 +975,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios"
+              ]
             },
             "header": [
               {
@@ -861,8 +1033,16 @@
             "method": "PUT",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios",
+                "{{test_user_id}}"
+              ]
             },
             "header": [
               {
@@ -904,8 +1084,17 @@
             "method": "PUT",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}/deactivate",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}", "deactivate"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios",
+                "{{test_user_id}}",
+                "deactivate"
+              ]
             },
             "header": [
               {
@@ -939,8 +1128,17 @@
             "method": "PUT",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios/{{test_user_id}}/activate",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "{{test_user_id}}", "activate"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios",
+                "{{test_user_id}}",
+                "activate"
+              ]
             },
             "header": [
               {
@@ -973,8 +1171,16 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios/9999",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios", "9999"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios",
+                "9999"
+              ]
             },
             "header": [
               {
@@ -1004,8 +1210,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios"
+              ]
             },
             "header": [
               {
@@ -1043,8 +1256,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/distritos",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "distritos"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "distritos"
+              ]
             },
             "header": [
               {
@@ -1086,8 +1306,15 @@
             "method": "POST",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/localidades",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "localidades"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "localidades"
+              ]
             },
             "header": [
               {
@@ -1129,8 +1356,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/distritos",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "distritos"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "distritos"
+              ]
             },
             "header": [
               {
@@ -1163,8 +1397,17 @@
             "method": "PUT",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/distritos/{{distrito_id}}/deactivate",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "distritos", "{{distrito_id}}", "deactivate"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "distritos",
+                "{{distrito_id}}",
+                "deactivate"
+              ]
             },
             "header": [
               {
@@ -1203,8 +1446,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/catalogos/distritos",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "catalogos", "distritos"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalogos",
+                "distritos"
+              ]
             },
             "header": [
               {
@@ -1237,8 +1487,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/catalogos/localidades?distrito_id=1",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "catalogos", "localidades"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "catalogos",
+                "localidades"
+              ],
               "query": [
                 {
                   "key": "distrito_id",
@@ -1283,8 +1540,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/admin/usuarios",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "admin", "usuarios"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "usuarios"
+              ]
             },
             "header": [
               {
@@ -1319,8 +1583,15 @@
             "method": "GET",
             "url": {
               "raw": "{{base_url}}/api/v1/pacientes/",
-              "host": ["{{base_url}}"],
-              "path": ["api", "v1", "pacientes", ""]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "pacientes",
+                ""
+              ]
             },
             "description": "Prueba acceder a un endpoint protegido sin token. Debe retornar 401."
           },

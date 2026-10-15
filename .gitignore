@@ -45,3 +45,7 @@ htmlcov/
 # --- Dataset Kaggle (grande, se descarga aparte, NO se commitea) ---
 heart_disease_health_indicators*.csv
 *.BRFSS2015*.csv
+
+# Experimentos offline: modelos, asignaciones y predicciones por fila.
+# Los informes agregados se publican en docs/experimentos/.
+experimentos_ml/

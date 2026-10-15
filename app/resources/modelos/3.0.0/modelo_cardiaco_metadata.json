@@ -1,0 +1,236 @@
+{
+  "model_version": "3.0.0",
+  "algoritmo": "XGBoost+sigmoid",
+  "entrenado_en": "2026-10-15T15:33:49.628993+00:00",
+  "release_en": "2026-10-15T15:45:42.447638+00:00",
+  "artifact_sha256": "d20e69f5ca053df7a1e459705f89dca5e8fb74d7af408c34281a559d490df27f",
+  "features": [
+    "edad",
+    "presion_alta",
+    "colesterol_alto",
+    "tabaquismo",
+    "actividad_fisica",
+    "antecedente_acv",
+    "diabetes",
+    "salud_general",
+    "dificultad_para_caminar"
+  ],
+  "target": "Antecedente declarado de CHD o infarto; no futuro",
+  "dataset": {
+    "filas": 253680,
+    "duplicados_completos_excedentes": 23899,
+    "filas_en_grupos_completos_repetidos": 35086,
+    "perfiles_9_features_unicos": 5630,
+    "perfiles_9_features_con_ambas_etiquetas": 3263,
+    "nota": "Coincidencia de respuestas no identifica encuestados; no hay ID de persona.",
+    "n_rows": 253680,
+    "n_features": 9,
+    "positive_rate": 0.09418558814254178,
+    "sha256": "953fb23bb131736d7879539a071d3f6d1eaae8d4867ab05335d0ba89b94d5f99",
+    "particiones": {
+      "train": {
+        "n": 152725,
+        "positivos": 13822,
+        "prevalencia": 0.0905025372401375,
+        "perfiles": 3378
+      },
+      "calibration": {
+        "n": 36116,
+        "positivos": 3778,
+        "prevalencia": 0.10460737623214088,
+        "perfiles": 844
+      },
+      "validation": {
+        "n": 27564,
+        "positivos": 2495,
+        "prevalencia": 0.09051661587578,
+        "perfiles": 563
+      },
+      "test": {
+        "n": 37275,
+        "positivos": 3798,
+        "prevalencia": 0.10189134808853119,
+        "perfiles": 845
+      }
+    }
+  },
+  "hiperparametros": {
+    "n_estimators": 400,
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8
+  },
+  "validacion": "Train/calibration/validation/test por perfiles disjuntos 60/15/10/15",
+  "calibracion": "sigmoid; estimador congelado; solo calibration",
+  "politica_modelo": {
+    "reglas_version": "bandas-academicas-3.0.0",
+    "semantica_score": "calibracion_sigmoid_interna",
+    "umbrales": {
+      "bajo_max": 0.051065,
+      "moderado_max": 0.210469
+    },
+    "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+    "criterios": {
+      "bajo_max": "mayor umbral con recall validation >=0.90",
+      "moderado_max": "max F1 validation; empate mayor umbral"
+    },
+    "decimales_score": 6
+  },
+  "umbrales_clasificacion_clinica": {
+    "bajo_max": 0.051065,
+    "moderado_max": 0.210469
+  },
+  "metricas_validation_bandas": {
+    "bajo_max": {
+      "n": 27564,
+      "positivos": 2495,
+      "prevalencia": 0.09051661587578,
+      "umbral": 0.051065,
+      "roc_auc": 0.8361169504831996,
+      "average_precision": 0.34916010015608084,
+      "precision": 0.17788612771311732,
+      "recall": 0.9066132264529058,
+      "specificity": 0.5829909449918226,
+      "f1": 0.2974163434356715,
+      "alert_rate": 0.4613263677260194,
+      "brier": 0.06922762192622979,
+      "log_loss": 0.23761944746225333,
+      "ece_10_uniform": 0.007587270352633866,
+      "matriz_confusion": [
+        [
+          14615,
+          10454
+        ],
+        [
+          233,
+          2262
+        ]
+      ],
+      "aviso": null
+    },
+    "moderado_max": {
+      "n": 27564,
+      "positivos": 2495,
+      "prevalencia": 0.09051661587578,
+      "umbral": 0.210469,
+      "roc_auc": 0.8361169504831996,
+      "average_precision": 0.34916010015608084,
+      "precision": 0.3282841472969444,
+      "recall": 0.5038076152304609,
+      "specificity": 0.8974031672583669,
+      "f1": 0.39753320683111953,
+      "alert_rate": 0.13891307502539543,
+      "brier": 0.06922762192622979,
+      "log_loss": 0.23761944746225333,
+      "ece_10_uniform": 0.007587270352633866,
+      "matriz_confusion": [
+        [
+          22497,
+          2572
+        ],
+        [
+          1238,
+          1257
+        ]
+      ],
+      "aviso": null
+    }
+  },
+  "metricas_test_umbral_0.50": {
+    "n": 37275,
+    "positivos": 3798,
+    "prevalencia": 0.10189134808853119,
+    "umbral": 0.5,
+    "roc_auc": 0.8285192125257674,
+    "average_precision": 0.3513138400329552,
+    "precision": 0.74,
+    "recall": 0.009741969457609268,
+    "specificity": 0.9996116736864116,
+    "f1": 0.019230769230769232,
+    "alert_rate": 0.0013413816230717639,
+    "brier": 0.07734126776564779,
+    "log_loss": 0.2607187637058941,
+    "ece_10_uniform": 0.009089657974513757,
+    "matriz_confusion": [
+      [
+        33464,
+        13
+      ],
+      [
+        3761,
+        37
+      ]
+    ],
+    "aviso": null
+  },
+  "metricas_test_bandas": {
+    "bajo_max": {
+      "n": 37275,
+      "positivos": 3798,
+      "prevalencia": 0.10189134808853119,
+      "umbral": 0.051065,
+      "roc_auc": 0.8285192125257674,
+      "average_precision": 0.3513138400329552,
+      "precision": 0.20701645451723066,
+      "recall": 0.8778304370721433,
+      "specificity": 0.6185142037817009,
+      "f1": 0.33502487062251923,
+      "alert_rate": 0.43205902079141517,
+      "brier": 0.07734126776564779,
+      "log_loss": 0.2607187637058941,
+      "ece_10_uniform": 0.009089657974513757,
+      "matriz_confusion": [
+        [
+          20706,
+          12771
+        ],
+        [
+          464,
+          3334
+        ]
+      ],
+      "aviso": null
+    },
+    "moderado_max": {
+      "n": 37275,
+      "positivos": 3798,
+      "prevalencia": 0.10189134808853119,
+      "umbral": 0.210469,
+      "roc_auc": 0.8285192125257674,
+      "average_precision": 0.3513138400329552,
+      "precision": 0.29527606620756314,
+      "recall": 0.6434965771458663,
+      "specificity": 0.8257609702183589,
+      "f1": 0.40480331262939956,
+      "alert_rate": 0.2220523138832998,
+      "brier": 0.07734126776564779,
+      "log_loss": 0.2607187637058941,
+      "ece_10_uniform": 0.009089657974513757,
+      "matriz_confusion": [
+        [
+          27644,
+          5833
+        ],
+        [
+          1354,
+          2444
+        ]
+      ],
+      "aviso": null
+    }
+  },
+  "librerias": {
+    "python": "3.12.10",
+    "sklearn": "1.9.0",
+    "xgboost": "3.4.1",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "joblib": "1.5.3"
+  },
+  "limites": [
+    "Calibración interna, sin validación clínica ni local",
+    "CSV e hiperparámetros previamente explorados; test interno",
+    "Recall varía por edad y sexo; no criterio de urgencia"
+  ]
+}

@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { evaluacionesService } from '../../services/evaluaciones';
 import { mensajeError } from '../../services/api';
-import { clasesSemaforo, clasesClasificacion } from '../../utils/triaje';
+import { clasesSemaforo, clasesClasificacion, etiquetaDiabetes, resumenPolitica } from '../../utils/triaje';
 
 /**
  * Muestra el resultado de una evaluación: probabilidad, clasificación,
@@ -24,9 +24,7 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
 
   const triaje = evaluacion.triaje_clinico;
   const semaforo = clasesSemaforo(triaje?.codigo_color);
-  // Se muestra como ÍNDICE de riesgo, no como probabilidad: el modelo no está
-  // calibrado (Brier 0.1714 vs 0.0853 del baseline, ver docs/MODEL_CARD.md),
-  // así que un "82.6%" se leería como probabilidad real de enfermedad.
+  // El índice y los cortes dependen de la política guardada en esta evaluación.
   const indiceRiesgo = (evaluacion.probabilidad * 100).toFixed(1);
 
   const descargarFua = async () => {
@@ -67,13 +65,13 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
               evaluacion.clasificacion
             )}`}
           >
-            Riesgo {evaluacion.clasificacion}
+            Banda {evaluacion.clasificacion}
           </span>
           <span
             className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/70 text-slate-700 border border-white"
             title="Índice de riesgo: sirve para ordenar y priorizar. No es la probabilidad de que el paciente esté enfermo."
           >
-            Índice de riesgo {indiceRiesgo}
+            Índice del modelo {indiceRiesgo} / 100
           </span>
         </div>
       </div>
@@ -87,42 +85,45 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
 
       {/* Advertencia explícita: evita que el número se lea como diagnóstico. */}
       <p className="text-[11px] text-slate-600 leading-relaxed">
-        Este índice <span className="font-semibold">prioriza</span> la atención y no confirma
-        enfermedad: el modelo no está calibrado como probabilidad clínica. La decisión es del
-        personal de salud.
+        Prototipo académico: el índice ordena perfiles asociados con antecedentes declarados. No es
+        una probabilidad clínica, no predice eventos futuros ni determina urgencias. Las reglas
+        son experimentales; la decisión corresponde al personal de salud. Los textos históricos
+        se conservan como fueron registrados.
       </p>
+
+      <p className="text-[11px] text-slate-600 leading-relaxed">{resumenPolitica(evaluacion)}</p>
 
       {!compacta && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="bg-white/70 rounded-xl p-4 border border-white">
             <p className="text-xs font-semibold text-rose-800 flex items-center gap-1.5 mb-2">
-              <AlertTriangle className="w-3.5 h-3.5" /> Factores de riesgo
+              <AlertTriangle className="w-3.5 h-3.5" /> Antecedentes registrados
             </p>
             <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
               {triaje?.factores_riesgo_detectados?.length ? (
                 triaje.factores_riesgo_detectados.map((f, i) => <li key={i}>{f}</li>)
               ) : (
-                <li className="text-slate-400 list-none">Sin factores detectados</li>
+                <li className="text-slate-400 list-none">Sin antecedentes registrados</li>
               )}
             </ul>
           </div>
 
           <div className="bg-white/70 rounded-xl p-4 border border-white">
             <p className="text-xs font-semibold text-emerald-800 flex items-center gap-1.5 mb-2">
-              <ShieldCheck className="w-3.5 h-3.5" /> Factores protectores
+              <ShieldCheck className="w-3.5 h-3.5" /> Hábitos declarados
             </p>
             <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
               {triaje?.factores_protectores?.length ? (
                 triaje.factores_protectores.map((f, i) => <li key={i}>{f}</li>)
               ) : (
-                <li className="text-slate-400 list-none">Sin factores protectores</li>
+                <li className="text-slate-400 list-none">Sin hábitos de esta lista declarados</li>
               )}
             </ul>
           </div>
 
           <div className="bg-white/70 rounded-xl p-4 border border-white">
             <p className="text-xs font-semibold text-sky-800 flex items-center gap-1.5 mb-2">
-              <ClipboardList className="w-3.5 h-3.5" /> Recomendaciones
+              <ClipboardList className="w-3.5 h-3.5" /> Orientación experimental
             </p>
             <ul className="text-xs text-slate-700 space-y-1 list-disc list-inside">
               {triaje?.recomendaciones_medicas?.length ? (
@@ -139,13 +140,16 @@ export default function TarjetaTriaje({ evaluacion, compacta = false }) {
         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
           <Activity className="w-3.5 h-3.5" />
           <span>
-            Edad {evaluacion.edad} · presión alta:{' '}
+            Edad {evaluacion.edad} · diagnóstico previo de hipertensión:{' '}
             {evaluacion.presion_alta ? 'sí' : 'no'} · colesterol alto:{' '}
-            {evaluacion.colesterol_alto ? 'sí' : 'no'} · tabaquismo:{' '}
+            {evaluacion.colesterol_alto ? 'sí' : 'no'} · antecedente de ≥100 cigarrillos:{' '}
             {evaluacion.tabaquismo ? 'sí' : 'no'} · diabetes:{' '}
-            {evaluacion.diabetes ? 'sí' : 'no'} · salud general:{' '}
+            {etiquetaDiabetes(evaluacion)} · salud general:{' '}
             {evaluacion.salud_general}/5
           </span>
+          {evaluacion.presion_sistolica != null && (
+            <span>Presión medida: {evaluacion.presion_sistolica}/{evaluacion.presion_diastolica} mmHg (fuera del modelo)</span>
+          )}
         </div>
       )}
 

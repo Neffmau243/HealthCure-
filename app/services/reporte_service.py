@@ -34,6 +34,7 @@ from app.models.paciente import Paciente
 from app.models.usuario import Usuario
 from app.repositories.evaluacion_repository import EvaluacionRepository
 from app.mappers.evaluacion_mapper import EvaluacionMapper
+from app.services.evaluacion_triaje_service import etiqueta_diabetes
 
 # ============================================================
 # CONSTANTES DE MAQUETACIÓN (oficio peruano 215 x 330 mm)
@@ -88,7 +89,7 @@ def _salto(c: canvas.Canvas, cy: float, alto_necesario: float) -> float:
         _pie_pagina(c, cy)  # pinta footer de la página que se cierra
         c.showPage()
         _cabecera_pagina(c)
-        return TOPE_MM
+        return TOPE_MM + 6
     return cy
 
 
@@ -101,9 +102,8 @@ def _cabecera_pagina(c: canvas.Canvas) -> None:
 def _pie_pagina(c: canvas.Canvas, cy: float) -> None:
     """Footer estándar de cada página."""
     _texto(c, MARGEN_MM, PAGE_H_MM - 11,
-           "Documento generado automaticamente por HealthCure CardioPredict. "
-           "El resultado del tamizaje es un apoyo a la decision clinica y no "
-           "sustituye el criterio del profesional de salud.", size=6.5, color=GRIS_LABEL)
+           "HealthCure CardioPredict - Documento academico de demostracion. "
+           "Sin validacion clinica; el indice y las reglas no determinan diagnostico ni urgencias.", size=6.5, color=GRIS_LABEL)
     _texto(c, MARGEN_MM, PAGE_H_MM - 8.2,
            f"Generado el {datetime.now().strftime('%d/%m/%Y %H:%M')}", size=6.5,
            color=GRIS_LABEL)
@@ -148,10 +148,13 @@ def _campo(c: canvas.Canvas, cy: float, x: float, w: float, h: float,
     lineas = simpleSplit(valor, "Helvetica", valor_size, (w - 3) * mm)
     if not lineas:
         lineas = [""]
-    y_texto = cy + h - 2.0
+    if len(lineas) > 1:
+        valor_size = 7.3
+        lineas = simpleSplit(valor, "Helvetica", valor_size, (w - 3) * mm)
+    y_texto = cy + 4.5
     for linea in lineas[:2]:
         _texto(c, x + 1.5, y_texto, linea, size=valor_size)
-        y_texto -= 3.4
+        y_texto += 2.8
 
 
 def _fila_campos(c: canvas.Canvas, cy: float, h: float,
@@ -187,15 +190,10 @@ def _encabezado(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
     alto = 26.0
     _rect(c, MARGEN_MM, cy, ANCHO_CONTENIDO, alto, lw=1.2)
 
-    # Institución
-    _texto(c, MARGEN_MM + 3, cy + 3, "MINISTERIO DE SALUD", size=7.5, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 3, cy + 7.6, "SEGURO INTEGRAL DE SALUD", size=7.5, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 3, cy + 12.2, "SIS - CardioPredict", size=7, color=GRIS_LABEL)
-
-    # Título central
-    _texto(c, MARGEN_MM + 38, cy + 5, "FORMATO UNICO DE ATENCION", size=14, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 38, cy + 11.5, "FUA - Tamizaje de Riesgo Cardiovascular", size=9, color=GRIS_LABEL)
-    _texto(c, MARGEN_MM + 38, cy + 17.5,
+    _texto(c, MARGEN_MM + 3, cy + 3, "HEALTHCURE - CARDIOPREDICT", size=8, font="Helvetica-Bold")
+    _texto(c, MARGEN_MM + 3, cy + 8, "FORMATO DE EVALUACION ACADEMICA", size=11, font="Helvetica-Bold")
+    _texto(c, MARGEN_MM + 3, cy + 13, "Demo tipo FUA - Clasificacion experimental de perfiles", size=8, color=GRIS_LABEL)
+    _texto(c, MARGEN_MM + 3, cy + 17.5,
            f"N° de Historia Clinica: {paciente.numero_historia_clinica or '-----------'}",
            size=7.5, color=GRIS_LABEL)
 
@@ -285,12 +283,12 @@ def _variables(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
     ])
 
     factores = [
-        ("Presión arterial alta", evaluacion.presion_alta),
+        ("Hipertensión diagnosticada previamente", evaluacion.presion_alta),
         ("Colesterol alto", evaluacion.colesterol_alto),
-        ("Tabaquismo", evaluacion.tabaquismo),
+        ("Fumó al menos 100 cigarrillos en su vida", evaluacion.tabaquismo),
         ("Actividad física", evaluacion.actividad_fisica),
         ("Antecedente de ACV", evaluacion.antecedente_acv),
-        ("Diabetes", evaluacion.diabetes),
+        ("Prediabetes o diabetes (agrupado para ML)", evaluacion.diabetes),
         ("Dificultad para caminar", evaluacion.dificultad_para_caminar),
     ]
     ancho_col = ANCHO_CONTENIDO / 2
@@ -301,6 +299,11 @@ def _variables(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
             x = MARGEN_MM + j * ancho_col
             campos.append((x, ancho_col - 1, label, _texto_si_no(valor)))
         cy = _fila_campos(c, cy, 10, campos)
+    cy = _parrafo(c, cy + 1, MARGEN_MM + 2, ANCHO_CONTENIDO - 4,
+                   "Antecedente: " + etiqueta_diabetes(evaluacion.estado_diabetes, evaluacion.diabetes), size=8)
+    if evaluacion.presion_sistolica is not None:
+        cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4,
+                       f"Presión medida: {evaluacion.presion_sistolica}/{evaluacion.presion_diastolica} mmHg (fuera del modelo)", size=8)
     return cy
 
 
@@ -317,15 +320,27 @@ def _resultado(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
 
     # Franja de color según clasificación
     cy = _salto(c, cy, 15)
-    color_fondo = COLOR_HEX.get(nombre_color, colors.white)
+    color_fondo = COLOR_HEX.get(triaje.codigo_color, colors.white)
     _rect(c, MARGEN_MM, cy, ANCHO_CONTENIDO, 14, fill=color_fondo)
     _texto(c, MARGEN_MM + 2, cy + 2.5,
            f"NIVEL DE RIESGO: {nombre_color.upper()}  |  {triaje.nivel_alerta}",
            size=10, font="Helvetica-Bold")
     _texto(c, MARGEN_MM + 2, cy + 8.5,
-           f"Probabilidad: {response.probabilidad * 100:.2f}%    Modelo: {response.modelo_version or 'N/D'}",
+           f"Indice del modelo: {response.probabilidad * 100:.2f} / 100    Modelo: {response.modelo_version or 'N/D'}",
            size=8)
     cy += 15.2
+
+    cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4,
+                  ("Prototipo académico. Calibración interna: " if response.politica_modelo else "Prototipo académico. Índice histórico sin calibrar: ") + "no es probabilidad clínica, diagnóstico ni pronóstico. "
+                  "Reglas experimentales; no determinan urgencias. Se conserva el texto de evaluaciones históricas.", size=8)
+
+    if response.politica_modelo:
+        policy = response.politica_modelo
+        cuts = policy["umbrales"]
+        cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4,
+                      f"Reglas: {policy['reglas_version']}. Bandas sobre 100: baja < {cuts['bajo_max']*100:.4f}; "
+                      f"intermedia hasta < {cuts['moderado_max']*100:.4f}; alta desde {cuts['moderado_max']*100:.4f}. "
+                      "Comparar solo dentro de la misma version.", size=7.5)
 
     # Acción sugerida
     cy = _salto(c, cy, 6)
@@ -345,7 +360,7 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     cy = _banda_titulo(c, cy, "5. FACTORES DE RIESGO Y RECOMENDACIONES")
 
     cy = _salto(c, cy, 5)
-    _texto(c, MARGEN_MM + 2, cy, "FACTORES DE RIESGO DETECTADOS:", size=7.5,
+    _texto(c, MARGEN_MM + 2, cy, "ANTECEDENTES REGISTRADOS:", size=7.5,
            font="Helvetica-Bold", color=GRIS_LABEL)
     cy += 3.5
     lista = triaje.factores_riesgo_detectados or []
@@ -356,7 +371,7 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     cy += 1.5
 
     cy = _salto(c, cy, 5)
-    _texto(c, MARGEN_MM + 2, cy, "FACTORES PROTECTORES:", size=7.5,
+    _texto(c, MARGEN_MM + 2, cy, "HABITOS DECLARADOS:", size=7.5,
            font="Helvetica-Bold", color=GRIS_LABEL)
     cy += 3.5
     lista = triaje.factores_protectores or []
@@ -367,7 +382,7 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     cy += 1.5
 
     cy = _salto(c, cy, 5)
-    _texto(c, MARGEN_MM + 2, cy, "EXAMENES / CONTROLES SUGERIDOS:", size=7.5,
+    _texto(c, MARGEN_MM + 2, cy, "ORIENTACION EXPERIMENTAL:", size=7.5,
            font="Helvetica-Bold", color=GRIS_LABEL)
     cy += 3.5
     for r in (triaje.recomendaciones_medicas or []):
@@ -378,6 +393,7 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
 
 def _firmas(c: canvas.Canvas, cy: float, usuario: Usuario) -> float:
     """Bloque 6: firmas (profesional y paciente/apoderado)."""
+    cy = _salto(c, cy, 48)
     cy = _banda_titulo(c, cy, "6. FIRMAS Y CONFORMIDAD")
 
     ancho_mitad = (ANCHO_CONTENIDO - 6) / 2

@@ -1,0 +1,109 @@
+{
+  "fecha_prueba": "2026-10-15T11:20:11.936880-05:00",
+  "datos_completamente_ficticios": true,
+  "paciente": {
+    "id": 14,
+    "tipo_documento": "Pasaporte",
+    "documento_identidad": "TEST-FICTICIO-A96F848B",
+    "numero_historia_clinica": "DEMO-A96F848B",
+    "apellido_paterno": "Prueba",
+    "apellido_materno": "Academica",
+    "nombres": "Elena Ficticia",
+    "nombre_completo": "Prueba Academica, Elena Ficticia",
+    "fecha_nacimiento": "1974-04-12",
+    "sexo": "F",
+    "telefono": null,
+    "direccion": null,
+    "distrito_id": null,
+    "distrito": null,
+    "localidad_id": null,
+    "localidad": null,
+    "tipo_seguro": "Otro",
+    "codigo_afiliacion_seguro": null,
+    "usuario_creador_id": 2,
+    "activo": true,
+    "talla_cm": null,
+    "peso_kg": null,
+    "created_at": "2026-10-15T11:20:13",
+    "updated_at": "2026-10-15T11:20:13"
+  },
+  "entrada_evaluacion": {
+    "paciente_id": 14,
+    "edad": 52,
+    "presion_alta": true,
+    "colesterol_alto": true,
+    "tabaquismo": false,
+    "actividad_fisica": true,
+    "antecedente_acv": false,
+    "diabetes": true,
+    "estado_diabetes": "prediabetes",
+    "salud_general": 3,
+    "dificultad_para_caminar": false,
+    "presion_sistolica": 132,
+    "presion_diastolica": 82
+  },
+  "respuesta": {
+    "id": 45,
+    "paciente_id": 14,
+    "usuario_id": 2,
+    "edad": 52,
+    "presion_alta": true,
+    "colesterol_alto": true,
+    "tabaquismo": false,
+    "actividad_fisica": true,
+    "antecedente_acv": false,
+    "diabetes": true,
+    "salud_general": 3,
+    "dificultad_para_caminar": false,
+    "estado_diabetes": "prediabetes",
+    "presion_sistolica": 132,
+    "presion_diastolica": 82,
+    "probabilidad": 0.07095,
+    "clasificacion": "moderado",
+    "modelo_version": "3.0.0",
+    "politica_modelo": {
+      "reglas_version": "bandas-academicas-3.0.0",
+      "semantica_score": "calibracion_sigmoid_interna",
+      "umbrales": {
+        "bajo_max": 0.051065,
+        "moderado_max": 0.210469
+      },
+      "seleccionado_en": "validation BRFSS 2015; nunca test ni datos externos",
+      "criterios": {
+        "bajo_max": "mayor umbral con recall validation >=0.90",
+        "moderado_max": "max F1 validation; empate mayor umbral"
+      },
+      "decimales_score": 6
+    },
+    "triaje_clinico": {
+      "nivel_alerta": "BANDA INTERMEDIA - REVISION EXPERIMENTAL",
+      "codigo_color": "amarillo",
+      "accion_sugerida": "Confirmar los antecedentes y revisar el perfil con el profesional responsable.",
+      "factores_riesgo_detectados": [
+        "Hipertensión Arterial",
+        "Dislipidemia (Colesterol Alto)",
+        "Prediabetes declarada"
+      ],
+      "factores_protectores": [
+        "Actividad física declarada en los últimos 30 días",
+        "No declara haber fumado 100 cigarrillos en la vida"
+      ],
+      "recomendaciones_medicas": [
+        "Verificar que los antecedentes registrados estén completos y actualizados.",
+        "El profesional determina los estudios, el seguimiento y cualquier tratamiento.",
+        "Regla académica sin validación clínica; no determina urgencia ni diagnóstico.",
+        "El rendimiento varía por edad y sexo; una banda no reemplaza la evaluación profesional."
+      ]
+    },
+    "created_at": "2026-10-15T11:20:17"
+  },
+  "comprobaciones": {
+    "paciente_nuevo": true,
+    "historial_inicial_vacio": true,
+    "persistencia_identica": true,
+    "entradas_conservadas": true,
+    "historial_con_una_evaluacion": true,
+    "pdf_generado": true,
+    "pdf_bytes": 6189
+  }
+}

@@ -9,13 +9,18 @@ evaluación de ayer NO cuenta como evaluado hoy, porque la cola de triaje es
 por visita/día (antes el frontend marcaba como "evaluado" a todo paciente
 con cualquier evaluación histórica, así que la cola se vaciaba sola).
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from app.models.paciente import Paciente
 
 from sqlalchemy import text
 
 
 def _crear_evaluacion(env, paciente_id: int, usuario_id: int, edad: int = 60) -> dict:
     """Crea una evaluación real por HTTP (ejecuta el modelo XGBoost)."""
+    with env.new_session() as db:
+        nacimiento = db.get(Paciente, paciente_id).fecha_nacimiento
+    hoy = datetime.now(timezone(timedelta(hours=-5))).date()
+    edad = hoy.year - nacimiento.year - ((hoy.month, hoy.day) < (nacimiento.month, nacimiento.day))
     r = env.client.post(
         "/api/v1/evaluaciones/",
         headers=env.auth_header(usuario_id, "usuario"),

@@ -16,7 +16,7 @@ Solo recibe datos → devuelve predicción.
 from typing import Dict
 from app.ml.model_loader import load_model
 from app.ml.preprocessor import preprocess
-from app.ml.metadata import get_model_version, get_classification_thresholds
+from app.ml.metadata import get_model_version, get_classification_thresholds, get_model_policy, load_metadata
 from app.schemas.evaluacion import PredictionResult, ClasificacionEnum
 from app.exceptions.ml_exceptions import PredictionError
 
@@ -43,6 +43,9 @@ def predict(data: Dict) -> PredictionResult:
     # 1. Cargar el modelo (de la caché o del disco)
     try:
         model = load_model()
+        expected_hash = load_metadata().get("artifact_sha256")
+        if expected_hash and getattr(model, "_healthcure_artifact_sha256", None) != expected_hash:
+            raise ValueError("Modelo cacheado y metadata distintos; recargar el bundle completo")
     except Exception as e:
         raise PredictionError(f"No se pudo cargar el modelo: {e}")
 
@@ -53,7 +56,7 @@ def predict(data: Dict) -> PredictionResult:
         # df es un DataFrame de pandas con las columnas en orden correcto
 
         # 2b. Ejecutar la predicción
-        probabilidad = float(model.predict_proba(df)[0][1])
+        probabilidad = round(float(model.predict_proba(df)[0][1]), 6)
         # predict_proba retorna [[prob_no_enfermo, prob_enfermo]]
         # [0][1] = tomamos la probabilidad de ENFERMEDAD (clase 1)
 
@@ -68,23 +71,12 @@ def predict(data: Dict) -> PredictionResult:
         # Versión leída de la ficha técnica (app/ml/metadata.py);
         # NO hardcodeada → reentrenar actualiza la versión sin tocar código.
         modelo_version=get_model_version(),
+        politica_modelo=get_model_policy(),
     )
 
 
 def _classify(probabilidad: float) -> ClasificacionEnum:
-    """
-    Convierte una probabilidad (0.0-1.0) en un nivel de riesgo legible.
-
-    Los umbrales NO están hardcodeados: se leen de la ficha técnica del
-    modelo (app/ml/metadata.py), con fallback a los valores del MVP:
-      - < 0.30 (30%)        → bajo riesgo
-      - 0.30 - 0.60 (30-60%) → riesgo moderado
-      - >= 0.60 (60%)       → alto riesgo
-
-    Esto mantiene coherentes el entrenamiento (que guarda los umbrales en
-    la metadata) y la inferencia (que los aplica). Si no hay ficha técnica,
-    se comporta igual que antes (0.30 / 0.60).
-    """
+    """Banda experimental según metadata del modelo activo y score persistido."""
     umbrales = get_classification_thresholds()
     if probabilidad < umbrales["bajo_max"]:
         return ClasificacionEnum.bajo

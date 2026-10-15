@@ -16,6 +16,7 @@ Si el modelo no está entrenado, estos tests FALLAN con un mensaje claro
 (no se saltan): el artefacto es parte del entregable y debe estar presente.
 """
 from pathlib import Path
+from datetime import datetime, date, timezone, timedelta
 
 import pytest
 
@@ -63,7 +64,7 @@ def metadata() -> dict:
     if not path.exists():
         pytest.fail(
             f"Falta la ficha técnica del modelo ({path}). "
-            "Ejecuta: python entrenar_modelo.py"
+            "Restaura la metadata versionada de la aplicación; el experimento no la reemplaza."
         )
     meta = load_metadata()
     assert meta, "La ficha técnica existe pero está vacía o corrupta."
@@ -77,7 +78,7 @@ def modelo():
     if not path.exists():
         pytest.fail(
             f"Falta el modelo entrenado ({path}). "
-            "Ejecuta: python entrenar_modelo.py"
+            "Restaura el modelo versionado de la aplicación; el experimento no lo reemplaza."
         )
     from app.ml.model_loader import load_model
     return load_model()
@@ -95,13 +96,13 @@ def test_artefacto_y_ficha_tecnica_existen():
 def test_metadata_tiene_campos_minimos(metadata):
     obligatorios = {
         "model_version", "algoritmo", "entrenado_en", "dataset",
-        "features", "target", "hiperparametros", "validacion_cruzada",
+        "features", "target", "hiperparametros", "validacion",
         "metricas_test_umbral_0.50", "umbrales_clasificacion_clinica", "librerias",
     }
     faltan = obligatorios - set(metadata)
     assert not faltan, f"Faltan campos en la ficha técnica: {faltan}"
     assert metadata["model_version"]
-    assert metadata["algoritmo"] in {"RandomForest", "XGBoost"}
+    assert metadata["algoritmo"] in {"RandomForest", "XGBoost", "XGBoost+sigmoid"}
 
 
 def test_metadata_declara_el_dataset_real(metadata):
@@ -168,8 +169,8 @@ def test_prediccion_coherente_con_el_riesgo_clinico():
     bajo = predict(dict(PERFIL_BAJO_RIESGO)).probabilidad
     alto = predict(dict(PERFIL_ALTO_RIESGO)).probabilidad
     assert alto > bajo, "El perfil de alto riesgo debería tener mayor probabilidad"
-    assert alto > 0.5, "Un perfil con casi todos los factores debería superar 0.5"
-    assert bajo < 0.3, "Un perfil joven y sano debería quedar por debajo de 0.3"
+    assert alto >= get_classification_thresholds()["moderado_max"], "El perfil de referencia debe quedar en banda alta"
+    assert bajo < get_classification_thresholds()["bajo_max"], "El perfil de referencia debe quedar en banda baja"
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -220,7 +221,7 @@ def test_e2e_post_evaluacion_predice_y_persiste(env, usuarios_base):
 
     resp = env.client.post(
         "/api/v1/evaluaciones/",
-        json=_payload(paciente.id),
+        json=_payload(paciente.id, edad=datetime.now(timezone(timedelta(hours=-5))).year - paciente.fecha_nacimiento.year),
         headers=headers,
     )
     assert resp.status_code == 201, resp.text
@@ -262,14 +263,17 @@ def test_e2e_orden_de_riesgo_por_http(env, usuarios_base):
     paciente = usuarios_base["paciente_doctor"]
     headers = env.auth_header(doctor.id, "usuario")
 
+    anio = datetime.now(timezone(timedelta(hours=-5))).year
+    joven = env.create_paciente("44444444", doctor.id, fecha_nacimiento=date(anio - 30, 1, 1))
+    mayor = env.create_paciente("55555555", doctor.id, fecha_nacimiento=date(anio - 75, 1, 1))
     bajo = env.client.post(
         "/api/v1/evaluaciones/",
-        json=_payload(paciente.id, **PERFIL_BAJO_RIESGO),
+        json=_payload(joven.id, **PERFIL_BAJO_RIESGO),
         headers=headers,
     )
     alto = env.client.post(
         "/api/v1/evaluaciones/",
-        json=_payload(paciente.id, **PERFIL_ALTO_RIESGO),
+        json=_payload(mayor.id, **PERFIL_ALTO_RIESGO),
         headers=headers,
     )
     assert bajo.status_code == 201, bajo.text
@@ -283,7 +287,7 @@ def test_e2e_evaluacion_sin_token_devuelve_401(env, usuarios_base):
     paciente = usuarios_base["paciente_doctor"]
     resp = env.client.post(
         "/api/v1/evaluaciones/",
-        json=_payload(paciente.id),
+        json=_payload(paciente.id, edad=datetime.now(timezone(timedelta(hours=-5))).year - paciente.fecha_nacimiento.year),
     )
     assert resp.status_code == 401
 

@@ -31,21 +31,21 @@ def test_bajo_riesgo_es_verde():
     triaje = generar_triaje_clinico({}, probabilidad=0.1, clasificacion="bajo")
     assert triaje["codigo_color"] == "verde"
     assert "BAJO RIESGO" in triaje["nivel_alerta"]
-    assert "anuales" in triaje["accion_sugerida"].lower()
+    assert "no descarta enfermedad" in triaje["accion_sugerida"].lower()
 
 
 def test_moderado_es_amarillo():
     triaje = generar_triaje_clinico({}, probabilidad=0.459186, clasificacion="moderado")
     assert triaje["codigo_color"] == "amarillo"
     assert "MODERADO" in triaje["nivel_alerta"]
-    assert "15 a 30 días" in triaje["accion_sugerida"]
+    assert "experimental moderada" in triaje["accion_sugerida"]
 
 
 def test_alto_es_rojo():
     triaje = generar_triaje_clinico({}, probabilidad=0.9, clasificacion="alto")
     assert triaje["codigo_color"] == "rojo"
     assert "ALTA PRIORIDAD" in triaje["nivel_alerta"]
-    assert "Cardiología" in triaje["accion_sugerida"]
+    assert "experimental alta" in triaje["accion_sugerida"]
 
 
 def test_clasificacion_acepta_enum():
@@ -69,30 +69,30 @@ def test_detecta_factores_de_riesgo():
     triaje = generar_triaje_clinico(PACIENTE_MODERADO, 0.459186, "moderado")
     assert "Hipertensión Arterial" in triaje["factores_riesgo_detectados"]
     assert "Dislipidemia (Colesterol Alto)" in triaje["factores_riesgo_detectados"]
-    assert "Diabetes Mellitus" in triaje["factores_riesgo_detectados"]
+    assert "Prediabetes o diabetes (sin detalle registrado)" in triaje["factores_riesgo_detectados"]
     # No fumador ni ACV ni dificultad para caminar → NO deben aparecer
-    assert "Consumo de Tabaco Activo" not in triaje["factores_riesgo_detectados"]
+    assert "Antecedente de haber fumado al menos 100 cigarrillos en la vida" not in triaje["factores_riesgo_detectados"]
     assert "Antecedente de Accidente Cerebrovascular (ACV)" not in triaje["factores_riesgo_detectados"]
 
 
 def test_detecta_factores_protectores():
     triaje = generar_triaje_clinico(PACIENTE_MODERADO, 0.459186, "moderado")
-    assert "Realiza Actividad Física Regular" in triaje["factores_protectores"]
-    assert "No Fumador" in triaje["factores_protectores"]
+    assert "Actividad física declarada en los últimos 30 días" in triaje["factores_protectores"]
+    assert "No declara haber fumado 100 cigarrillos en la vida" in triaje["factores_protectores"]
 
 
 def test_sin_factores_da_listas_vacias():
     triaje = generar_triaje_clinico({}, 0.1, "bajo")
     assert triaje["factores_riesgo_detectados"] == []
-    # Sin actividad física y sin tabaquismo → solo "No Fumador" como protector
-    assert triaje["factores_protectores"] == ["No Fumador"]
+    # Sin actividad física y sin tabaquismo → solo "No declara haber fumado 100 cigarrillos en la vida" como protector
+    assert triaje["factores_protectores"] == []
 
 
 def test_tabaquismo_true_es_riesgo_y_no_protector():
     data = {"tabaquismo": True, "actividad_fisica": False}
     triaje = generar_triaje_clinico(data, 0.7, "alto")
-    assert "Consumo de Tabaco Activo" in triaje["factores_riesgo_detectados"]
-    assert "No Fumador" not in triaje["factores_protectores"]
+    assert "Antecedente de haber fumado al menos 100 cigarrillos en la vida" in triaje["factores_riesgo_detectados"]
+    assert "No declara haber fumado 100 cigarrillos en la vida" not in triaje["factores_protectores"]
 
 
 def test_salud_general_mala_es_factor_de_riesgo():

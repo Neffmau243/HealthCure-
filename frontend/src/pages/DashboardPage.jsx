@@ -72,7 +72,7 @@ export default function DashboardPage() {
       <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
         <h1 className="text-2xl font-bold text-slate-800">Panel Principal</h1>
         <p className="text-sm text-slate-500 mt-1">
-          Resumen de la actividad del centro médico y del riesgo cardiovascular detectado.
+          Resumen de la actividad del centro médico y de los perfiles evaluados por el modelo.
         </p>
       </div>
 
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                           className="text-xs font-bold text-slate-600"
                           title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
                         >
-                          índice {(ev.probabilidad * 100).toFixed(1)}
+                          índice {(ev.probabilidad * 100).toFixed(1)} / 100
                         </span>
                       </div>
                     </li>

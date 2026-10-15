@@ -46,25 +46,24 @@ export const esPresionElevada = (texto) => {
 // 1 = 18-24, 2 = 25-29, ..., 12 = 75-79, 13 = 80 o más. Menores de 18 -> null.
 export const edadACategoria = (edad) => {
   const e = Number(edad);
-  if (!Number.isFinite(e) || e < 18) return null;
+  if (!Number.isFinite(e) || e < 18 || e > 120) return null;
   if (e >= 80) return 13;
   if (e < 25) return 1;
   return Math.floor((e - 25) / 5) + 2;
 };
 
 // Fecha de nacimiento ("YYYY-MM-DD") -> edad en años. Null si falta o no es válida.
-export const calcularEdad = (fechaNacimiento) => {
-  if (!fechaNacimiento) return null;
-  const nacimiento = new Date(`${fechaNacimiento}T00:00:00`);
-  if (Number.isNaN(nacimiento.getTime())) return null;
-
-  const hoy = new Date();
-  let edad = hoy.getFullYear() - nacimiento.getFullYear();
-  const yaCumplio =
-    hoy.getMonth() > nacimiento.getMonth() ||
-    (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() >= nacimiento.getDate());
-  if (!yaCumplio) edad -= 1;
-  return edad;
+export const calcularEdad = (fechaNacimiento, ahora = new Date()) => {
+  if (!fechaNacimiento || !/^\d{4}-\d{2}-\d{2}$/.test(fechaNacimiento)) return null;
+  const [anio, mes, dia] = fechaNacimiento.split('-').map(Number);
+  const nacimiento = new Date(Date.UTC(anio, mes - 1, dia));
+  if (nacimiento.getUTCFullYear() !== anio || nacimiento.getUTCMonth() !== mes - 1 || nacimiento.getUTCDate() !== dia) return null;
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Lima', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(ahora);
+  const hoy = Object.fromEntries(partes.map((p) => [p.type, Number(p.value)]));
+  const edad = hoy.year - anio - Number(hoy.month < mes || (hoy.month === mes && hoy.day < dia));
+  return edad >= 0 ? edad : null;
 };
 
 // Edad del paciente a partir de su fecha de nacimiento (formato del backend).
@@ -94,20 +93,45 @@ export const etiquetaSexo = (sexo) =>
  *
  * `datos` es lo que captura el ModalTriaje (signos vitales + antecedentes).
  */
-export const construirPayloadEvaluacion = (paciente, datos, edad) => ({
-  paciente_id: paciente.id,
-  edad: Number(edad),
-  // Presión alta si ya tiene diagnóstico previo O si la lectura del triaje es elevada.
-  presion_alta: Boolean(datos.hipertensionPrevia) || esPresionElevada(datos.presionArterial),
-  colesterol_alto: Boolean(datos.colesterolAlto),
-  tabaquismo: Boolean(datos.fuma),
-  actividad_fisica: Boolean(datos.actividadFisica),
-  antecedente_acv: Boolean(datos.derrame),
-  // En el formulario 0 = No tiene, 1 = Prediabetes, 2 = Diabetes.
-  diabetes: String(datos.diabetes) !== '0',
-  salud_general: Number(datos.saludGeneral) || 3,
-  dificultad_para_caminar: Boolean(datos.dificultadCaminar),
-});
+// Un positivo histórico no permite distinguir prediabetes y diabetes.
+export const diabetesFormulario = (evaluacion) => {
+  if (!evaluacion) return '0';
+  const valores = { ninguna: '0', prediabetes: '1', diabetes: '2' };
+  return valores[evaluacion.estado_diabetes] ?? (evaluacion.diabetes ? '' : '0');
+};
+
+export const etiquetaDiabetes = (evaluacion) => {
+  const etiquetas = { ninguna: 'Sin prediabetes ni diabetes declarada', prediabetes: 'Prediabetes declarada', diabetes: 'Diabetes declarada' };
+  return etiquetas[evaluacion?.estado_diabetes] ?? (evaluacion?.diabetes
+    ? 'Prediabetes o diabetes (sin detalle registrado)'
+    : 'Sin prediabetes ni diabetes declarada');
+};
+
+export const construirPayloadEvaluacion = (paciente, datos, edad) => {
+  const estados = { '0': 'ninguna', '1': 'prediabetes', '2': 'diabetes' };
+  const estado = estados[String(datos.diabetes)];
+  if (!estado) throw new Error('Selecciona el antecedente de diabetes; el registro histórico no distingue su categoría.');
+  const presion = parsePresion(datos.presionArterial);
+  if (String(datos.presionArterial ?? '').trim() && (!presion || presion.sistolica <= presion.diastolica || presion.sistolica > 400)) {
+    throw new Error('Revisa la presión: usa sistólica/diastólica con la sistólica mayor.');
+  }
+  return {
+    paciente_id: paciente.id,
+    edad: Number(edad),
+    // El modelo aprendió antecedentes declarados, no lecturas aisladas.
+    presion_alta: Boolean(datos.hipertensionPrevia),
+    colesterol_alto: Boolean(datos.colesterolAlto),
+    tabaquismo: Boolean(datos.fuma),
+    actividad_fisica: Boolean(datos.actividadFisica),
+    antecedente_acv: Boolean(datos.derrame),
+    diabetes: estado !== 'ninguna',
+    estado_diabetes: estado,
+    salud_general: Number(datos.saludGeneral),
+    dificultad_para_caminar: Boolean(datos.dificultadCaminar),
+    presion_sistolica: presion?.sistolica ?? null,
+    presion_diastolica: presion?.diastolica ?? null,
+  };
+};
 
 // Clases Tailwind por semáforo del triaje clínico.
 export const clasesSemaforo = (codigoColor) => {
@@ -144,6 +168,16 @@ export const clasesSemaforo = (codigoColor) => {
 };
 
 // Clases Tailwind por clasificación de riesgo del modelo.
+export const resumenPolitica = (evaluacion) => {
+  const politica = evaluacion?.politica_modelo;
+  if (!politica) return 'Histórico: score sin calibrar. Comparar solo dentro de la misma versión.';
+  const cortes = politica.umbrales;
+  if (!cortes) return 'Política sin cortes disponibles.';
+  const bajo = (cortes.bajo_max * 100).toFixed(4);
+  const alto = (cortes.moderado_max * 100).toFixed(4);
+  return `Calibración interna · ${politica.reglas_version} · bandas sobre 100: baja < ${bajo}, intermedia ${bajo} a < ${alto}, alta ≥ ${alto}. Comparar solo dentro de la misma versión.`;
+};
+
 export const clasesClasificacion = (clasificacion) => {
   switch (clasificacion) {
     case 'alto':

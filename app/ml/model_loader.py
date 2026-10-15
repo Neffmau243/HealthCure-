@@ -15,6 +15,7 @@ Flujo:
   4. Si hay error al cargar → lanza ModelLoadError
 """
 import joblib
+import hashlib
 from pathlib import Path
 from app.core.config import get_settings
 from app.exceptions.ml_exceptions import ModelNotFoundError, ModelLoadError
@@ -44,12 +45,24 @@ def load_model():
     if not model_path.exists():
         raise ModelNotFoundError(
             f"Modelo no encontrado en: {model_path}. "
-            f"Entrena el modelo primero con train.py"
+            "Restaura el artefacto versionado de la aplicación. "
+            "entrenar_modelo.py genera candidatos offline y no los activa automáticamente."
         )
 
     # Cargar el modelo desde disco (primera y única vez)
     try:
-        _model_instance = joblib.load(model_path)
+        from app.ml.metadata import load_metadata
+        meta = load_metadata()
+        actual_hash = hashlib.sha256(model_path.read_bytes()).hexdigest()
+        if meta.get("artifact_sha256") and meta["artifact_sha256"] != actual_hash:
+            raise ValueError("El hash del modelo no corresponde a su metadata")
+        model = joblib.load(model_path)
+        from sklearn.calibration import CalibratedClassifierCV
+        calibrated = isinstance(model, CalibratedClassifierCV)
+        if calibrated != meta["model_version"].startswith("3."):
+            raise ValueError("La calibración del artefacto no corresponde a su versión")
+        model._healthcure_artifact_sha256 = actual_hash
+        _model_instance = model
         # joblib.load() deserializa el objeto Python guardado con dump()
         # Retorna un estimador de scikit-learn/XGBoost
     except Exception as e:
@@ -68,4 +81,6 @@ def reload_model():
     """
     global _model_instance
     _model_instance = None  # Borra el cache
+    from app.ml.metadata import reload_metadata
+    reload_metadata()
     return load_model()     # Vuelve a cargar desde disco

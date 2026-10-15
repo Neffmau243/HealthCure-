@@ -109,7 +109,7 @@ export default function ConsultorioPage() {
   return (
     <div className="space-y-6 p-4 sm:p-6 lg:p-8">
       <div>
-        <h2 className="text-2xl font-bold text-slate-800">Consultorio Médico & Diagnóstico IA</h2>
+        <h2 className="text-2xl font-bold text-slate-800">Consultorio y revisión del modelo</h2>
         <p className="text-sm text-slate-500">
           Revisa la evaluación del modelo, registra el acto médico y descarga el FUA.
         </p>
@@ -204,7 +204,7 @@ export default function ConsultorioPage() {
                         {ev.clasificacion}
                       </span>
                       <span className="text-xs font-bold text-slate-600">
-                        {(ev.probabilidad * 100).toFixed(1)}%
+                        Índice {(ev.probabilidad * 100).toFixed(1)} / 100
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 mt-1">

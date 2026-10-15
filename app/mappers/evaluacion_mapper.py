@@ -113,12 +113,16 @@ class EvaluacionMapper:
             actividad_fisica=evaluacion.actividad_fisica,
             antecedente_acv=evaluacion.antecedente_acv,
             diabetes=evaluacion.diabetes,
+            estado_diabetes=evaluacion.estado_diabetes,
+            presion_sistolica=evaluacion.presion_sistolica,
+            presion_diastolica=evaluacion.presion_diastolica,
             salud_general=evaluacion.salud_general,
             dificultad_para_caminar=evaluacion.dificultad_para_caminar,
             # Resultado del ML
             probabilidad=float(evaluacion.probabilidad),  # Decimal → float
             clasificacion=evaluacion.clasificacion,
             modelo_version=evaluacion.modelo_version,
+            politica_modelo=evaluacion.politica_modelo,
             triaje_clinico=EvaluacionMapper._triaje_clinico(evaluacion),
             created_at=evaluacion.created_at,
         )
@@ -153,11 +157,13 @@ class EvaluacionMapper:
                 "actividad_fisica": evaluacion.actividad_fisica,
                 "antecedente_acv": evaluacion.antecedente_acv,
                 "diabetes": evaluacion.diabetes,
+                "estado_diabetes": evaluacion.estado_diabetes,
                 "salud_general": evaluacion.salud_general,
                 "dificultad_para_caminar": evaluacion.dificultad_para_caminar,
             },
             probabilidad=float(evaluacion.probabilidad),
             clasificacion=evaluacion.clasificacion,
+            politica=evaluacion.politica_modelo,
         )
         return TriajeClinico(**triaje)
 
@@ -193,11 +199,13 @@ class EvaluacionMapper:
                 "actividad_fisica":        data.actividad_fisica,
                 "antecedente_acv":         data.antecedente_acv,
                 "diabetes":                data.diabetes,
+                "estado_diabetes":         data.estado_diabetes,
                 "salud_general":           data.salud_general,
                 "dificultad_para_caminar": data.dificultad_para_caminar,
             },
             probabilidad=prediction.probabilidad,
             clasificacion=prediction.clasificacion,
+            politica=prediction.politica_modelo,
         )
 
         return {
@@ -213,6 +221,9 @@ class EvaluacionMapper:
             "actividad_fisica":        data.actividad_fisica,
             "antecedente_acv":         data.antecedente_acv,
             "diabetes":                data.diabetes,
+            "estado_diabetes":         data.estado_diabetes.value if data.estado_diabetes else None,
+            "presion_sistolica":       data.presion_sistolica,
+            "presion_diastolica":      data.presion_diastolica,
             "salud_general":           data.salud_general,
             "dificultad_para_caminar": data.dificultad_para_caminar,
 
@@ -220,6 +231,7 @@ class EvaluacionMapper:
             "probabilidad":            prediction.probabilidad,
             "clasificacion":           prediction.clasificacion,
             "modelo_version":          prediction.modelo_version,
+            "politica_modelo":         prediction.politica_modelo,
 
             # --- Triaje clínico (reglas de negocio) ---
             "nivel_alerta":            triaje["nivel_alerta"],

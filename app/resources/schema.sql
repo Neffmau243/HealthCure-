@@ -122,6 +122,9 @@ CREATE TABLE evaluaciones (
     actividad_fisica        BOOLEAN     NOT NULL DEFAULT FALSE,
     antecedente_acv         BOOLEAN     NOT NULL DEFAULT FALSE,
     diabetes                BOOLEAN     NOT NULL DEFAULT FALSE,
+    estado_diabetes         VARCHAR(20) NULL,
+    presion_sistolica        SMALLINT    NULL,
+    presion_diastolica       SMALLINT    NULL,
     salud_general           SMALLINT    NOT NULL DEFAULT 3,
     dificultad_para_caminar BOOLEAN     NOT NULL DEFAULT FALSE,
 
@@ -129,6 +132,7 @@ CREATE TABLE evaluaciones (
     probabilidad            DECIMAL(7,6) NOT NULL,
     clasificacion           ENUM('bajo', 'moderado', 'alto') NOT NULL,
     modelo_version          VARCHAR(50)  NULL,
+    politica_modelo         JSON NULL,
 
     -- Triaje clínico (interpretación para médicos/enfermeros)
     nivel_alerta            VARCHAR(100) NULL,

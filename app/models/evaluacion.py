@@ -46,6 +46,9 @@ class Evaluacion(Base):
     actividad_fisica        = Column(Boolean, nullable=False, default=False)
     antecedente_acv         = Column(Boolean, nullable=False, default=False)
     diabetes                = Column(Boolean, nullable=False, default=False)
+    estado_diabetes         = Column(String(20), nullable=True)
+    presion_sistolica       = Column(SmallInteger, nullable=True)
+    presion_diastolica      = Column(SmallInteger, nullable=True)
     # Estos 6 booleanos son factores de riesgo del CDC/BRFSS dataset
 
     salud_general = Column(SmallInteger, nullable=False, default=3)
@@ -58,7 +61,7 @@ class Evaluacion(Base):
     # --- Resultado del modelo ML ---
     probabilidad = Column(Numeric(7, 6), nullable=False)
     # Numeric(7,6) = 0.000000 a 1.000000 (6 decimales)
-    # Ej: 0.734521 = 73.4% de probabilidad de enfermedad cardíaca
+    # Ej: 0.734521 = índice experimental 73.4 / 100; no es probabilidad clínica
 
     clasificacion = Column(
         Enum("bajo", "moderado", "alto", name="clasificacion_enum"),
@@ -70,6 +73,7 @@ class Evaluacion(Base):
     #   > 0.60 → "alto"
 
     modelo_version = Column(String(50), nullable=True)
+    politica_modelo = Column(JSON, nullable=True)
     # Versión del modelo que se usó (ej: "1.0.0")
     # Útil para auditoría: saber con qué versión se hizo cada predicción
 

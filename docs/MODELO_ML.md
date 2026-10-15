@@ -1,595 +1,90 @@
-# Modelo de Machine Learning — CardioPredict (HealthCure)
-
-Documento de referencia del componente de ML: **cómo funciona**, **qué datos
-espera**, **cómo se entrenó**, **qué datos/artefactos entrega** y **cómo se
-verifica**. Toda la información está contrastada contra el código y contra la
-ficha técnica real generada por el entrenamiento (v2.0.0).
-
-> Entrada rápida: el modelo vive en `app/resources/modelo_cardiaco.joblib`
-> y su ficha técnica en `app/resources/modelo_cardiaco_metadata.json`.
-> Se consume con `POST /api/v1/evaluaciones/`.
-
----
-
-## Índice
-
-1. [Qué es y dónde vive](#1-qué-es-y-dónde-vive)
-2. [Cómo funciona (arquitectura del pipeline)](#2-cómo-funciona-arquitectura-del-pipeline)
-3. [Qué datos espera (entrada)](#3-qué-datos-espera-entrada)
-4. [Cómo se entrenó](#4-cómo-se-entrenó)
-5. [Umbrales de decisión y clasificación](#5-umbrales-de-decisión-y-clasificación)
-6. [Qué debe entregar](#6-qué-debe-entregar)
-7. [Métricas reales e interpretación](#7-métricas-reales-e-interpretación)
-8. [Cómo reentrenar y versionar](#8-cómo-reentrenar-y-versionar)
-9. [Cómo verificar que todo está OK](#9-cómo-verificar-que-todo-está-ok)
-10. [Limitaciones y próximos pasos](#10-limitaciones-y-próximos-pasos)
-11. [Glosario](#11-glosario)
-
-> 📄 **Ficha formal del modelo (uso previsto, límites y ética):**
-> [`MODEL_CARD.md`](MODEL_CARD.md)
-
----
-
-## 1. Qué es y dónde vive
-
-Es un modelo de **clasificación binaria supervisada**: dado un perfil clínico
-de 9 variables, estima la probabilidad de que el paciente tenga o desarrolle
-**enfermedad cardíaca** y la traduce a un nivel de riesgo para el triaje.
-
-| Elemento | Ruta / valor |
-|----------|--------------|
-| Modelo serializado | `app/resources/modelo_cardiaco.joblib` |
-| Ficha técnica (metadata) | `app/resources/modelo_cardiaco_metadata.json` |
-| Algoritmo (v2.0.0) | XGBoost (`XGBClassifier`) |
-| Versión | `2.0.0` |
-| Dataset | Heart Disease Health Indicators — CDC/BRFSS 2015 |
-| Se sirve en | `POST /api/v1/evaluaciones/` |
-
-**Código de la capa ML** (`app/ml/`):
-
-| Archivo | Responsabilidad |
-|---------|-----------------|
-| `preprocessor.py` | Valida, convierte (edad años→código CDC) y ordena las 9 features en un DataFrame. |
-| `model_loader.py` | Carga el `.joblib` **una sola vez** (singleton en RAM). |
-| `metadata.py` | Lee la ficha técnica: versión y umbrales. Sin hardcodeos. |
-| `predictor.py` | Ejecuta `predict_proba`, clasifica el riesgo y devuelve `PredictionResult`. |
-
----
-
-## 2. Cómo funciona (arquitectura del pipeline)
-
-```
- POST /api/v1/evaluaciones/   (body JSON con paciente_id + 9 variables)
-        │
-        ▼
- app/services/evaluacion_service.py     ← orquesta (único que habla con BD y ML)
-        │  1. Valida que el paciente exista
-        │  2. EvaluacionMapper.request_to_model_input()  → bool → int (0/1)
-        │  3. Import LAZY de app.ml.predictor  (si falta el .joblib, el resto de la API sigue viva)
-        ▼
- app/ml/preprocessor.py::preprocess()
-        │  • Verifica que estén las 9 variables
-        │  • Valida rangos (edad 1-120 años, salud_general 1-5)
-        │  • mapear_edad_cdc(edad en años) → código 1-13   ← punto crítico
-        │  • Devuelve DataFrame con FEATURE_COLUMNS en el ORDEN exacto
-        ▼
- app/ml/model_loader.py::load_model()   ← modelo cacheado en RAM (singleton)
-        ▼
- app/ml/predictor.py::predict()
-        │  • model.predict_proba(df)[0][1] → probabilidad de clase 1
-        │  • _classify(probabilidad) → "bajo" | "moderado" | "alto"
-        │  • modelo_version ← get_model_version() (de la ficha técnica)
-        ▼
- PredictionResult(probabilidad, clasificacion, modelo_version)
-        │
-        ▼
- EvaluacionMapper.create_to_model()  →  genera el TRIAJE CLÍNICO (reglas de negocio)
-        │
-        ▼
- EvaluacionRepository.create()  →  INSERT en MySQL  →  EvaluacionResponse (201)
-```
-
-**Puntos de diseño que no se deben romper:**
-
-- **Import lazy**: el modelo solo se importa dentro de `evaluate()`. Si el
-  `.joblib` no existe, auth/pacientes/catálogos siguen funcionando y solo falla
-  la predicción (con un `500` claro).
-- **Orden de columnas**: `FEATURE_COLUMNS` (inferencia) debe coincidir con el
-  orden usado en el entrenamiento. Si cambia, el modelo predice basura en
-  silencio. Está protegido por tests.
-- **Edad**: se entrena con el código CDC 1-13, no con años. Ver sección 3.
-- **Triaje**: se calcula en el mapper (lógica de negocio), NO dentro del modelo.
-
----
-
-## 3. Qué datos espera (entrada)
-
-### 3.1 Las 9 variables predictoras
-
-Todas provienen del cuestionario CDC/BRFSS. La API las recibe dentro del JSON
-de evaluación, además de `paciente_id` (que **no** entra al modelo).
-
-| # | Variable (API) | Tipo API | Valores | Variable CDC | Descripción |
-|---|----------------|----------|---------|--------------|-------------|
-| 1 | `edad` | int | 1-120 (años) | `Age` (1-13) | Edad del paciente. Se convierte a código CDC. |
-| 2 | `presion_alta` | bool | true/false | `HighBP` | Diagnóstico de hipertensión. |
-| 3 | `colesterol_alto` | bool | true/false | `HighChol` | Colesterol alto diagnosticado. |
-| 4 | `tabaquismo` | bool | true/false | `Smoker` | Fumó ≥100 cigarrillos en su vida. |
-| 5 | `actividad_fisica` | bool | true/false | `PhysActivity` | Actividad física en los últimos 30 días. |
-| 6 | `antecedente_acv` | bool | true/false | `Stroke` | Antecedente de accidente cerebrovascular. |
-| 7 | `diabetes` | bool | true/false | `Diabetes` | Diagnóstico de diabetes (BRFSS 0/1/2 → 0/1). |
-| 8 | `salud_general` | int | 1-5 | `GenHlth` | 1=excelente, 2=muy buena, 3=buena, 4=regular, 5=mala. |
-| 9 | `dificultad_para_caminar` | bool | true/false | `DiffWalk` | Dificultad para caminar o subir escaleras. |
-
-En el entrenamiento los `bool` se usan como 0/1 y `GenHlth`/`Age` como enteros.
-
-### 3.2 La trampa de la edad (crítico)
-
-El dataset **no trae la edad en años**: la columna `Age` ya viene codificada en
-13 rangos. La API recibe años reales, así que hay que convertir.
-
-| Código | Rango | Código | Rango |
-|--------|-------|--------|-------|
-| 1 | 18-24 | 8 | 55-59 |
-| 2 | 25-29 | 9 | 60-64 |
-| 3 | 30-34 | 10 | 65-69 |
-| 4 | 35-39 | 11 | 70-74 |
-| 5 | 40-44 | 12 | 75-79 |
-| 6 | 45-49 | 13 | 80+ |
-| 7 | 50-54 | | |
-
-- **Entrenamiento** (`entrenar_modelo.py`): usa `Age` **tal cual** (ya es 1-13).
-- **Inferencia** (`app/ml/preprocessor.py`): `mapear_edad_cdc(55) → 8`.
-- Ambas tablas deben ser idénticas. Si se manda `55` sin convertir, el modelo lo
-  lee como "código 55" → predicción sin sentido. Protegido por
-  `app/tests/test_preprocessor.py`.
-
-### 3.3 Ejemplo de request
-
-```json
-POST /api/v1/evaluaciones/
-{
-    "paciente_id": 1,
-    "edad": 55,
-    "presion_alta": true,
-    "colesterol_alto": true,
-    "tabaquismo": false,
-    "actividad_fisica": true,
-    "antecedente_acv": false,
-    "diabetes": true,
-    "salud_general": 3,
-    "dificultad_para_caminar": false
-}
-```
-
-Respuesta **201** (v2.0.0 real para este perfil):
-
-```json
-{
-    "probabilidad": 0.51315,
-    "clasificacion": "moderado",
-    "modelo_version": "2.0.0",
-    "triaje_clinico": { "codigo_color": "amarillo", "...": "..." }
-}
-```
-
-### 3.4 Errores de entrada esperados
-
-| Caso | Respuesta |
-|------|-----------|
-| Falta una variable o `edad` fuera de 1-120 / `salud_general` fuera de 1-5 | `422` (Pydantic) |
-| `paciente_id` inexistente | `400 "Paciente no encontrado"` |
-| Falta el `.joblib` | `500 "Modelo ML no disponible"` |
-
----
-
-## 4. Cómo se entrenó
-
-Todo el entrenamiento está en un único script reproducible:
-**`entrenar_modelo.py`** (raíz del proyecto).
-
-### 4.1 Dataset
-
-| Dato | Valor |
-|------|-------|
-| Nombre | Heart Disease Health Indicators (CDC/BRFSS 2015) |
-| Fuente | Kaggle — `alexteboul/heart-disease-health-indicators-dataset` |
-| Archivo | `heart_disease_health_indicators_BRFSS2015.csv` (~22 MB, **no se commitea**) |
-| Filas | 253,680 |
-| Features usadas | 9 (de las 22 disponibles) |
-| Variable objetivo | `HeartDiseaseorAttack` (0=no, 1=sí) |
-| Clase positiva | 23,893 → **9.42%** (dataset desbalanceado) |
-
-> El `.gitignore` excluye el CSV (`heart_disease_health_indicators*.csv`):
-> se descarga aparte. El **modelo sí se commitea** para que la API funcione al
-> clonar sin reentrenar.
-
-### 4.2 Pasos del pipeline de entrenamiento
-
-1. **Carga y preparación** — se seleccionan las 10 columnas necesarias (9 +
-   target), se renombran a los nombres que usa la API y `Diabetes` se binariza
-   (`>0 → 1`) para que el modelo nunca vea valores que la API no manda.
-2. **Split estratificado** — 80% train (202,944) / 20% test (50,736), `random_state=42`.
-   Estratificado para conservar el 9.4% de positivos en ambos conjuntos.
-3. **Búsqueda de hiperparámetros** — `RandomizedSearchCV` con validación cruzada
-   **estratificada de 3 folds**, **8 candidatos por familia**, scoring doble
-   (`roc_auc` y `average_precision` = PR AUC).
-4. **Comparación de familias** — Random Forest vs XGBoost. Gana la de mayor
-   **ROC AUC de CV**.
-5. **Reajuste** — el ganador se reentrena con **todo** el train.
-6. **Optimización del umbral** — sobre la curva precision-recall del test se
-   elige el umbral binario que maximiza F1.
-7. **Persistencia** — se guarda el modelo `.joblib` y la ficha técnica JSON.
-
-### 4.3 Resultado de la comparación
-
-| Familia | CV ROC AUC | CV PR AUC | Mejores hiperparámetros |
-|---------|-----------|-----------|-------------------------|
-| Random Forest | 0.8373 | 0.3544 | `n_estimators=200, max_depth=8, min_samples_leaf=5, class_weight="balanced"` |
-| **XGBoost** ✅ | **0.8391** | **0.3583** | `n_estimators=400, max_depth=3, learning_rate=0.05, subsample=0.8, colsample_bytree=0.8` |
-
-**Ganador: XGBoost** (por ROC AUC de CV; la diferencia con RF es pequeña, ambos
-son válidos y por eso se documenta la comparación).
-
-### 4.4 La restricción de ponderación (importante)
-
-Ambos estimadores se entrenan con **ponderación de la clase positiva**
-(`class_weight="balanced"` en RF, `scale_pos_weight = neg/pos ≈ 9.62` en XGBoost).
-
-¿Por qué? Porque la API aplica **umbrales clínicos fijos** (0.30 / 0.60) sobre
-la salida del modelo. Con una prevalencia del 9.4%, un modelo **sin** ponderar
-concentra las probabilidades muy por debajo de 0.30 y **el triaje colapsa a una
-sola banda** (todos "bajo", incluidos enfermos evidentes). La ponderación
-mantiene una **escala de riesgo** en la que 0.30 y 0.60 separan las 3 bandas.
-El script además valida esto con la `distribucion_triaje_test`.
-
-### 4.5 Reproducibilidad
-
-| Fuente | Valor |
-|--------|-------|
-| Semilla | `random_state=42` (split, búsqueda y modelos) |
-| Librerías | scikit-learn 1.9.0 · xgboost 3.4.1 · pandas 3.0.5 · joblib 1.5.3 |
-| Fecha de entrenamiento | Guardada en `entrenado_en` de la ficha técnica |
-
----
-
-## 5. Umbrales de decisión y clasificación
-
-Aquí conviven **dos tipos de umbral** que no hay que confundir:
-
-### 5.1 Bandas clínicas (regla de negocio, 3 niveles)
-
-Definen el color del triaje. Se leen de la ficha técnica
-(`umbrales_clasificacion_clinica`), con fallback a 0.30/0.60.
-
-| Probabilidad | Clasificación | Triaje |
-|--------------|---------------|--------|
-| `< 0.30` | bajo | 🟢 verde |
-| `0.30 – 0.60` | moderado | 🟡 amarillo |
-| `>= 0.60` | alto | 🔴 rojo |
-
-### 5.2 Umbral binario óptimo (referencia técnica)
-
-El entrenamiento también calcula el umbral que maximiza F1 para la decisión
-**enfermo / no enfermo**:
-
-| Métrica | Valor |
-|---------|-------|
-| Umbral óptimo F1 | **0.7026** |
-| F1 en ese punto | 0.4101 |
-
-Notar que **0.7026 > 0.60**: la banda clínica "alto" es más sensible que el
-punto óptimo de F1. Es coherente: en screening se prefiere *no dejar pasar
-enfermos* (recall alto) aunque baje la precisión.
-
----
-
-## 6. Qué debe entregar
-
-Un entrenamiento correcto **entrega dos artefactos** (y la API los usa ambos):
-
-### 6.1 Checklist de entregables
-
-| Entregable | Ruta | Obligatorio |
-|------------|------|-------------|
-| Modelo serializado | `app/resources/modelo_cardiaco.joblib` | Sí |
-| Ficha técnica | `app/resources/modelo_cardiaco_metadata.json` | Sí |
-| Métricas del modelo | `metricas_test_umbral_0.50` en la ficha | Sí |
-| Versión del modelo | `model_version` en la ficha | Sí |
-| Umbrales clínicos | `umbrales_clasificacion_clinica` en la ficha | Sí |
-
-> Si falta el `.joblib` → `POST /evaluaciones/` responde `500`.
-> Si falta la ficha → la API sigue funcionando con versión `1.0.0` y umbrales
-> por defecto (diseño defensivo de `app/ml/metadata.py`).
-
-### 6.2 Campos de la ficha técnica
-
-| Campo | Qué entrega |
-|-------|-------------|
-| `model_version` | Versión del artefacto (la reporta la API). |
-| `algoritmo` | Familia ganadora (`XGBoost` / `RandomForest`). |
-| `entrenado_en` | Fecha UTC del entrenamiento. |
-| `dataset` | Nombre, fuente, archivo, filas, features, positivos, train/test. |
-| `features` | Orden exacto de las 9 features (debe ser `FEATURE_COLUMNS`). |
-| `hiperparametros` | Configuración final del modelo. |
-| `validacion_cruzada` | Método, scoring, folds y resultado **por familia** (la comparación). |
-| `metricas_test_umbral_0.50` | Accuracy, precision, recall, F1, ROC AUC, PR AUC, matriz de confusión. |
-| `metricas_test_umbral_optimo` | Lo mismo en el umbral óptimo de F1. |
-| `umbral_decision` | Umbral por defecto (0.50) y óptimo de F1. |
-| `umbrales_clasificacion_clinica` | Bandas 0.30 / 0.60. |
-| `distribucion_triaje_test` | Reparto % de casos en bajo/moderado/alto (guardrail). |
-| `restriccion_ponderacion` | Explica la ponderación y su motivo. |
-| `librerias` | Versiones de scikit-learn, xgboost, pandas, joblib. |
-
----
-
-## 7. Métricas reales e interpretación
-
-Evaluadas sobre el 20% reservado (50,736 casos, 4,779 positivos reales).
-
-### 7.1 Comparativa por umbral
-
-| Métrica | Umbral 0.50 (default) | Umbral óptimo F1 (0.7026) |
-|---------|----------------------|---------------------------|
-| Accuracy | 0.7243 | 0.8488 |
-| Precision | 0.2297 | 0.3242 |
-| **Recall** | **0.8192** | 0.5581 |
-| **F1** | 0.3588 | **0.4101** |
-| ROC AUC | 0.8403 | 0.8403 |
-| PR AUC | 0.3537 | 0.3537 |
-
-Matriz de confusión (umbral 0.50):
-
-```
-                  Predijo NO   Predijo SÍ
-Real NO (45,957)    32,831      13,126
-Real SÍ  (4,779)       864       3,915
-```
-
-### 7.2 Distribución del triaje (guardrail de producto)
-
-| Banda | Casos | % |
-|-------|-------|---|
-| bajo | 25,929 | 51.11% |
-| moderado | 12,220 | 24.09% |
-| alto | 12,587 | 24.81% |
-
-Las tres bandas quedan pobladas → el semáforo del triaje informa de verdad.
-
-### 7.3 Cómo leer esto (honestidad)
-
-- **ROC AUC ≈ 0.84** es un resultado **bueno y realista** para predicción de
-  enfermedad cardíaca con BRFSS (la literatura reporta ~0.80-0.84). No esperar 0.95.
-- **F1 ≈ 0.36 en el umbral 0.50** es **esperable** con 9.4% de positivos y PR AUC
-  ≈ 0.35. Un F1 alto exigiría un problema más separable.
-- Se prioriza **recall (0.82)** en el umbral por defecto: en salud, dejar pasar un
-  enfermo (falso negativo) es más costoso que una falsa alarma. Si se prioriza
-  precisión, el umbral 0.7026 sube el F1 a 0.41 y baja el recall a 0.56.
-- La probabilidad de salida es una **escala de riesgo ponderada**, no una
-  probabilidad calibrada a la prevalencia real (ver limitaciones).
-
-> ⚠️ **Nota histórica:** versiones anteriores de `README.md` e
-> `INTEGRACION_ML.md` mencionaban "F1 ~0.60-0.65". Ese valor **era incorrecto**
-> (se esperaba, nunca se midió). Las cifras de esta sección salen de la ficha
-> técnica real y se reproducen con `python entrenar_modelo.py`.
-
-### 7.4 Desbalance de clases: por qué las métricas son las que son
-
-Esta es la sección que **justifica** los números anteriores. Leer "F1 = 0.36"
-sin contexto hace parecer un modelo malo; con contexto, es el resultado esperable
-del dataset.
-
-**El punto de partida: 9.42% de enfermos.** En el conjunto de test hay
-**4,779 enfermos de 50,736** casos. Con esa proporción:
-
-| Referencia | Valor | Lectura |
-|---|---|---|
-| Un modelo que dijera **"nadie está enfermo"** | Accuracy **90.58%** · Recall **0.00%** | Acertaría casi todo y **no detectaría a un solo enfermo** |
-| Baseline aleatorio de PR AUC (prevalencia) | 0.0942 | El azar "promete" 9.4% de precisión; nuestro modelo logra **0.3537 (×3.8)** |
-| Baseline aleatorio de ROC AUC | 0.5000 | El modelo logra **0.8403** |
-
-> **Por eso la accuracy sola es engañosa y PR AUC es la métrica honesta aquí:**
-> un modelo inútil (el que no predice nada) alcanzaría 90.58% de accuracy.
-> La comparación válida es contra la prevalencia, no contra el 100%.
-
-**El costo de los errores no es simétrico.** En el umbral 0.50:
-
-```
-Falsos negativos (FN) =    864  → pacientes ENFERMOS clasificados como sanos
-Falsos positivos (FP) = 13,126  → pacientes sanos derivados a revisión
-                          → 1 falso negativo por cada ~15 falsas alarmas
-```
-
-Un FN es un paciente que se va a casa sin seguimiento; un FP es una consulta
-adicional (costo y ansiedad). Por eso el modelo se queda en el umbral 0.50 con
-**recall 0.8192** en lugar del umbral de F1 óptimo (0.7026), que sube precision a
-0.3242 pero **deja escapar al 44.2% de los enfermos** (2,112 FN).
-
-**Qué significa cada banda para el médico (esto es lo que importa en consulta).**
-El triaje no usa 0.50: deriva a revisión a todo el que caiga en `moderado` o
-`alto` (≥ 0.30). Medido sobre el test:
-
-| Banda | Pacientes | % del total | Enfermos en la banda | **PPV** (de los marcados, cuántos enfermos) | % de enfermos que captura |
-|---|---|---|---|---|---|
-| bajo (< 0.30) | 25,929 | 51.1% | 388 | **1.5%** | 8.1% |
-| moderado (0.30-0.60) | 12,220 | 24.1% | 972 | **8.0%** | 20.3% |
-| alto (≥ 0.60) | 12,587 | 24.8% | 3,419 | **27.2%** | **71.5%** |
-
-**Regla de triaje completa (≥ 0.30 = "no bajo"): sensibilidad 91.88% ·
-especificidad 55.58% · precision 17.70%.** Deriva a revisión al **48.9%** de los
-pacientes y deja sin marcar solo al **8.1%** de los enfermos.
-
-Interpretación honesta de esta tabla:
-
-- ✅ **Como filtro de priorización funciona:** la banda `alto` ocupa un cuarto de
-  la población y concentra al 71.5% de los enfermos. La banda `bajo` tiene 1.5%
-  de PPV: es una zona de riesgo realmente baja.
-- ⚠️ **Como diagnóstico no funciona:** PPV 27.2% en `alto` significa que ~3 de
-  cada 4 pacientes marcados en rojo **no** están enfermos. El modelo ordena y
-  prioriza; **no** confirma enfermedad.
-- ⚠️ **La precisión baja (0.2297) es consecuencia del desbalance**, no un bug.
-
-### 7.5 Las probabilidades NO están calibradas (y está medido)
-
-Curva de calibración sobre el test:
-
-| Métrica | Valor | Lectura |
-|---|---|---|
-| **Brier del modelo** | **0.1714** | Error cuadrático medio de la probabilidad |
-| Brier de "predecir siempre la prevalencia" | **0.0853** | Baseline |
-
-> ⚠️ **El modelo tiene PEOR Brier que decir siempre 9.42%.** Esto es esperable y
-> consecuente con la decisión de producto de §4.4: `scale_pos_weight=9.62` infla
-> las probabilidades **a propósito** para que las bandas fijas 0.30/0.60 queden
-> pobladas (si no, el triaje colapsa a "todo bajo").
-
-**Consecuencia práctica (importante para el uso clínico):**
-
-- La salida se debe leer como **escala de riesgo para ordenar/priorizar**, NO como
-  "probabilidad de que el paciente esté enfermo". Un 0.60 **no** significa 60%.
-- Si en algún momento se necesita `P(enfermedad)` interpretable, hay que envolver
-  el modelo en `CalibratedClassifierCV` (isotónica/Platt) **y recalibrar las
-  bandas** — no basta con cambiar el número.
-
-### 7.6 Evidencia visual
-
-Las figuras se generan desde el modelo versionado (sin reentrenar) y el script
-**verifica** que las métricas coincidan con la ficha técnica:
+# Componente ML — release 3.0.0
+
+Estado vigente: 15/10/2026. Prototipo académico de clasificación de perfiles asociados con antecedentes autodeclarados de enfermedad coronaria o infarto. No estima eventos futuros ni determina diagnóstico, tratamiento o urgencia.
+
+## Modelo activo y trazabilidad
+
+XGBoost ponderado + calibración sigmoid (`CalibratedClassifierCV`, estimador congelado). La aplicación carga `app/resources/modelo_cardiaco.joblib` y `modelo_cardiaco_metadata.json`. La release íntegra está en `app/resources/modelos/3.0.0/`; la referencia anterior, en `app/resources/modelos/2.0.0/`.
+
+La metadata valida features, versión, cortes y política. El cargador comprueba SHA256 del modelo antes de deserializar; incoherencia de bundle o cachés causa error, sin aplicar cortes de respaldo a un calibrador distinto. `reload_model()` recarga también metadata; para una instancia en ejecución se recomienda reiniciar el servidor.
+
+Cada evaluación nueva guarda `modelo_version` y el snapshot `politica_modelo`: versión de reglas, cortes, semántica y precisión del score. La migración aditiva 004 añade JSON nullable; los históricos conservan score, clasificación y textos. Un registro sin snapshot sigue interpretándose como histórico sin calibrar. No comparar valores entre versiones como si compartieran escala.
+
+## Contrato de entrada
+
+Los nueve predictores son obligatorios y mantienen orden/codificación:
+
+| Predictor | Significado |
+| --- | --- |
+| edad | API: años 18–120, coherentes con nacimiento a fecha de Lima; se convierte a CDC 1–13 |
+| presion_alta | Diagnóstico previo declarado, no medición aislada |
+| colesterol_alto | Antecedente declarado de colesterol alto |
+| tabaquismo | Al menos 100 cigarrillos en la vida; no consumo actual |
+| actividad_fisica | Actividad declarada en últimos 30 días |
+| antecedente_acv | Antecedente declarado de ACV |
+| diabetes | Prediabetes o diabetes agrupadas |
+| salud_general | 1 excelente, 2 muy buena, 3 buena, 4 regular, 5 mala |
+| dificultad_para_caminar | Dificultad al caminar o subir escaleras |
+
+Edad CDC: 1=18–24, 2=25–29, 3=30–34, 4=35–39, 5=40–44, 6=45–49, 7=50–54, 8=55–59, 9=60–64, 10=65–69, 11=70–74, 12=75–79, 13=80+. El CSV ya contiene códigos; no se convierten por segunda vez al entrenar.
+
+Se conservan aparte `estado_diabetes` (ninguna/prediabetes/diabetes) y presión sistólica/diastólica opcionales. No son nuevas features. API: 422 para omisiones, rangos o contradicciones; 400 para inexistencia del paciente, edad real fuera de población o discrepante; 401 sin autenticación.
+
+## Entrenamiento y calibración
+
+253,680 filas del CSV transformado de BRFSS 2015, 23,893 positivos; nueve features. XGBoost: 400 árboles, profundidad 3, learning rate 0.05, subsample/colsample 0.8. Configuración procedente del experimento v2, sin una nueva búsqueda de hiperparámetros.
+
+Separación por perfiles idénticos de las nueve features, sin target ni sexo en los grupos: train 152,725; calibration 36,116; validation 27,564; test 37,275. Cero perfiles compartidos entre particiones. Entrena solo en train, calibra solo en calibration y elige variante/cortes solo en validation. No hay reajuste posterior con validation/test.
+
+El CSV y los hiperparámetros ya habían sido explorados. La separación interna mejora el protocolo, pero no convierte esos datos en una cohorte nueva. El experimento de origen está documentado en [segunda etapa](SEGUNDA_ETAPA_EXPERIMENTAL.md).
+
+## Score y política activa
+
+`probabilidad` conserva su nombre API histórico. En v3 es un score con calibración interna, redondeado a seis decimales **antes de clasificar y persistir**; se presenta como índice sobre 100. La calibración interna no demuestra probabilidad clínica individual o generalización local.
+
+Reglas **bandas-academicas-3.0.0**:
+
+| Score | Índice sobre 100 | Banda |
+| --- | --- | --- |
+| <0.051065 | <5.1065 | bajo |
+| 0.051065 a <0.210469 | 5.1065 a <21.0469 | moderado |
+| >=0.210469 | >=21.0469 | alto |
+
+Corte inferior: mayor umbral con recall >=90% en validation; superior: máximo F1 en validation, empate mayor umbral. Son criterios académicos, no puntos clínicos. El 90% es objetivo de selección en validation, no garantía de recall en test u otras poblaciones. Los textos nuevos describen bandas y revisión experimental; no prioridad de urgencias.
+
+## Métricas internas de la release
+
+Test por perfiles, 37,275 filas y 3,798 positivos (10.19%): ROC AUC **0.8285**, AP **0.3513**, Brier **0.0773** frente a 0.1907 del candidato crudo y 0.0916 de prevalencia constante de train. Calibrar cambia escala, no mejora aquí AUC/AP.
+
+| Corte | Precision | Recall | F1 | Fracción marcada |
+| --- | --- | --- | --- | --- |
+| >=0.051065: intermedia o alta | 0.2070 | 0.8778 | 0.3350 | 0.4321 |
+| >=0.210469: alta | 0.2953 | 0.6435 | 0.4048 | 0.2221 |
+
+AUC IC95% por bootstrap de perfiles: 0.8040–0.8487. F1 al corte superior: 0.3804–0.4277. Condicionados en modelo/umbral, no incluyen variación de reentrenamiento. AP es `average_precision_score`, no área trapezoidal.
+
+Las cinco particiones adicionales, investigación de subgrupos y evaluación temporal externa se presentan en [integración y generalización](INTEGRACION_V3_Y_GENERALIZACION.md). No ocultar el recall inferior de jóvenes ni las diferencias por sexo; no se afirma equidad ni utilidad clínica.
+
+## Ejecutar y verificar
 
 ```bash
-python scripts/generar_figuras.py
-# [VERIF] OK ... el modelo reproduce exactamente las métricas de su ficha técnica.
+python scripts/aplicar_migracion_003.py
+python scripts/aplicar_migracion_004.py
+python -m pytest app/tests -q
+# Nuevo experimento offline; no promueve candidatos automáticamente:
+python entrenar_modelo.py --output experimentos_ml/otra_ejecucion --report-dir docs/experimentos/otra_ejecucion
 ```
 
-| Figura | Qué demuestra |
-|---|---|
-| ![Curva ROC](figuras/01_curva_roc.png) | Discriminación: ROC AUC 0.8403 vs 0.50 del azar |
-| ![Precision-Recall](figuras/02_curva_precision_recall.png) | Rendimiento con 9.4% de positivos: PR AUC 0.3537 vs 0.0942 la prevalencia |
-| ![Matriz de confusión](figuras/03_matriz_confusion.png) | Tipos de error: 864 FN vs 13,126 FP |
-| ![Calibración](figuras/04_curva_calibracion.png) | Sobreestima el riesgo (Brier 0.1714 > 0.0853) |
-| ![Importancia de variables](figuras/05_importancia_features.png) | Qué variables pesan (gain de XGBoost) |
-| ![Barrido de umbral](figuras/06_barrido_umbral.png) | Compromiso precision/recall y las bandas 0.30/0.60 |
-| ![Distribución de riesgo](figuras/07_distribucion_riesgo.png) | Reparto real en las 3 bandas del triaje |
+El script `preparar_release_v3.py` documenta la promoción realizada: congela política, genera metadata, archiva referencia anterior e instala una release. Preparar dos veces el mismo destino falla para conservar evidencia; activar una release ya instalada es idempotente.
 
----
+`python scripts/generar_figuras.py` reproduce exclusivamente **v2 archivada**, con su split histórico 80/20 seed 42. Sus figuras no representan la v3. Las métricas antiguas y limitaciones del umbral sobre test se conservan en [documentación histórica v2](historico/MODELO_ML_v2.md).
 
-## 8. Cómo reentrenar y versionar
+## Referencias
 
-```bash
-# 1. Descarga el CSV y colócalo en la raíz del proyecto (no se commitea)
-#    https://www.kaggle.com/datasets/alexteboul/heart-disease-health-indicators-dataset
+[Model Card](MODEL_CARD.md), [reglas y persistencia](TRIAGE_CLINICO.md), [contrato API](INTEGRACION_ML.md), [CDC BRFSS](https://www.cdc.gov/brfss/annual_data/annual_2017.html), [calibración sklearn](https://scikit-learn.org/stable/modules/generated/sklearn.calibration.CalibratedClassifierCV.html).
 
-# 2. (Opcional) Sube MODEL_VERSION en entrenar_modelo.py si cambias el modelo
-#    MODEL_VERSION = "2.0.0"   →   "2.1.0"
+## Evaluación temporal externa completada
 
-# 3. Entrena (comparación + CV: ~2-3 minutos)
-python entrenar_modelo.py
-#    o con ruta explícita:
-python entrenar_modelo.py heart_disease_health_indicators_BRFSS2015.csv
+BRFSS 2017: 373,536 casos completos, 34,408 positivos; modelo y bandas congelados, sin ajuste con esos datos. ROC AUC 0.8398, AP 0.3509, Brier 0.0704. Recall intermedia/alta 0.8971; en banda alta, recall 0.5963 y F1 0.3984. Persiste recall reducido en jóvenes (0.4214 al corte inferior, 0.1625 al superior).
 
-# 4. Reinicia uvicorn (o usa reload_model()/reload_metadata() si el server sigue vivo)
-python -m uvicorn main:app --reload --port 8000
-```
-
-**Versionado:** la versión **no está hardcodeada** en la API. `predictor.py` la
-lee con `app/ml/metadata.py::get_model_version()` desde la ficha técnica. Al
-reentrenar con otra `MODEL_VERSION`, las evaluaciones nuevas reportan la versión
-nueva automáticamente.
-
----
-
-## 9. Cómo verificar que todo está OK
-
-### 9.1 Tests automáticos
-
-```bash
-python -m pytest app/tests -v
-```
-
-Debe dar **72 tests en verde**, de los cuales **17 son del modelo real**
-(`app/tests/test_modelo_real.py`) y cubren:
-
-- Existencia del `.joblib` y de la ficha técnica (versionado).
-- Campos mínimos de la ficha y métricas sanas (`ROC AUC >= 0.70`).
-- Guardia anti-dataset-sintético (`dataset.n_rows > 200_000`).
-- `features` de la metadata == `FEATURE_COLUMNS` del preprocessor.
-- El modelo tiene 9 features y `predict_proba`.
-- Pipeline real `preprocess → predict()` end-to-end y determinista.
-- Coherencia clínica: perfil de alto riesgo > perfil de bajo riesgo.
-- `_classify` respeta los umbrales de la ficha.
-- **E2E por HTTP** de `POST /api/v1/evaluaciones/` (TestClient → router →
-  service → mapper → modelo real → repositorio SQLite): `201` + predicción
-  real + persistencia (GET por id y por paciente), ordenamiento de riesgo,
-  `401` sin token y `400` con paciente inexistente.
-
-### 9.2 Smoke test manual
-
-```python
-from app.ml.predictor import predict
-from app.ml.metadata import get_model_version
-
-print(get_model_version())  # 2.0.0
-
-casos = {
-    "sano 30":    dict(edad=30, presion_alta=0, colesterol_alto=0, tabaquismo=0,
-                       actividad_fisica=1, antecedente_acv=0, diabetes=0,
-                       salud_general=1, dificultad_para_caminar=0),
-    "riesgo 75":  dict(edad=75, presion_alta=1, colesterol_alto=1, tabaquismo=1,
-                       actividad_fisica=0, antecedente_acv=1, diabetes=1,
-                       salud_general=5, dificultad_para_caminar=1),
-}
-for nombre, datos in casos.items():
-    r = predict(datos)
-    print(nombre, r.probabilidad, r.clasificacion.value)
-# sano 30   → ~0.021 → bajo
-# riesgo 75 → ~0.962 → alto
-```
-
----
-
-## 10. Limitaciones y próximos pasos
-
-**Limitaciones conocidas (honestas):**
-
-1. **Probabilidad no calibrada (medido, no supuesto).** Brier del modelo
-   **0.1714** vs **0.0853** de predecir siempre la prevalencia (ver §7.5). La
-   ponderación convierte la salida en una *escala de riesgo*, no en
-   `P(enfermedad)`. Mejora posible: envolver el modelo en
-   `CalibratedClassifierCV` **y recalibrar las bandas 0.30/0.60**.
-2. **Desbalance y F1 moderado.** Con 9.42% de positivos (4,779 de 50,736), F1
-   0.36-0.41 es el techo realista del dataset (ver §7.4). Además, la PPV de la
-   banda `alto` es solo 27.2%: el modelo prioriza, no diagnostica.
-3. **Población distinta.** El dataset es de EE.UU. (BRFSS); la población objetivo
-   es local. Puede haber *dataset shift*. No usar como diagnóstico definitivo.
-4. **Umbrales clínicos fijos.** 0.30/0.60 son una decisión de producto; conviene
-   validarlos con criterio médico.
-5. **Reentrenamiento manual.** No hay pipeline programado ni monitoreo de drift.
-6. **Versión manual.** `MODEL_VERSION` se sube a mano en el script.
-
-**Próximos pasos sugeridos:**
-
-- Evaluación por subgrupos: **hoy no es posible** con las 9 variables del modelo
-  (BRFSS sí tiene sexo/raza/ingreso, pero la API no los recibe ni los persiste).
-  Si se quiere medir equidad, primero hay que capturar esos campos.
-- Calibración de probabilidades + recalibración de umbrales.
-- Explicabilidad por paciente (SHAP) para justificar el riesgo.
-- Análisis de equidad por subgrupos (sexo, edad, seguro).
-- Pipeline automático de descarga/preparación y monitoreo de desempeño en producción.
-- Validación con datos clínicos locales.
-
----
-
-## 11. Glosario
-
-| Término | Significado |
-|---------|-------------|
-| **ROC AUC** | Capacidad de ordenar positivos por encima de negativos. 0.5 = azar, 1.0 = perfecto. |
-| **PR AUC** | Área bajo la curva precision-recall. Más informativa con clases desbalanceadas. |
-| **Precision** | De los que marcó como enfermos, cuántos lo eran. |
-| **Recall** | De los enfermos reales, cuántos detectó. |
-| **F1** | Media armónica de precision y recall. |
-| **Validación cruzada (CV)** | Entrenar/evaluar en K particiones para estimar desempeño sin sesgo de un solo split. |
-| **Umbral de decisión** | Corte de probabilidad que separa "enfermo" de "no enfermo". |
-| **Ponderación de clases** | Dar más peso a la clase minoritaria para que el modelo no la ignore. |
-| **Ficha técnica** | JSON con versión, dataset, hiperparámetros y métricas del artefacto. |
-| **Guardrail** | Verificación que evita un estado inválido (p. ej. banda de triaje vacía). |
+Es otra edición de la encuesta de EE.UU., obtenida de una copia pública archivada con procedencia y hashes registrados; no una cohorte clínica peruana. El cambio de selección de casos y los patrones discretos compartidos entre años limitan las conclusiones. Ver [protocolo, subgrupos y límites de la evaluación externa](INTEGRACION_V3_Y_GENERALIZACION.md).

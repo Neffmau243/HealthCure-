@@ -1,0 +1,15 @@
+{
+  "semillas": [
+    20261016,
+    20261017,
+    20261018,
+    20261019,
+    20261020
+  ],
+  "unidad": "perfil nueve features sin target ni sexo",
+  "seleccion_semilla": "Ninguna; todas se reportan; candidato original ya congelado",
+  "bandas": "En validation de cada repetición: recall>=0.90 / máximo F1",
+  "dataset_sha256": "953fb23bb131736d7879539a071d3f6d1eaae8d4867ab05335d0ba89b94d5f99",
+  "script_sha256": "2951903798f37dfa835897170c553d17be3e65f0a61ba8070b0227dff97218af",
+  "intervalos": "Recall por bootstrap de perfiles, 200 réplicas, modelo/umbral fijos"
+}

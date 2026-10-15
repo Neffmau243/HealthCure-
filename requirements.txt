@@ -1,20 +1,52 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.30.0
-sqlalchemy>=2.0.35
-pymysql>=1.1.0
-aiomysql>=0.2.0
-pydantic>=2.9.0
-pydantic-settings>=2.5.0
-python-jose[cryptography]>=3.3.0
-passlib[bcrypt]>=1.7.4
+# ============================================================
+# HealthCure - CardioPredict — dependencias del backend
+# ============================================================
+# Instalar:  pip install -r requirements.txt
+#
+# ¿POR QUÉ VERSIONES FIJAS (==) Y NO RANGOS (>=)?
+#
+#   1) REPRODUCIBILIDAD. Con ">=..." una máquina nueva instala las versiones
+#      más recientes y el proyecto puede romperse sin que nadie haya tocado
+#      el código. Pasó de verdad: un clon limpio instalaba SQLAlchemy 2.1.4
+#      en vez de 2.0.36, y el proyecto nunca se probó con esa versión.
+#      Estas versiones son las que corren los 76 tests en verde.
+#
+#   2) WINDOWS + CONTROL INTELIGENTE DE APLICACIONES (Smart App Control).
+#      Windows bloquea binarios recién descargados sin reputación con el
+#      error "Una directiva de Control de aplicaciones bloqueó este archivo".
+#      Le pasa a los .exe que genera pip (uvicorn.exe) y a las DLL
+#      compiladas de versiones muy nuevas (SQLAlchemy 2.1.x, pandas,
+#      scikit-learn, xgboost). Estas versiones ya están permitidas.
+#
+#      Si aun así te bloquea algo: crea el entorno con
+#      `python -m venv venv --system-site-packages` (reutiliza los paquetes
+#      ya instalados y permitidos por Windows).
+#
+# Al actualizar una versión: correr `python -m pytest app/tests -v` y, si
+# pasa, actualizar el número aquí.
+# ============================================================
+
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+sqlalchemy==2.0.36
+pymysql==1.1.1
+aiomysql==0.2.0
+# El extra [email] es OBLIGATORIO: app/schemas/usuario.py usa EmailStr y
+# pydantic v2 no lo valida sin email-validator (ImportError al arrancar el
+# servidor). Faltaba en este archivo y el proyecto solo funcionaba porque
+# email-validator estaba instalado de casualidad en el equipo original.
+pydantic[email]==2.10.3
+pydantic-settings==2.7.0
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
 # bcrypt PINNEADO a 4.0.1: passlib 1.7.4 (no mantenido desde 2020)
 # falla al leer la versión de bcrypt >= 4.1 (se eliminó bcrypt.__about__)
 # y llena el log con "(trapped) error reading bcrypt version" en cada login.
 # 4.0.1 es la última versión compatible y no tiene CVEs conocidos.
 bcrypt==4.0.1
-python-multipart>=0.0.12
-joblib>=1.4.0
-pandas>=2.2.0
-scikit-learn>=1.5.0
-xgboost>=2.1.0
-reportlab>=4.0.0
+python-multipart==0.0.19
+joblib==1.5.3
+pandas==3.0.5
+scikit-learn==1.9.0
+xgboost==3.4.1
+reportlab==5.0.1

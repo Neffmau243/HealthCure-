@@ -11,7 +11,7 @@ Separación clave:
   - EvaluacionResponse incluye TODO + el resultado de la predicción
   - PredictionResult es solo el output del modelo ML (sin DB)
 """
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing import Optional
 from datetime import datetime
 from enum import Enum
@@ -19,15 +19,22 @@ from enum import Enum
 
 class ClasificacionEnum(str, Enum):
     """
-    Niveles de riesgo cardíaco calculados por el modelo.
-    Se derivan de la probabilidad:
-      - bajo:     probabilidad < 0.30 (30%)
-      - moderado: probabilidad 0.30 - 0.60 (30-60%)
-      - alto:     probabilidad > 0.60 (60%)
+    Bandas experimentales del score no calibrado.
+    Los cortes vigentes se leen de la metadata del modelo:
+      - bajo:     score < 0.30
+      - moderado: 0.30 <= score < 0.60
+      - alto:     score >= 0.60
+    No representan probabilidades clínicas ni criterios de urgencia.
     """
     bajo = "bajo"
     moderado = "moderado"
     alto = "alto"
+
+
+class EstadoDiabetes(str, Enum):
+    ninguna = "ninguna"
+    prediabetes = "prediabetes"
+    diabetes = "diabetes"
 
 
 class EvaluacionCreate(BaseModel):
@@ -52,29 +59,46 @@ class EvaluacionCreate(BaseModel):
         "dificultad_para_caminar": false
     }
     """
-    paciente_id: int  # Obligatorio — debe existir en la tabla pacientes
+    paciente_id: int = Field(..., gt=0)
 
     # --- Variables predictoras (las que entra al modelo ML) ---
-    edad: int = Field(..., ge=1, le=120)
-    # ge=1 → greater or equal (mayor o igual a 1)
+    edad: int = Field(..., ge=18, le=120)
+    # ge=18: población adulta del modelo
     # le=120 → less or equal (menor o igual a 120)
 
-    presion_alta: bool = False
-    colesterol_alto: bool = False
-    tabaquismo: bool = False
-    actividad_fisica: bool = False
-    antecedente_acv: bool = False
-    diabetes: bool = False
+    presion_alta: bool
+    colesterol_alto: bool
+    tabaquismo: bool
+    actividad_fisica: bool
+    antecedente_acv: bool
+    diabetes: bool
 
-    salud_general: int = Field(3, ge=1, le=5)
+    salud_general: int = Field(..., ge=1, le=5)
     # 1=excelente, 2=muy buena, 3=buena, 4=regular, 5=mala
 
-    dificultad_para_caminar: bool = False
+    dificultad_para_caminar: bool
+
+    # Datos originales de consulta: se conservan, pero no añaden features al ML.
+    # None conserva compatibilidad con clientes que solo conocen el booleano.
+    estado_diabetes: Optional[EstadoDiabetes] = None
+    presion_sistolica: Optional[int] = Field(None, gt=0, le=400)
+    presion_diastolica: Optional[int] = Field(None, gt=0, le=400)
+
+    @model_validator(mode="after")
+    def validar_datos_originales(self):
+        if self.estado_diabetes is not None:
+            if self.diabetes != (self.estado_diabetes != EstadoDiabetes.ninguna):
+                raise ValueError("diabetes debe coincidir con estado_diabetes")
+        if (self.presion_sistolica is None) != (self.presion_diastolica is None):
+            raise ValueError("Envía ambas mediciones de presión o ninguna")
+        if self.presion_sistolica is not None and self.presion_sistolica <= self.presion_diastolica:
+            raise ValueError("La presión sistólica debe ser mayor que la diastólica")
+        return self
 
 
 class TriajeClinico(BaseModel):
     """
-    Interpretación clínica del resultado ML, lista para consumir.
+    Orientación experimental asociada al resultado ML.
 
     TODO es texto plano / listas de strings — SIN HTML ni estilos.
     El frontend renderiza colores y tarjetas a partir de codigo_color
@@ -84,10 +108,10 @@ class TriajeClinico(BaseModel):
     {
         "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
         "codigo_color": "amarillo",
-        "accion_sugerida": "Programar consulta médica de control...",
+        "accion_sugerida": "Revisar los antecedentes durante la consulta; prioridad experimental moderada.",
         "factores_riesgo_detectados": ["Hipertensión Arterial", ...],
-        "factores_protectores": ["Realiza Actividad Física Regular"],
-        "recomendaciones_medicas": ["Solicitar perfil lipídico..."]
+        "factores_protectores": ["Actividad física declarada en los últimos 30 días"],
+        "recomendaciones_medicas": ["Regla académica sin validación clínica; no determina urgencia ni diagnóstico."]
     }
     """
     nivel_alerta: str
@@ -123,10 +147,10 @@ class EvaluacionResponse(BaseModel):
         "triaje_clinico": {
             "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
             "codigo_color": "rojo",
-            "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
+            "accion_sugerida": "Revisar el perfil con el profesional responsable; prioridad experimental alta.",
             "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
-            "factores_protectores": ["No Fumador"],
-            "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
+            "factores_protectores": ["No declara haber fumado 100 cigarrillos en la vida"],
+            "recomendaciones_medicas": ["Regla académica sin validación clínica; no determina urgencia ni diagnóstico."]
         },
         "created_at": "2025-01-15T10:30:00"
     }
@@ -145,13 +169,17 @@ class EvaluacionResponse(BaseModel):
     diabetes: bool
     salud_general: int
     dificultad_para_caminar: bool
+    estado_diabetes: Optional[EstadoDiabetes] = None
+    presion_sistolica: Optional[int] = None
+    presion_diastolica: Optional[int] = None
 
     # Resultado del modelo ML
-    probabilidad: float  # 0.0 a 1.0
+    probabilidad: float = Field(..., ge=0, le=1, description="Score [0,1]; su calibración y bandas dependen de politica_modelo y versión. No es probabilidad clínica.")
     clasificacion: ClasificacionEnum
     modelo_version: Optional[str] = None
+    politica_modelo: Optional[dict] = None
 
-    # Interpretación clínica para médicos/enfermeros (triaje)
+    # Orientación experimental; se conserva el nombre del contrato histórico.
     triaje_clinico: Optional[TriajeClinico] = None
     # None si la evaluación es antigua y no tiene triaje persistido
 
@@ -201,3 +229,4 @@ class PredictionResult(BaseModel):
     probabilidad: float  # 0.0 a 1.0 (6 decimales)
     clasificacion: ClasificacionEnum  # "bajo", "moderado" o "alto"
     modelo_version: str  # Ej: "1.0.0"
+    politica_modelo: Optional[dict] = None
