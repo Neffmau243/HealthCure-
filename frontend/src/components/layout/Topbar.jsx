@@ -4,7 +4,7 @@ import { AlignLeft, Bell, ChevronDown, LogOut, Clock } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { etiquetaRol } from '../../constants/roles';
 
-export default function Topbar({ toggleSidebar }) {
+export default function Topbar({ toggleSidebar, sidebarOpen }) {
   // Un solo estado: 'notificaciones' | 'usuario' | null. Abrir uno cierra el otro.
   const [menuAbierto, setMenuAbierto] = useState(null);
   const [currentTime, setCurrentTime] = useState('');
@@ -63,28 +63,29 @@ export default function Topbar({ toggleSidebar }) {
   const alternar = (menu) => setMenuAbierto((prev) => (prev === menu ? null : menu));
 
   return (
-    <header className="h-16 lg:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-6 shadow-xs z-30 shrink-0">
+    <header className="clinical-topbar h-16 lg:h-20 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0">
       <div className="flex items-center gap-2 lg:gap-4">
         {/* Botón del menú lateral */}
         <button
           onClick={toggleSidebar}
           className="p-2.5 min-h-11 min-w-11 rounded-lg text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center"
           aria-label="Alternar menú lateral"
+          aria-expanded={sidebarOpen}
+          aria-controls="navegacion-principal"
           title="Alternar Menú"
         >
           <AlignLeft className="w-5 h-5 text-slate-700" aria-hidden="true" />
         </button>
 
-        <h1 className="font-semibold text-slate-800 text-base lg:text-lg hidden sm:block font-lexend">
+        <p className="font-medium text-slate-600 text-sm hidden sm:block">
           {currentTitle}
-        </h1>
+        </p>
       </div>
 
       <div className="flex items-center gap-2 lg:gap-3">
         {/* Indicador de Sesión Activa y Hora */}
         <div className="hidden md:flex items-center gap-2.5 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs text-slate-600">
           <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
           </span>
           <span className="font-medium text-slate-700">Sesión Activa</span>

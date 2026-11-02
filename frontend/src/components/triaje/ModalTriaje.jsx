@@ -3,6 +3,10 @@ import { Loader2, Info, BrainCircuit } from 'lucide-react';
 import { calcularIMC, edadACategoria, obtenerEdad, nombreCompleto } from '../../utils/triaje';
 import { Alerta } from '../ui/Feedback';
 import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
+import ObservacionesForm from '../clinica/ObservacionesForm';
+import AlertaClinica from '../clinica/AlertaClinica';
+import { construirObservaciones, hayAlerta } from '../../utils/observaciones';
+import { useAlertaClinica } from '../../hooks/useAlertaClinica';
 
 const inputClass =
   'w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none';
@@ -60,21 +64,13 @@ const formInicialTriaje = (paciente, ultimaEvaluacion) => ({
     : {}),
 });
 
-function Seccion({ titulo, children, nota, usadaPorModelo = false }) {
+function Seccion({ titulo, children, nota }) {
   return (
     <fieldset className="space-y-3">
       <legend className="w-full mb-2">
         <span className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-semibold text-slate-800">{titulo}</span>
-          {usadaPorModelo ? (
-            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-              Usada por el modelo
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-              No entra al modelo
-            </span>
-          )}
+
         </span>
         {nota && <span className="block text-xs text-slate-500 mt-1 font-normal">{nota}</span>}
       </legend>
@@ -140,6 +136,8 @@ export default function ModalTriaje({
   // El modal solo se monta al abrirse, así el formulario arranca con los datos
   // precargados del paciente y de su última evaluación.
   const [form, setForm] = useState(() => formInicialTriaje(paciente, ultimaEvaluacion));
+  const observaciones = construirObservaciones(form);
+  const revision = useAlertaClinica(paciente?.id, observaciones);
 
   // Scroll bloqueado, Escape, clic fuera y foco inicial: ver el hook.
   const { propsContenedor, alClicFondo } = useDialogoAccesible({
@@ -192,6 +190,7 @@ export default function ModalTriaje({
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
           <div className="overflow-y-auto px-6 lg:px-8 py-5 space-y-6 flex-1">
             {error && <Alerta>{error}</Alerta>}
+            <AlertaClinica {...revision} observaciones={observaciones} />
 
             {precargado && (
               <div className="flex items-start gap-2.5 text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-xl p-3">
@@ -207,9 +206,9 @@ export default function ModalTriaje({
             )}
 
             <Seccion
-              titulo="Signos vitales que sí entran al modelo"
+              titulo="Presión arterial"
               usadaPorModelo
-              nota="La presión alta se deduce de este campo o del diagnóstico previo."
+              nota="Registra la medición de esta visita. El antecedente de hipertensión se indica más adelante."
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Campo label="Presión Arterial (mmHg)">
@@ -229,8 +228,8 @@ export default function ModalTriaje({
             </Seccion>
 
             <Seccion
-              titulo="Otros signos vitales (apoyo en consulta)"
-              nota="Hoy el registro no los guarda todavía; quedan como apoyo visual en pantalla. Por eso ya no son obligatorios."
+              titulo="Mediciones de la visita"
+              nota="Se guardan para apoyar la valoración clínica. Deja el campo vacío si no se realizó la medición."
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Campo label="Peso (kg)">
@@ -240,13 +239,16 @@ export default function ModalTriaje({
                   <input type="number" min="30" name="altura" value={form.altura} onChange={handleChange} placeholder="170" className={inputClass} />
                 </Campo>
                 <Campo label="Temperatura (°C)">
-                  <input type="number" step="0.1" name="temperatura" value={form.temperatura} onChange={handleChange} placeholder="36.5" className={inputClass} />
+                  <input type="number" step="0.1" min="25" max="45" name="temperatura" value={form.temperatura} onChange={handleChange} placeholder="36.5" className={inputClass} />
                 </Campo>
                 <Campo label="Frecuencia Cardíaca (bpm)">
-                  <input type="number" name="frecuenciaCardiaca" value={form.frecuenciaCardiaca} onChange={handleChange} placeholder="80" className={inputClass} />
+                  <input type="number" min="0" max="300" name="frecuenciaCardiaca" value={form.frecuenciaCardiaca} onChange={handleChange} placeholder="80" className={inputClass} />
                 </Campo>
                 <Campo label="Saturación de Oxígeno (%)">
-                  <input type="number" name="saturacion" value={form.saturacion} onChange={handleChange} placeholder="98" className={inputClass} />
+                  <input type="number" min="0" max="100" step="0.1" name="saturacion" value={form.saturacion} onChange={handleChange} placeholder="98" className={inputClass} />
+                </Campo>
+                <Campo label="Frecuencia respiratoria (rpm)">
+                  <input type="number" min="0" max="100" name="frecuencia_respiratoria" value={form.frecuencia_respiratoria ?? ''} onChange={handleChange} className={inputClass} />
                 </Campo>
               </div>
               <p className="text-xs text-slate-500">
@@ -254,6 +256,8 @@ export default function ModalTriaje({
                 <span className="font-semibold text-slate-700">{imc ?? '—'}</span>
               </p>
             </Seccion>
+
+            <ObservacionesForm value={form} onChange={setForm} incluirMediciones={false} mostrarCondicion={paciente?.sexo === 'F'} disabled={guardando} />
 
             {sinEdadValida && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
@@ -319,17 +323,15 @@ export default function ModalTriaje({
               </div>
             </Seccion>
 
-            <div className="flex items-start gap-2.5 text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
-              <BrainCircuit className="w-4 h-4 mt-0.5 shrink-0 text-indigo-600" aria-hidden="true" />
-              <span>
-                El modelo recibe 9 variables: presión alta, colesterol alto, tabaquismo, actividad
-                física, antecedente de ACV, diabetes, salud general, dificultad para caminar y edad.
-              </span>
-            </div>
+            <details className="text-xs text-slate-600 border-t border-slate-200 pt-3 leading-relaxed">
+              <summary className="flex items-center gap-2 cursor-pointer min-h-11"><BrainCircuit className="w-4 h-4 shrink-0" aria-hidden="true" />Qué información utiliza la evaluación cardiovascular</summary>
+              <p className="mt-2">El modelo recibe 9 variables: presión alta, colesterol alto, tabaquismo, actividad física, antecedente de ACV, diabetes, salud general, dificultad para caminar y edad.</p>
+            </details>
           </div>
 
           {/* Acciones fijas: antes el botón de guardar quedaba ~180px por debajo
               del pliegue en un viewport de 900px y había que bajar todo el formulario. */}
+          {hayAlerta(revision.alerta) && <p role="alert" className="shrink-0 px-6 py-3 bg-rose-100 text-rose-950 text-sm font-bold">{revision.alerta.titulo}. La atención no debe esperar al resultado del modelo.</p>}
           <div className="px-6 lg:px-8 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl flex flex-col-reverse sm:flex-row sm:justify-end gap-3 shrink-0">
             <button
               type="button"

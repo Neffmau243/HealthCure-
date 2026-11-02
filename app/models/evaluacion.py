@@ -70,6 +70,8 @@ class Evaluacion(Base):
     #   > 0.60 → "alto"
 
     modelo_version = Column(String(50), nullable=True)
+    observaciones_clinicas = Column(JSON, nullable=True)
+    alerta_clinica = Column(JSON, nullable=True)
     # Versión del modelo que se usó (ej: "1.0.0")
     # Útil para auditoría: saber con qué versión se hizo cada predicción
 

@@ -1,31 +1,23 @@
 """
-preprocessor.py — LIMPIEZA Y VALIDACIÓN DE INPUTS PARA EL MODELO
+ARCHIVO 06 de 09 | Acomodamos las respuestas antes de calcular.
+Vienes de: app/ml/model_loader.py (archivo 05).
+Muestra mapear_edad_cdc y preprocess: 55 años pasan a grupo 8.
+Después abre: app/ml/predictor.py (archivo 07).
 
-Este módulo transforma datos crudos del formulario en un DataFrame
-de pandas listo para que el modelo ML lo procese.
+Aquí acomodamos las nueve respuestas antes de entregarlas al modelo.
 
-RESPONSABILIDADES:
-  - Validar que no falten variables predictoras
-  - Validar rangos (edad 1-120, salud_general 1-5)
-  - Convertir la EDAD de años reales (55) al rango CDC 1-13 que usa
-    el dataset BRFSS de entrenamiento (ver mapear_edad_cdc)
-  - Ordenar las columnas en el orden exacto que espera el modelo
-  - Convertir booleans a números (el modelo espera ints, no bools)
+Comprobamos que estén presentes, revisamos edad y salud general, convertimos
+la edad a su grupo y armamos una tabla de una fila con el orden correcto.
+Los sí/no ya vienen como 1/0 desde evaluacion_mapper.py.
 
-NO conoce el modelo, NO toca la BD, NO conoce FastAPI.
-Solo limpia y ordena datos → retorna DataFrame.
-
-IMPORTANTE: entrenar_modelo.py (raiz del proyecto) entrena con la columna
-Age del CSV que YA viene codificada 1-13. Por eso la conversión de años →
-1-13 vive AQUI (lado inferencia) y NO en el entrenamiento.
+El modelo aprendió con grupos de edad. Por eso 55 años se convierten en el
+grupo 8 (55 a 59 años), en lugar de enviar el número 55 directamente.
 """
 import pandas as pd
 from typing import Dict
 
 
-# Orden EXACTO de columnas que el modelo fue entrenado a esperar.
-# Si este orden cambia, las predicciones serán incorrectas.
-# Este orden se documenta y se prueba en tests unitarios.
+# Estas son las nueve respuestas y el orden que el modelo espera recibir.
 FEATURE_COLUMNS = [
     "edad",
     "presion_alta",
@@ -41,16 +33,13 @@ FEATURE_COLUMNS = [
 
 def mapear_edad_cdc(edad_anios: int) -> int:
     """
-    Convierte la edad en AÑOS (ej: 55) al codigo 1-13 del CDC/BRFSS.
+    Busca a qué grupo pertenece la edad, siguiendo los grupos de la encuesta.
 
-    El dataset de entrenamiento codifica la edad en 13 rangos:
-        1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49,
-        7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+
+    1=18-24, 2=25-29, 3=30-34, 4=35-39, 5=40-44, 6=45-49,
+    7=50-54, 8=55-59, 9=60-64, 10=65-69, 11=70-74, 12=75-79, 13=80+.
 
-    Ejemplo: mapear_edad_cdc(55) -> 8
-
-    DEBE ser identica a la logica con la que se entreno el modelo
-    (el CSV ya viene codificado 1-13; el formulario manda años reales).
+    Ejemplo: 55 años devuelve 8. La tabla usada para entrenar ya trae esos grupos.
+    Esta función también mete a menores de 18 en el grupo 1; no los rechaza.
     """
     if edad_anios < 25:
         return 1
@@ -80,53 +69,39 @@ def mapear_edad_cdc(edad_anios: int) -> int:
         return 13
 
 
-# EXPO-ML 09 | Adaptar los datos a la representación usada en entrenamiento.
-# Ejemplo: 55 años -> código CDC 8; se arma una tabla de 1 fila y 9 columnas.
-# El CSV ya contiene Age en categorías: convertir otra vez al entrenar sería un error.
-# Los booleanos ya vienen como 0/1 del mapper. Aquí se validan y ordenan los datos.
-# Siguiente: predict_proba en predictor.py, EXPO-ML 10.
+# EXPO-ML 09 | Preparamos las respuestas: 55 años pasan a grupo 8.
+# Después el modelo calcula el puntaje en predictor.py, EXPO-ML 10.
 def preprocess(data: Dict) -> pd.DataFrame:
     """
-    Convierte un diccionario de datos crudos en un DataFrame
-    listo para el modelo.
-
-    Parámetros:
-      data: dict con las variables predictoras
-            Ej: {"edad": 55, "presion_alta": 1, ...}
-
-    Retorna:
-      pd.DataFrame con una fila y las columnas en orden correcto
-
-    Excepciones:
-      ValueError si faltan columnas o los rangos son inválidos
+    Recibe las nueve respuestas y devuelve una tabla lista para calcular.
+    Por ejemplo, edad=55 pasa a edad=8 y los demás datos conservan su valor.
+    La tabla tiene una fila por evaluación y las columnas de FEATURE_COLUMNS.
+    Si falta un dato o falla uno de los rangos revisados, avisa con ValueError.
     """
-    # --- PASO 1: Validar que no falten columnas ---
+
+    # Primero comprobamos que estén las nueve respuestas. Si Pydantic ya rellenó
+    # un dato omitido con False o 3, aquí no podemos distinguirlo de una respuesta real.
     missing = [col for col in FEATURE_COLUMNS if col not in data]
     if missing:
         raise ValueError(f"Faltan variables predictoras: {missing}")
-    # Ejemplo de error: "Faltan variables predictoras: ['edad', 'diabetes']"
 
-    # --- PASO 2: Validar rangos de valores ---
+    # Revisamos estos dos rangos. Los tipos y los sí/no se comprueban antes en
+    # EvaluacionCreate; aquí no se rellenan datos vacíos ni se revisan todos los tipos.
     if not (1 <= data["edad"] <= 120):
         raise ValueError("Edad fuera de rango válido (1-120)")
     if not (1 <= data["salud_general"] <= 5):
         raise ValueError("Salud general fuera de rango (1-5)")
 
-    # --- PASO 3: Convertir la edad de AÑOS al codigo CDC 1-13 ---
-    # El modelo se entreno con Age del BRFSS (ya codificada 1-13).
-    # El formulario manda la edad real (55) -> aqui se convierte a 8.
+    # La tabla de entrenamiento ya tenía grupos de edad; convertimos los años
+    # del paciente a esos mismos grupos. Por ejemplo: 55 -> 8.
     edad_cdc = mapear_edad_cdc(data["edad"])
 
-    # --- PASO 4: Extraer y ordenar las columnas ---
+    # Nos quedamos con las nueve entradas en orden. Para edad usamos el grupo;
+    # para las otras ocho conservamos la respuesta recibida.
     row = {
         col: (edad_cdc if col == "edad" else data[col])
         for col in FEATURE_COLUMNS
     }
-    # Crea un dict nuevo SOLO con las columnas del modelo,
-    # en el orden EXACTO que el modelo espera.
-    # Esto descarta automáticamente paciente_id y otros campos extra.
 
-    # --- PASO 5: Convertir a DataFrame ---
+    # Armamos una tabla de una fila: representa esta evaluación del paciente.
     return pd.DataFrame([row], columns=FEATURE_COLUMNS)
-    # pd.DataFrame con UNA fila (una evaluación) y N columnas
-    # Este es el formato que espera model.predict_proba()

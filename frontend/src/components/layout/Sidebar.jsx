@@ -8,8 +8,9 @@ import {
   History,
   ShieldCheck,
   LogOut,
+  X,
+  HeartPulse,
 } from 'lucide-react';
-import logoImage from '../../assets/logo.png';
 import { useAuth } from '../../context/useAuth';
 import { PERMISSIONS } from '../../constants/roles';
 
@@ -19,7 +20,7 @@ const SECCIONES = [
   {
     titulo: 'Principal',
     items: [
-      { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+      { id: 'dashboard', label: 'Inicio', path: '/dashboard', icon: LayoutDashboard },
     ],
   },
   {
@@ -66,22 +67,21 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
 
   return (
     <aside
-      className={`absolute inset-y-0 left-0 z-50 bg-[#56ccf2] flex flex-col transition-all duration-300 ease-in-out lg:relative overflow-hidden ${
+      id="navegacion-principal"
+      aria-label="Navegación principal"
+      inert={!sidebarOpen}
+      className={`clinical-sidebar absolute inset-y-0 left-0 z-50 flex flex-col transition-all duration-200 ease-out lg:relative overflow-hidden shrink-0 ${
         sidebarOpen ? 'w-64 shadow-xl lg:shadow-none' : 'w-0 -translate-x-full lg:translate-x-0'
       }`}
     >
       <div className="w-64 flex flex-col h-full">
-        <div className="flex items-center justify-center h-20 px-3 bg-[#7FCFEC] border-b border-sky-300/60 shadow-xs shrink-0">
-          {/* Sin `scale-200`: el logo se renderizaba a 420x128 dentro de un
-              contenedor de 256x80 y desbordaba el ancho del menú. */}
-          <img
-            src={logoImage}
-            alt="HealthCure"
-            className="w-[180px] h-auto max-h-12 object-contain drop-shadow-sm"
-          />
+        <div className="sidebar-brand shrink-0">
+          <HeartPulse className="w-8 h-8 shrink-0" aria-hidden="true" />
+          <div><span className="block text-lg font-bold tracking-tight">HealthCure</span><span className="block text-xs text-[#24475c]">Gestión de la atención</span></div>
+          <button onClick={() => setSidebarOpen(false)} aria-label="Cerrar navegación" className="lg:hidden absolute right-1 top-2 min-h-11 min-w-11 inline-flex items-center justify-center"><X className="w-4 h-4" /></button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-6">
           {seccionesVisibles.map((seccion) => (
             <div key={seccion.titulo} className="flex flex-col gap-1">
               {/* /60 daba 3.84:1 de contraste (WCAG AA exige 4.5:1). Con /80 sube a ~5:1. */}
@@ -96,10 +96,11 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                   <button
                     key={item.id}
                     onClick={() => irA(item.path)}
-                    className={`flex items-center gap-3 w-full px-3.5 py-2.5 min-h-11 rounded-lg text-sm font-medium transition-all cursor-pointer whitespace-nowrap ${
+                    aria-current={isActive ? 'page' : undefined}
+                    className={`sidebar-link flex items-center gap-3 w-full px-3.5 py-3 min-h-11 rounded-xl text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
                       isActive
-                        ? 'bg-[#17324c] text-white shadow-md'
-                        : 'text-slate-800 hover:bg-sky-300/50'
+                        ? 'bg-[#17324c] text-white'
+                        : 'text-[#17324c] hover:bg-white/45'
                     }`}
                   >
                     <IconComponent
@@ -125,15 +126,15 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           ))}
         </nav>
 
-        <div className="p-3 border-t border-sky-400/60 shrink-0">
+        <div className="p-3 border-t border-[#17324c]/15 shrink-0">
           <button
             onClick={() => {
               logout();
               navigate('/login');
             }}
-            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-lg text-sm font-medium text-red-700 hover:bg-red-500/10 transition-colors cursor-pointer whitespace-nowrap"
+            className="flex items-center gap-3.5 w-full px-4 py-3 rounded-xl text-sm font-medium text-[#17324c] hover:bg-white/40 transition-colors cursor-pointer whitespace-nowrap"
           >
-            <LogOut className="w-5 h-5 text-red-600 shrink-0" />
+            <LogOut className="w-5 h-5 shrink-0" />
             <span>Cerrar Sesión</span>
           </button>
         </div>

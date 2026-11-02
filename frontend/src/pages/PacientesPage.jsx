@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageHeader from '../components/ui/PageHeader';
 import { Search, Plus, FileText, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import Tabla from '../components/ui/Tabla';
@@ -8,6 +9,7 @@ import { pacientesService } from '../services/pacientes';
 import { catalogosService } from '../services/catalogos';
 import { mensajeError } from '../services/api';
 import { calcularEdad, etiquetaSexo, nombreCompleto } from '../utils/triaje';
+import { etiquetaGrupo } from '../utils/clinica';
 
 // Opcional = "" -> null (evita strings vacíos y choques de UNIQUE en la BD)
 const opcional = (valor) => {
@@ -228,11 +230,12 @@ export default function PacientesPage() {
     {
       titulo: 'Paciente',
       render: (row) => (
-        <div>
-          <p className="font-medium text-slate-900">{nombreCompleto(row)}</p>
+        <div className="patient-identity">
+          <span className="patient-avatar" aria-hidden="true">{`${row.nombres?.[0] ?? ''}${row.apellido_paterno?.[0] ?? ''}`}</span>
+          <div><p className="font-medium text-slate-900">{nombreCompleto(row)}</p>
           {row.numero_historia_clinica && (
             <p className="text-xs text-slate-400">H.C. {row.numero_historia_clinica}</p>
-          )}
+          )}</div>
         </div>
       ),
     },
@@ -240,7 +243,7 @@ export default function PacientesPage() {
       titulo: 'Edad',
       render: (row) => {
         const edad = calcularEdad(row.fecha_nacimiento);
-        return <span className="text-slate-600">{edad != null ? `${edad} años` : '—'}</span>;
+        return <span className="text-slate-600">{edad != null ? `${edad} años` : '—'}<span className="block text-xs text-slate-500">{etiquetaGrupo(row.grupo_etario)}</span></span>;
       },
     },
     {
@@ -288,14 +291,8 @@ export default function PacientesPage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Gestión de Pacientes</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Directorio y registro general de datos personales de pacientes.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader title="Pacientes" description="Cada atención empieza por conocer a la persona. Consulta su información o registra un nuevo paciente.">
         <button
           onClick={abrirModalNuevo}
           className="flex items-center justify-center gap-2 bg-[#17324c] hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl font-medium shadow-md transition-all cursor-pointer w-full sm:w-auto"
@@ -303,11 +300,11 @@ export default function PacientesPage() {
           <Plus className="w-5 h-5" />
           <span>Nuevo Paciente</span>
         </button>
-      </div>
+      </PageHeader>
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
 
-      <div className="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" aria-hidden="true" />
           <input
@@ -325,6 +322,7 @@ export default function PacientesPage() {
         <Cargando texto="Cargando pacientes..." />
       ) : (
         <Tabla
+          caption="Directorio de pacientes"
           columnas={columnasPacientes}
           datos={pacientesFiltrados}
           mensajeVacio="No se encontraron registros de pacientes."

@@ -1,13 +1,15 @@
 
-export default function Tabla({ columnas, datos, mensajeVacio = "No se encontraron registros." }) {
+export default function Tabla({ columnas, datos, caption, mensajeVacio = "No se encontraron registros." }) {
   return (
-    <div className="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden">
+    <div className="clinical-table">
+      {caption && <p className="clinical-table-caption">{caption} · {datos.length} {datos.length === 1 ? 'registro' : 'registros'}</p>}
       <div className="w-full overflow-x-auto">
         <table className="w-full text-left border-collapse min-w-[700px]">
+          <caption className="sr-only">{caption ?? 'Listado de registros'}</caption>
           <thead>
             <tr className="bg-slate-50/70 border-b border-slate-100 text-slate-600 text-xs uppercase tracking-wider font-semibold">
               {columnas.map((col, index) => (
-                <th key={index} className={`p-4 ${index === 0 ? 'pl-6' : ''} ${col.align === 'center' ? 'text-center' : ''}`}>
+                <th scope="col" key={index} className={`p-4 ${index === 0 ? 'pl-6' : ''} ${col.align === 'center' ? 'text-center' : ''}`}>
                   {col.titulo}
                 </th>
               ))}

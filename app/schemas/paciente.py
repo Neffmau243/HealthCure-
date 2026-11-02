@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import date, datetime
 from enum import Enum
+from app.core.clinica import GrupoEtario
 
 
 class SexoEnum(str, Enum):
@@ -180,6 +181,7 @@ class PacienteResponse(BaseModel):
     }
     """
     id: int
+    grupo_etario: Optional[GrupoEtario] = None
     tipo_documento: TipoDocumentoEnum
     documento_identidad: str
     numero_historia_clinica: Optional[str] = None

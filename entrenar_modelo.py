@@ -1,38 +1,23 @@
 """
-entrenar_modelo.py — ENTRENA, COMPARA Y VERSIONA EL MODELO ML
+ARCHIVO 01 de 09 | Empezamos aquí: cómo aprende el modelo.
+Muestra main(), siguiendo los comentarios E1 a E6.
+Después abre: app/schemas/evaluacion.py (archivo 02).
 
-Pipeline completo de entrenamiento con calidad de "entregable formal":
+Aquí se enseña al modelo usando ejemplos que ya tienen una respuesta conocida.
 
-  1. Carga y prepara el dataset real (CDC/BRFSS 2015, Kaggle).
-  2. Divide train/test de forma ESTRATIFICADA (mismo seed siempre).
-  3. BUSCA hiperparámetros con RandomizedSearchCV + validación cruzada
-     estratificada (3 folds) y scoring doble: ROC AUC y PR AUC.
-  4. COMPARA dos familias de modelos: Random Forest vs XGBoost.
-  5. Elige la mejor por ROC AUC de CV, la reajusta en TODO el train.
-  6. Optimiza el UMBRAL de decisión para maximizar F1 (screening).
-  7. Guarda el modelo en app/resources/modelo_cardiaco.joblib
-     y su FICHA TÉCNICA en app/resources/modelo_cardiaco_metadata.json
-     (versión, fecha, dataset, hiperparámetros, métricas, umbrales).
+El archivo de datos contiene respuestas de una encuesta y señala si la persona
+declaró antecedentes de enfermedad coronaria o infarto. Elegimos nueve datos,
+comparamos Random Forest con XGBoost y guardamos el modelo que resulte elegido.
 
-USO:
-    1. Descarga el CSV de Kaggle:
-       https://www.kaggle.com/datasets/alexteboul/heart-disease-health-indicators-dataset
-       (archivo: heart_disease_health_indicators_BRFSS2015.csv)
+Para ejecutarlo desde la carpeta del proyecto:
+python entrenar_modelo.py ruta/al/archivo.csv
 
-    2. Ejecuta desde la raiz del proyecto (con el venv activo):
-       python entrenar_modelo.py                              # busca el CSV en la raiz
-       python entrenar_modelo.py ruta/al/csv.csv              # o pasa la ruta
+Esto se hace aparte, antes de evaluar pacientes. Ejecutarlo reemplaza el modelo
+y su ficha en app/resources. Después hay que reiniciar el servidor para usarlos.
 
-    3. Reinicia el servidor (uvicorn main:app --reload lo hace solo)
-       y prueba POST /api/v1/evaluaciones/ -> ya responde 201 con prediccion.
-
-IMPORTANTE — ENCODING DE LA EDAD:
-  - En el CSV, la columna Age YA viene codificada 1-13 (rangos CDC):
-        1=18-24, 2=25-29, ..., 12=75-79, 13=80+
-  - Por eso AQUI NO se convierte nada: se entrena con Age tal cual.
-  - En el backend, el formulario manda la edad en ANIOS (ej: 55) y
-    app/ml/preprocessor.py la convierte a 1-13 con mapear_edad_cdc().
-  - Ambas funciones deben ser identicas (ver entrenar_modelo.py y preprocessor.py).
+La edad del archivo ya está representada por grupos del 1 al 13. Aquí se deja
+así; preprocessor.py convierte los años del paciente a esos mismos grupos.
+El modelo aprende sobre antecedentes declarados, no sobre cuándo ocurrirá un infarto.
 """
 import sys
 import json
@@ -56,8 +41,8 @@ from sklearn.metrics import (
 from xgboost import XGBClassifier
 
 
-# ── Columnas exactas que el backend espera + la variable objetivo ──────────
-# El ORDEN importa: debe coincidir con FEATURE_COLUMNS en app/ml/preprocessor.py
+# Estos son los nombres originales de la tabla y los nombres que usa la aplicación.
+# El orden debe coincidir con FEATURE_COLUMNS en app/ml/preprocessor.py.
 COLUMNAS = {
     "Age": "edad",
     "HighBP": "presion_alta",
@@ -73,28 +58,34 @@ COLUMNAS = {
 
 FEATURE_COLUMNS = [c for c in COLUMNAS.values() if c != "target"]
 
-# ── Artefactos que produce el entrenamiento ───────────────────────────────
+
+# Aquí se guardarán el modelo entrenado y su ficha.
 OUTPUT_PATH = "app/resources/modelo_cardiaco.joblib"
 METADATA_PATH = "app/resources/modelo_cardiaco_metadata.json"
 
-# ── Configuración del experimento (reproducible) ──────────────────────────
+
 MODEL_VERSION = "2.0.0"
+# La semilla permite repetir la misma separación y búsqueda con los mismos datos.
 RANDOM_STATE = 42
 TEST_SIZE = 0.20
+# Probamos alternando tres partes de los datos de entrenamiento.
 CV_FOLDS = 3
-SEARCH_ITER = 8          # candidatos evaluados por familia de modelo
+# Se probarán ocho configuraciones de cada método.
+SEARCH_ITER = 8
 SEARCH_SCORING = {"roc_auc": "roc_auc", "pr_auc": "average_precision"}
 
-# Umbrales clínicos de 3 niveles (regla de negocio, NO umbral de decisión del modelo).
-# Deben coincidir con app/ml/predictor.py.
+
+# Límites para mostrar bajo, moderado y alto. Se guardan en la ficha.
+# No son límites aprendidos durante fit ni prueban un nivel de urgencia.
 CLASSIFICATION_THRESHOLDS = {"bajo_max": 0.30, "moderado_max": 0.60}
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 1. CARGA DEL DATASET
-# ══════════════════════════════════════════════════════════════════════════
 def cargar_dataset(csv_path: str) -> tuple[pd.DataFrame, pd.Series, dict]:
-    """Lee el CSV, valida columnas y devuelve (X, y, info del dataset)."""
+    """
+    Lee la tabla de ejemplos y comprueba que tenga las columnas necesarias.
+    Devuelve X (los nueve datos para calcular), y (la respuesta conocida de cada
+    ejemplo) e info (cantidad de registros y de respuestas positivas).
+    """
     print(f"[TRAIN] Leyendo dataset: {csv_path}")
     df = pd.read_csv(csv_path)
 
@@ -104,13 +95,15 @@ def cargar_dataset(csv_path: str) -> tuple[pd.DataFrame, pd.Series, dict]:
         print("Asegurate de descargar 'heart_disease_health_indicators_BRFSS2015.csv'")
         sys.exit(1)
 
-    # Seleccionar y renombrar (mantiene el ORDEN de COLUMNAS)
+    # Elegimos las columnas necesarias y las renombramos, conservando su orden.
     df_ml = df[list(COLUMNAS.keys())].rename(columns=COLUMNAS)
 
-    # Normalizar diabetes a 0/1: BRFSS usa 2 = prediabetes/solo embarazo,
-    # pero la API solo manda 0/1. El modelo no debe ver valores que nunca vera.
+    # Cualquier valor mayor que cero pasa a 1; los demás pasan a 0.
+    # Se pierde la diferencia entre las categorías originales. Si cambiamos la
+    # tabla de origen, hay que revisar qué significa cada código antes de agruparlo.
     df_ml["diabetes"] = (df_ml["diabetes"] > 0).astype(int)
 
+    # X contiene los datos para calcular; y contiene la respuesta que debe aprender.
     X = df_ml.drop(columns=["target"])
     y = df_ml["target"]
 
@@ -125,22 +118,14 @@ def cargar_dataset(csv_path: str) -> tuple[pd.DataFrame, pd.Series, dict]:
     return X, y, info
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 2. BÚSQUEDA DE HIPERPARÁMETROS CON VALIDACIÓN CRUZADA
-# ══════════════════════════════════════════════════════════════════════════
 def _espacios_busqueda(scale_pos_weight: float) -> dict:
     """
-    Distribuciones de hiperparámetros por familia de modelo.
+    Prepara los dos métodos y las configuraciones que vamos a probar.
+    Por ejemplo, cuántos árboles usar y qué tan profundos pueden ser.
 
-    RESTRICCIÓN DE PRODUCTO: ambos estimadores usan PONDERACIÓN DE CLASES
-    (class_weight="balanced" en RF, scale_pos_weight=neg/pos en XGBoost).
-
-    Motivo: la API aplica UMBRALES CLÍNICOS FIJOS (0.30 / 0.60) sobre la
-    salida del modelo. Sin ponderación, con un dataset al 9.4% de positivos
-    las probabilidades se concentran muy por debajo de 0.30 y el triaje
-    colapsa a una sola banda (todo "bajo"). La ponderación mantiene una
-    ESCALA DE RIESGO donde 0.30/0.60 separan bajo/moderado/alto.
-    Ver docs/MODELO_ML.md (sección de umbrales).
+    Hay menos ejemplos con antecedente que sin él. Por eso damos más peso a los
+    primeros durante el aprendizaje. Esto también cambia la escala del puntaje:
+    no basta para interpretarlo como un porcentaje real de enfermedad.
     """
     return {
         "RandomForest": (
@@ -172,15 +157,21 @@ def _espacios_busqueda(scale_pos_weight: float) -> dict:
 
 def buscar_hiperparametros(X_train, y_train, scale_pos_weight: float) -> list[dict]:
     """
-    Evalúa ambas familias con RandomizedSearchCV (CV estratificada) y
-    devuelve, por familia, el mejor candidato según ROC AUC de CV.
+    Prueba distintas configuraciones de Random Forest y XGBoost.
+    Divide los datos de entrenamiento en tres partes: aprende con unas y comprueba
+    con otra, alternándolas. Eso es la validación cruzada.
+    Para cada método devuelve la configuración que obtuvo el mejor ROC AUC.
     """
+    # Alternamos tres partes para aprender y comprobar. Conservamos una proporción
+    # parecida de ejemplos con y sin antecedente en cada parte.
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
     resultados = []
 
     for nombre, (estimador, espacio) in _espacios_busqueda(scale_pos_weight).items():
         print(f"[TRAIN] Buscando hiperparámetros de {nombre} "
               f"({SEARCH_ITER} candidatos x {CV_FOLDS} folds)...")
+        # Probamos varias configuraciones. Aquí no se entrena automáticamente un
+        # ganador final: main() lo hará después con la configuración elegida.
         search = RandomizedSearchCV(
             estimador, espacio,
             n_iter=SEARCH_ITER, scoring=SEARCH_SCORING, refit=False,
@@ -188,6 +179,10 @@ def buscar_hiperparametros(X_train, y_train, scale_pos_weight: float) -> list[di
         )
         search.fit(X_train, y_train)
         res = search.cv_results_
+
+        # Elegimos por ROC AUC: mide qué tan bien se ordenan los dos grupos.
+        # También guardamos average precision, llamada pr_auc en este código.
+        # ROC AUC no es un porcentaje de aciertos.
         idx = int(np.argmax(res["mean_test_roc_auc"]))
 
         resultado = {
@@ -203,13 +198,14 @@ def buscar_hiperparametros(X_train, y_train, scale_pos_weight: float) -> list[di
     return resultados
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 3. MÉTRICAS Y UMBRAL ÓPTIMO
-# ══════════════════════════════════════════════════════════════════════════
 def optimizar_umbral(y_true, proba) -> tuple[float, float]:
     """
-    Devuelve (umbral, F1) que maximiza F1 sobre la curva precision-recall.
-    Punto de operación para screening: prioriza no dejar enfermos sin detectar.
+    Busca qué límite da el mejor F1 al separar los puntajes en dos grupos.
+    F1 combina cuántos positivos detectamos y cuántos de los señalados lo son.
+
+    main() busca ese límite con los mismos datos donde después lo evalúa. Eso puede
+    dar una impresión demasiado favorable: falta elegirlo con datos separados.
+    Este límite no es el que usa la aplicación para sus tres colores.
     """
     precision, recall, umbrales = precision_recall_curve(y_true, proba)
     f1 = np.divide(
@@ -222,7 +218,11 @@ def optimizar_umbral(y_true, proba) -> tuple[float, float]:
 
 
 def evaluar_modelo(model, X, y, umbral: float) -> dict:
-    """Métricas completas del modelo a un umbral de decisión dado."""
+    """
+    Compara lo que devuelve el modelo con las respuestas que ya conocemos.
+    El límite recibido decide desde qué puntaje marcamos un ejemplo como positivo.
+    Devuelve las medidas de aciertos, errores y capacidad de separar los grupos.
+    """
     proba = model.predict_proba(X)[:, 1]
     pred = (proba >= umbral).astype(int)
     return {
@@ -239,9 +239,9 @@ def evaluar_modelo(model, X, y, umbral: float) -> dict:
 
 def distribucion_triaje(proba, umbrales: dict) -> dict:
     """
-    Reparto de casos en las 3 bandas clínicas FIJAS que aplica la API.
-    Es un guardrail de producto: si una banda queda vacía, el triaje
-    deja de informar (todos los pacientes caen en el mismo color).
+    Cuenta cuántos ejemplos quedan en bajo, moderado y alto.
+    Sirve para ver si los resultados se concentran en algún nivel o si otro queda
+    vacío. Tener casos en los tres niveles no demuestra que sean útiles en clínica.
     """
     proba = np.asarray(proba)
     bajo = int((proba < umbrales["bajo_max"]).sum())
@@ -258,7 +258,10 @@ def distribucion_triaje(proba, umbrales: dict) -> dict:
 
 
 def _json_safe(valor):
-    """Convierte tipos numpy a tipos nativos para serializar a JSON."""
+    """
+    Convierte los números de numpy a tipos que el archivo JSON puede guardar.
+    También revisa los valores dentro de listas y diccionarios.
+    """
     if isinstance(valor, (np.integer,)):
         return int(valor)
     if isinstance(valor, (np.floating,)):
@@ -272,60 +275,57 @@ def _json_safe(valor):
     return valor
 
 
-# ══════════════════════════════════════════════════════════════════════════
-# 4. PIPELINE PRINCIPAL
-# ══════════════════════════════════════════════════════════════════════════
 def main(csv_path: str):
-    # EXPO-ML E1 | Etapa previa a usar la aplicación: aprendizaje supervisado offline.
-    # X contiene las 9 variables; y es HeartDiseaseorAttack (antecedente declarado).
-    # cargar_dataset renombra columnas y agrupa diabetes/prediabetes en 0/1.
-    # Este script se ejecuta aparte; no se llama al registrar o evaluar pacientes.
+
+    # EXPO-ML E1 | Leemos los ejemplos con los que el modelo va a aprender.
+    # X son las nueve entradas; y indica si se declaró el antecedente cardiovascular.
+    # Este script se ejecuta aparte, no cuando registramos o evaluamos a un paciente.
     X, y, info = cargar_dataset(csv_path)
 
-    # EXPO-ML E2 | Separar 80% para entrenamiento y 20% para test.
-    # stratify conserva la proporción de etiquetas; random_state fija la partición.
-    # ── Split estratificado (proporción de positivos igual en train/test) ──
+    # EXPO-ML E2 | Usamos 80% para aprender y reservamos 20% para probar.
+    # stratify mantiene una proporción parecida de respuestas positivas en ambos.
+    # random_state permite repetir la misma separación.
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
     )
     print(f"[TRAIN] Train: {len(X_train)} | Test: {len(X_test)}")
 
-    # scale_pos_weight = negativos/positivos (compensa el desbalance en XGBoost)
+    # Contamos ejemplos sin y con antecedente. Hay menos positivos, por eso
+    # calculamos cuánto peso extra darles al entrenar XGBoost.
     neg, pos = int((y_train == 0).sum()), int((y_train == 1).sum())
     scale_pos_weight = round(neg / pos, 2)
 
-    # EXPO-ML E3 | Comparar Random Forest y XGBoost dentro del conjunto de train.
-    # RandomizedSearchCV prueba parámetros con 3 folds; elegimos por ROC AUC de CV.
-    # La ponderación da más peso a positivos; no calibra la salida como probabilidad.
-    # ── 1) Comparación de familias con CV ─────────────────────────────────
+    # EXPO-ML E3 | Comparamos Random Forest y XGBoost usando solo el grupo de
+    # entrenamiento. Nos quedamos con el de mejor ROC AUC en esas pruebas.
     resultados = buscar_hiperparametros(X_train, y_train, scale_pos_weight)
     mejor = max(resultados, key=lambda r: r["cv_roc_auc"])
     print(f"[TRAIN] MEJOR FAMILIA: {mejor['familia']} "
           f"(CV ROC AUC={mejor['cv_roc_auc']})")
 
-    # EXPO-ML E4 | fit es donde el estimador aprende sus parámetros de los datos.
-    # El candidato ganador se ajusta con todo train; el test no entra en este fit.
-    # ── 2) Reajuste del mejor modelo en TODO el train ─────────────────────
+    # EXPO-ML E4 | Preparamos al ganador con la configuración elegida.
+    # fit es la orden para aprender: aquí usa todo el grupo de entrenamiento.
+    # Los ejemplos reservados para probar no entran en este aprendizaje.
     estimador_ganador = _espacios_busqueda(scale_pos_weight)[mejor["familia"]][0]
     model = estimador_ganador.set_params(**mejor["parametros"])
     model.fit(X_train, y_train)
 
-    # EXPO-ML E5 | Medir resultados y explorar un corte binario de referencia.
-    # Limitación de esta versión: el corte F1 se elige y evalúa en el mismo test.
-    # Mejora pendiente: elegirlo en validación independiente. La app usa 0.30/0.60,
-    # no este corte F1; tampoco debe explicarse ROC AUC como porcentaje de aciertos.
-    # ── 3) Optimización del umbral de decisión (F1) ───────────────────────
+    # EXPO-ML E5 | Pedimos resultados para los ejemplos reservados y buscamos
+    # un límite que dé el mejor F1 para separar en dos respuestas.
+    # Pendiente: ese límite se elige y se mide con los mismos datos de prueba,
+    # lo que puede hacerlo parecer mejor de lo que es. Hay que usar datos separados.
+    # La aplicación usa 0.30/0.60 para sus colores, no este límite de F1.
     proba_test = model.predict_proba(X_test)[:, 1]
     umbral_optimo, f1_optimo = optimizar_umbral(y_test, proba_test)
     print(f"[TRAIN] Umbral óptimo para F1: {umbral_optimo:.4f} (F1={f1_optimo:.4f})")
 
-    # Guardrail de producto: las 3 bandas del triaje deben quedar pobladas.
+    # Contamos cuántos resultados quedan en cada nivel. Esto describe el reparto;
+    # que haya casos en los tres niveles no demuestra que sean válidos en clínica.
     distribucion = distribucion_triaje(proba_test, CLASSIFICATION_THRESHOLDS)
     print(f"[TRAIN] Distribución de triaje en test (bandas 0.30/0.60): {distribucion}")
     if distribucion["alto"]["n"] == 0 or distribucion["moderado"]["n"] == 0:
         print("[WARN] Alguna banda del triaje quedó vacía: revisar ponderación/umbrales.")
 
-    # ── 4) Evaluación final en el 20% reservado ───────────────────────────
+    # Medimos con el límite fijo 0.50 y con el límite que acabamos de elegir.
     metricas_default = evaluar_modelo(model, X_test, y_test, 0.50)
     metricas_optimo = evaluar_modelo(model, X_test, y_test, umbral_optimo)
     print("[TRAIN] Metricas sobre el 20% reservado (umbral 0.50):")
@@ -338,16 +338,14 @@ def main(csv_path: str):
           f"F1={metricas_optimo['f1']} | Precision={metricas_optimo['precision']} "
           f"| Recall={metricas_optimo['recall']}")
 
-    # EXPO-ML E6 | Exportar lo aprendido y documentarlo en la metadata JSON.
-    # joblib guarda el estimador; el JSON registra versión, métricas y cortes.
-    # Con esto preparado empieza el recorrido del paciente (EXPO-ML 01).
-    # La API recupera el artefacto en EXPO-ML 08 para predecir sin volver a hacer fit.
-    # ── 5) Guardar modelo ─────────────────────────────────────────────────
+    # EXPO-ML E6 | Guardamos lo que aprendió el modelo y luego escribimos su ficha.
+    # Después la aplicación podrá abrirlo y calcular sin volver a entrenar.
+    # El recorrido del paciente empieza en EXPO-ML 01; el modelo se carga en el 08.
     Path(OUTPUT_PATH).parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, OUTPUT_PATH)
     print(f"[TRAIN] Modelo guardado en {OUTPUT_PATH}")
 
-    # ── 6) Guardar ficha técnica (versionado del artefacto) ───────────────
+    # La ficha guarda versión, origen de los ejemplos, configuración y resultados.
     metadata = {
         "model_version": MODEL_VERSION,
         "algoritmo": mejor["familia"],

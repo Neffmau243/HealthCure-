@@ -1,61 +1,57 @@
 """
-model_loader.py — CARGADOR DE MODELO ML (SINGLETON)
+ARCHIVO 05 de 09 | Abrimos el modelo que ya aprendió.
+Vienes de: app/mappers/evaluacion_mapper.py (archivo 04).
+Muestra load_model(): abre el archivo o reutiliza el modelo ya cargado.
+Después abre: app/ml/preprocessor.py (archivo 06).
 
-Patrón Singleton: carga el archivo .joblib UNA sola vez en memoria
-y lo reutiliza en cada predicción. Si no hiciera esto, tendríamos
-que leer el archivo de disco en CADA request → terribly lento.
+Aquí recuperamos el modelo que ya fue entrenado.
 
-.modeljoblib es el modelo entrenado de Random Forest/XGBoost
-que se guardó con joblib.dump() después del entrenamiento.
+La primera vez se abre el archivo .joblib y se deja el modelo en memoria.
+Después se reutiliza para evitar abrir el archivo en cada evaluación.
+Cada proceso del servidor conserva su propia copia. Si dos llamadas llegan
+al mismo tiempo al principio, no hay un bloqueo que coordine esa primera carga.
 
-Flujo:
-  1. Primera llamada → lee el archivo de disco, lo cachea en RAM
-  2. Segunda llamada → retorna directamente el objeto en memoria
-  3. Si el archivo no existe → lanza ModelNotFoundError
-  4. Si hay error al cargar → lanza ModelLoadError
+Este archivo carga lo aprendido; no enseña de nuevo al modelo.
 """
 import joblib
 from pathlib import Path
 from app.core.config import get_settings
 from app.exceptions.ml_exceptions import ModelNotFoundError, ModelLoadError
 
-_model_instance = None  # Variable global que cachea el modelo (singleton)
+# Aquí conservamos el modelo una vez abierto; None significa que aún no se cargó.
+_model_instance = None
 
 
-# EXPO-ML 08 | Recuperar el modelo que se entrenó previamente, fuera de la consulta.
-# Se carga el archivo configurado en MODEL_PATH; en esta entrega es XGBoost v2.
-# La caché se reutiliza por proceso. Registrar pacientes no actualiza sus árboles.
-# Volver a predict: el siguiente paso es preprocess, EXPO-ML 09.
+# EXPO-ML 08 | Recuperamos el modelo que ya aprendió fuera de la consulta.
+# Después volvemos a predictor.py para preparar las respuestas: EXPO-ML 09.
 def load_model():
     """
-    Retorna el modelo ML cargado. Lo cachea en memoria para no
-    releer el archivo en cada request.
-
-    Uso típico:
-        model = load_model()  # Primera vez: lee disco. Después: retorna cache.
-        prediction = model.predict_proba(data)
+    Devuelve el modelo listo para usar.
+    Si ya está cargado, lo reutiliza. Si todavía no, busca la ruta indicada en
+    MODEL_PATH y abre el archivo. Si falta o no se puede leer, informa el error.
     """
-    global _model_instance  # Accede a la variable global
+    global _model_instance
 
-    # Si ya está en memoria, retornarlo directamente (sin leer disco)
+    # Si ya lo tenemos listo, lo devolvemos sin volver a abrir el archivo.
     if _model_instance is not None:
         return _model_instance
 
+    # Buscamos la ruta del modelo en la configuración de la aplicación.
     settings = get_settings()
     model_path = Path(settings.MODEL_PATH)
 
-    # Verificar que el archivo .joblib existe
+    # Si el archivo no existe, avisamos en lugar de inventar un resultado.
     if not model_path.exists():
         raise ModelNotFoundError(
             f"Modelo no encontrado en: {model_path}. "
             f"Entrena el modelo primero con train.py"
         )
 
-    # Cargar el modelo desde disco (primera y única vez)
+    # joblib.load recupera lo aprendido desde el archivo. No vuelve a entrenar.
+    # Debe ser un archivo de confianza, porque joblib puede cargar código Python.
     try:
         _model_instance = joblib.load(model_path)
-        # joblib.load() deserializa el objeto Python guardado con dump()
-        # Retorna un estimador de scikit-learn/XGBoost
+
     except Exception as e:
         raise ModelLoadError(f"Error al cargar el modelo: {e}")
 
@@ -64,12 +60,11 @@ def load_model():
 
 def reload_model():
     """
-    Fuerza la recarga del modelo desde disco.
-    Útil después de reentrenar el modelo con datos nuevos.
-
-    Ejemplo:
-        reload_model()  # Borra el cache y vuelve a leer el archivo
+    Olvida el modelo que estaba en memoria y vuelve a abrir su archivo.
+    Sirve después de reemplazar el modelo entrenado. Su ficha se recarga aparte
+    con reload_metadata(); reiniciar los procesos del servidor renueva ambos.
     """
+
     global _model_instance
-    _model_instance = None  # Borra el cache
-    return load_model()     # Vuelve a cargar desde disco
+    _model_instance = None
+    return load_model()

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Users, Activity, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Users, Activity, AlertTriangle, TrendingUp, ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import PageHeader from '../components/ui/PageHeader';
 import { pacientesService } from '../services/pacientes';
 import { evaluacionesService } from '../services/evaluaciones';
 import { mensajeError } from '../services/api';
@@ -11,6 +13,7 @@ import { clasesClasificacion, nombreCompleto } from '../utils/triaje';
 const LIMITE_RECIENTES = 20;
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const [pacientes, setPacientes] = useState([]);
   const [evaluaciones, setEvaluaciones] = useState([]);
   // Conteos exactos (COUNT en SQL). Antes los KPIs se contaban en el cliente
@@ -61,20 +64,15 @@ export default function DashboardPage() {
       icono: Activity,
       color: 'text-indigo-600 bg-indigo-50',
     },
-    { titulo: 'Riesgo alto', valor: clasificaciones.alto ?? conteo('alto'), icono: AlertTriangle, color: 'text-rose-600 bg-rose-50' },
-    { titulo: 'Riesgo moderado', valor: clasificaciones.moderado ?? conteo('moderado'), icono: TrendingUp, color: 'text-amber-600 bg-amber-50' },
+    { titulo: 'Banda ML alta', valor: clasificaciones.alto ?? conteo('alto'), icono: AlertTriangle },
+    { titulo: 'Banda ML moderada', valor: clasificaciones.moderado ?? conteo('moderado'), icono: TrendingUp },
   ];
 
   const recientes = evaluaciones.slice(0, 6);
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
-        <h1 className="text-2xl font-bold text-slate-800">Panel Principal</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Resumen de la actividad del centro médico y del riesgo cardiovascular detectado.
-        </p>
-      </div>
+      <PageHeader title="Al cuidado de cada paciente" description="Tu espacio de trabajo para acompañar la atención, desde el registro hasta el seguimiento clínico." />
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
 
@@ -82,28 +80,41 @@ export default function DashboardPage() {
         <Cargando texto="Cargando métricas..." />
       ) : (
         <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="dashboard-overview">
+            <section className="dashboard-start" aria-labelledby="iniciar-atencion">
+              <h2 id="iniciar-atencion">Continúa el recorrido de atención</h2>
+              <p>Accede a la información que necesitas para la próxima valoración.</p>
+              <div className="mt-5">
+                {[
+                  ['Pacientes', 'Consulta el directorio o registra a una persona.', '/dashboard/pacientes'],
+                  ['Triaje y evaluación', 'Registra mediciones y revisa señales de alarma.', '/dashboard/triaje'],
+                  ['Consultorio médico', 'Documenta la atención y genera el FUA.', '/dashboard/consultorio'],
+                ].map(([titulo, detalle, ruta]) => <button key={ruta} className="dashboard-start-link" onClick={() => navigate(ruta)}><div><span>{titulo}</span><small>{detalle}</small></div><ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" /></button>)}
+              </div>
+            </section>
+            <section aria-labelledby="actividad-centro" className="pt-2">
+              <h2 id="actividad-centro" className="text-base font-semibold">Actividad del centro</h2>
+              <p className="text-xs text-slate-600 mt-2">Resumen de los registros disponibles.</p>
+              <dl className="dashboard-metrics mt-3">
             {metricas.map((m) => {
               const Icono = m.icono;
               return (
                 <div
                   key={m.titulo}
-                  className="bg-white p-5 rounded-2xl shadow-xs border border-slate-100 flex items-center gap-4"
+                  className="dashboard-metric"
                 >
-                  <div className={`p-3 rounded-xl ${m.color}`}>
-                    <Icono className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{m.valor}</p>
-                    <p className="text-xs text-slate-500">{m.titulo}</p>
-                    {m.pie && <p className="text-[10px] text-slate-400">{m.pie}</p>}
-                  </div>
+                  <dt><Icono className="w-4 h-4 shrink-0" aria-hidden="true" />{m.titulo}</dt>
+                  <dd>{m.valor}</dd>
+                  {m.pie && <p className="text-xs text-slate-600 mt-1">{m.pie}</p>}
                 </div>
               );
             })}
+              </dl>
+              <p className="text-xs text-slate-600 leading-relaxed mt-5">Las bandas del modelo describen el índice cardiovascular. La urgencia se revisa en cada atención.</p>
+            </section>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xs border border-slate-100 overflow-hidden">
+          <div className="clinical-panel overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">
               <h2 className="font-semibold text-slate-800">Últimas evaluaciones</h2>
               <span className="text-xs text-slate-500">
@@ -128,7 +139,7 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs text-slate-500">
                           {new Date(ev.created_at).toLocaleString()} · {ev.edad} años
-                          {ev.triaje_clinico?.nivel_alerta ? ` · ${ev.triaje_clinico.nivel_alerta}` : ''}
+                          {ev.alerta_clinica?.titulo ? ` · ${ev.alerta_clinica.titulo}` : ' · Urgencia actual no revisada'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

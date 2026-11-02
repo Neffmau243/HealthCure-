@@ -43,8 +43,8 @@ export function Alerta({ tipo = 'error', children, onClose }) {
 /** Estado vacío para listados. */
 export function Vacio({ titulo, detalle, icono: Icono = Inbox }) {
   return (
-    <div className="bg-white rounded-2xl shadow-xs border border-slate-100 p-10 text-center">
-      <Icono className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+    <div className="clinical-empty">
+      <Icono className="w-9 h-9 text-slate-500 mx-auto mb-4" aria-hidden="true" />
       <h3 className="text-base font-semibold text-slate-700">{titulo}</h3>
       {detalle && <p className="text-sm text-slate-500 mt-1">{detalle}</p>}
     </div>

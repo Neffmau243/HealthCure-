@@ -1,6 +1,8 @@
 import { Loader2 } from 'lucide-react';
 import { Alerta } from '../ui/Feedback';
 import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
+import { calcularEdad } from '../../utils/triaje';
+import { grupoPorEdad, etiquetaGrupo } from '../../utils/clinica';
 
 const inputClass =
   'w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none disabled:opacity-60';
@@ -129,9 +131,11 @@ export default function ModalPaciente({
                   name="fecha_nacimiento"
                   required
                   value={formData.fecha_nacimiento}
+                  max={new Date().toLocaleDateString('en-CA')}
                   onChange={onChange}
                   className={inputClass}
                 />
+                {formData.fecha_nacimiento && <p className="text-xs text-slate-600 mt-1">Grupo actual: {etiquetaGrupo(grupoPorEdad(calcularEdad(formData.fecha_nacimiento)))}</p>}
               </div>
             </div>
 

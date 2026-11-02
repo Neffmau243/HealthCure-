@@ -16,7 +16,7 @@ Relaciones: se declaran en UNA sola dirección (desde Atencion hacia el
 resto) para no tener que modificar los modelos Usuario/Paciente/Evaluacion.
 """
 from sqlalchemy import (
-    Column, BigInteger, String, Text, DateTime, ForeignKey, Index, func
+    Column, BigInteger, String, Text, JSON, SmallInteger, DateTime, ForeignKey, Index, func
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -51,6 +51,14 @@ class Atencion(Base):
 
     indicaciones = Column(Text, nullable=True)
     # Indicaciones generales (dieta, exámenes auxiliares, cita de control)
+
+    # Instantánea de la visita. NULL identifica registros anteriores a la migración.
+    tipo_atencion = Column(String(20), nullable=True)
+    grupo_etario = Column(String(20), nullable=True)
+    condicion_materna = Column(String(20), nullable=True)
+    edad_al_atender = Column(SmallInteger, nullable=True)
+    observaciones_clinicas = Column(JSON, nullable=True)
+    alerta_clinica = Column(JSON, nullable=True)
 
     # --- Timestamps ---
     created_at = Column(DateTime, server_default=func.now(), nullable=False)

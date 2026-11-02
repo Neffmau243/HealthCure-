@@ -13,13 +13,14 @@ Rutas:
 
 Autenticación: TODOS requieren token JWT válido.
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.services.atencion_service import AtencionService
 from app.schemas.atencion import AtencionCreate, AtencionResponse
 from app.api.deps import get_current_user
+from app.services.reporte_service import ReporteService
 
 router = APIRouter(prefix="/atenciones", tags=["Atenciones"])
 
@@ -107,3 +108,17 @@ def get_atencion(
             detail="Atención no encontrada",
         )
     return atencion
+
+
+@router.get("/{atencion_id}/fua", response_class=Response)
+def get_atencion_fua(
+    atencion_id: int,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    pdf = ReporteService(db).generar_fua_atencion(atencion_id)
+    if pdf is None:
+        raise HTTPException(status_code=404, detail="Atención no encontrada")
+    return Response(content=pdf, media_type="application/pdf", headers={
+        "Content-Disposition": f'attachment; filename="fua_atencion_{atencion_id}.pdf"',
+    })

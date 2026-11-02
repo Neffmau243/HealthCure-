@@ -129,6 +129,8 @@ CREATE TABLE evaluaciones (
     probabilidad            DECIMAL(7,6) NOT NULL,
     clasificacion           ENUM('bajo', 'moderado', 'alto') NOT NULL,
     modelo_version          VARCHAR(50)  NULL,
+    observaciones_clinicas  JSON NULL,
+    alerta_clinica          JSON NULL,
 
     -- Triaje clínico (interpretación para médicos/enfermeros)
     nivel_alerta            VARCHAR(100) NULL,
@@ -162,6 +164,13 @@ CREATE TABLE atenciones (
     diagnostico     TEXT         NOT NULL,
     tratamiento     TEXT         NOT NULL,
     indicaciones    TEXT         NULL,
+
+    tipo_atencion       VARCHAR(20) NULL,
+    grupo_etario        VARCHAR(20) NULL,
+    condicion_materna   VARCHAR(20) NULL,
+    edad_al_atender     SMALLINT NULL,
+    observaciones_clinicas JSON NULL,
+    alerta_clinica JSON NULL,
 
     created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

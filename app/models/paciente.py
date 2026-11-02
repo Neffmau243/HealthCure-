@@ -146,3 +146,13 @@ class Paciente(Base):
             p for p in [self.apellido_paterno, self.apellido_materno] if p
         )
         return f"{apellidos}, {self.nombres}".strip(", ")
+
+    @property
+    def grupo_etario(self) -> str | None:
+        from app.core.clinica import calcular_edad, grupo_por_edad
+        if not self.fecha_nacimiento:
+            return None
+        try:
+            return grupo_por_edad(calcular_edad(self.fecha_nacimiento)).value
+        except ValueError:
+            return None
