@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import PageHeader from '../components/ui/PageHeader';
 import { UserPlus, Loader2, Pencil, UserCheck, UserX } from 'lucide-react';
 import Tabla from '../components/ui/Tabla';
 import { Cargando, Alerta } from '../components/ui/Feedback';
@@ -213,14 +214,8 @@ export default function UsuariosPage() {
   ];
 
   return (
-    <div className="space-y-6 p-4 sm:p-6 lg:p-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">Gestión de Usuarios</h2>
-          <p className="text-sm text-slate-500">
-            Administra las cuentas y roles del personal del sistema.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader title="Equipo y accesos" description="Administra las cuentas y los roles del personal que participa en la atención.">
         <button
           onClick={abrirNuevo}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17324c] hover:bg-[#0f2235] text-white rounded-lg text-sm font-medium transition-colors cursor-pointer shadow-sm"
@@ -228,7 +223,7 @@ export default function UsuariosPage() {
           <UserPlus className="w-4 h-4" />
           <span>Nuevo Usuario</span>
         </button>
-      </div>
+      </PageHeader>
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
 

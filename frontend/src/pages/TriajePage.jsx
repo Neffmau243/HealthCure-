@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import PageHeader from '../components/ui/PageHeader';
 import {
   Search,
   Activity,
@@ -18,6 +19,8 @@ import { Cargando, Alerta } from '../components/ui/Feedback';
 import { pacientesService } from '../services/pacientes';
 import { evaluacionesService } from '../services/evaluaciones';
 import { mensajeError } from '../services/api';
+import { etiquetaGrupo } from '../utils/clinica';
+import { hayAlerta } from '../utils/observaciones';
 import {
   calcularEdad,
   construirPayloadEvaluacion,
@@ -125,11 +128,11 @@ export default function TriajePage() {
     [resumen]
   );
   const pendientes = useMemo(
-    () => pacientes.filter((p) => !idsEvaluadosHoy.has(p.id)),
+    () => pacientes.filter((p) => calcularEdad(p.fecha_nacimiento) >= 18 && !idsEvaluadosHoy.has(p.id)),
     [pacientes, idsEvaluadosHoy]
   );
   const evaluadosHoy = useMemo(
-    () => pacientes.filter((p) => idsEvaluadosHoy.has(p.id)),
+    () => pacientes.filter((p) => calcularEdad(p.fecha_nacimiento) >= 18 && idsEvaluadosHoy.has(p.id)),
     [pacientes, idsEvaluadosHoy]
   );
   // Pacientes con historial previo pero aún pendientes hoy (los que hay que
@@ -144,8 +147,10 @@ export default function TriajePage() {
       const edad = calcularEdad(pacienteSeleccionado.fecha_nacimiento);
       const payload = construirPayloadEvaluacion(pacienteSeleccionado, datos, edad);
       const evaluacion = await evaluacionesService.crear(payload);
-      // El backend devuelve el nombre del paciente en la evaluación, así que
-      // guardamos contexto para mostrarlo en el resultado.
+      // EXPO-ML 15 | Recibir el JSON y mostrar el resultado al profesional.
+      // Añadimos el nombre desde el paciente seleccionado para acompañar la respuesta.
+      // TarjetaTriaje.jsx presenta índice, banda, factores, recomendaciones y PDF.
+      // Después se actualizan listas y conteos; no se vuelve a entrenar el modelo.
       setResultado({
         ...evaluacion,
         _pacienteNombre: nombreCompleto(pacienteSeleccionado),
@@ -197,6 +202,7 @@ export default function TriajePage() {
         return (
           <span className={edad != null && edad >= 18 ? 'text-slate-600' : 'text-amber-700'}>
             {edad != null ? `${edad} años` : '—'}
+            <span className="block text-xs">{etiquetaGrupo(row.grupo_etario)}</span>
           </span>
         );
       },
@@ -208,6 +214,9 @@ export default function TriajePage() {
     {
       titulo: 'Estado',
       render: (row) => {
+        if (calcularEdad(row.fecha_nacimiento) < 18) {
+          return <span className="text-xs text-slate-600">Triaje ML bloqueado: menor de 18 años</span>;
+        }
         const lista = evaluacionesPorPaciente[row.id];
         const triadoHoy = idsEvaluadosHoy.has(row.id);
         if (!lista?.length) {
@@ -223,13 +232,12 @@ export default function TriajePage() {
         const ev = lista[0];
         return (
           <div className="flex flex-wrap items-center gap-2">
+            {hayAlerta(ev.alerta_clinica) && <span className="text-xs font-bold text-rose-800">{ev.alerta_clinica.titulo}</span>}
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${clasesClasificacion(
-                ev.clasificacion
-              )}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${hayAlerta(ev.alerta_clinica) ? 'bg-slate-100 text-slate-700' : clasesClasificacion(ev.clasificacion)}`}
               title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
             >
-              {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}
+              Banda ML {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}
             </span>
             <span className="text-xs text-slate-500">
               {triadoHoy ? 'Triado hoy' : 'Sin triaje hoy'} · {lista.length}{' '}
@@ -244,10 +252,11 @@ export default function TriajePage() {
       align: 'center',
       render: (row) => {
         const tieneEvaluaciones = Boolean(evaluacionesPorPaciente[row.id]?.length);
+        const menor = calcularEdad(row.fecha_nacimiento) < 18;
         return (
           <div className="flex items-center justify-center gap-2">
             <button
-              onClick={() => abrirTriaje(row)}
+              onClick={() => menor ? navigate('/dashboard/consultorio', { state: { pacienteId: row.id } }) : abrirTriaje(row)}
               className={`px-3 py-2 min-h-11 rounded-xl text-xs font-medium transition inline-flex items-center gap-1.5 cursor-pointer ${
                 tieneEvaluaciones
                   ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -255,7 +264,7 @@ export default function TriajePage() {
               }`}
             >
               <Activity className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>{tieneEvaluaciones ? 'Nueva evaluación' : 'Iniciar triaje'}</span>
+              <span>{menor ? 'Atender sin ML' : tieneEvaluaciones ? 'Nueva evaluación' : 'Iniciar triaje'}</span>
             </button>
             <button
               onClick={() => navigate('/dashboard/historiales', { state: { pacienteId: row.id } })}
@@ -272,16 +281,9 @@ export default function TriajePage() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+    <div className="space-y-6">
       {/* Encabezado */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl shadow-xs border border-slate-100">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Estación de Triaje</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Registra los signos vitales y el modelo de Machine Learning calcula el riesgo
-            cardiovascular y su triaje clínico.
-          </p>
-        </div>
+      <PageHeader title="Triaje y evaluación" description="Valora los signos y síntomas de la visita. Las alertas clínicas acompañan la revisión del riesgo cardiovascular.">
         <button
           onClick={() => navigate('/dashboard/pacientes')}
           className="flex items-center justify-center gap-2 px-4 py-3 min-h-11 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl text-sm font-medium shadow-md transition cursor-pointer w-full sm:w-auto"
@@ -289,15 +291,15 @@ export default function TriajePage() {
           <UserPlus className="w-4 h-4" />
           <span>Registrar paciente</span>
         </button>
-      </div>
+      </PageHeader>
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
 
       {/* Guía del proceso: deja claro el flujo paciente → triaje → modelo ML */}
-      <div className="bg-white p-5 rounded-2xl shadow-xs border border-slate-100">
+      <div className="workflow-guide">
         <div className="flex items-center justify-between gap-3 mb-4">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-500">
-            Cómo funciona el proceso
+          <p className="text-sm font-semibold text-slate-800">
+            Recorrido de atención
           </p>
           {/* En pantallas chicas la guía arranca cerrada: ocupaba 186px (21%
               del viewport) y empujaba la tabla de pacientes bajo el pliegue. */}
@@ -348,7 +350,7 @@ export default function TriajePage() {
                 Peso, talla, presión, antecedentes, hábitos y percepción de salud.
               </p>
               <p className="text-xs font-semibold text-sky-800 mt-2">
-                {pendientes.length} pendiente{pendientes.length === 1 ? '' : 's'} de evaluar
+                {pendientes.length} adulto{pendientes.length === 1 ? '' : 's'} pendiente{pendientes.length === 1 ? '' : 's'} de evaluar
               </p>
             </div>
           </div>
@@ -362,7 +364,7 @@ export default function TriajePage() {
                 <BrainCircuit className="w-4 h-4 text-indigo-600" /> El modelo ML calcula el riesgo
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Probabilidad, clasificación y triaje clínico con semáforo y recomendaciones.
+                Índice cardiovascular y clasificación. Las alertas actuales se revisan por separado.
               </p>
               <p className="text-xs font-semibold text-indigo-800 mt-2">
                 {(resumen?.total_evaluaciones ?? evaluaciones.length)}{' '}
@@ -398,7 +400,7 @@ export default function TriajePage() {
       )}
 
       {/* Lista de pacientes en cola */}
-      <div className="bg-white p-4 rounded-2xl shadow-xs border border-slate-100 space-y-4">
+      <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           {FILTROS.map((f) => {
             const conteo =

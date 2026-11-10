@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Loader2 } from 'lucide-react';
-import logoImage from '../assets/logo.png';
+import { Mail, Lock, Loader2, HeartPulse, ClipboardList, Stethoscope, FileText } from 'lucide-react';
 import { useAuth } from '../context/useAuth';
-import { mensajeError } from '../services/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,78 +13,80 @@ export default function LoginPage() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    if (enviando) return;
     setError(null);
     setEnviando(true);
     try {
       await login(email.trim(), password);
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(mensajeError(err, 'No se pudo iniciar sesión'));
+      if (err.response?.status === 401) {
+        setError('El correo o la contraseña no coinciden. Revisa tus datos y vuelve a intentarlo.');
+      } else if (!err.response) {
+        setError('No pudimos conectar con el servidor. Comprueba tu conexión y vuelve a intentarlo.');
+      } else {
+        setError('No pudimos iniciar sesión en este momento. Vuelve a intentarlo en unos instantes.');
+      }
     } finally {
       setEnviando(false);
     }
   };
 
   return (
-    <div className="flex min-h-screen w-screen items-center justify-center bg-gradient-to-b from-sky-400 via-sky-200 to-sky-100 p-4 font-lexend">
+    <div className="login-screen">
       {/* Contenedor principal con una altura óptima y uniforme */}
-      <div className="flex w-full max-w-[460px] lg:max-w-[1150px] lg:h-[580px] bg-[#fcf6f4] rounded-xl shadow-2xl overflow-hidden flex-col lg:flex-row">
+      <div className="login-layout">
         {/* Panel del Formulario Izquierdo con distribución equilibrada */}
-        <div className="w-full lg:flex-1 bg-[#fcf6f4] flex flex-col justify-between items-center p-8 lg:p-12">
-          <div className="text-center w-full mt-2">
-            <img
-              src={logoImage}
-              alt="Logo"
-              className="w-[280px] lg:w-[310px] max-w-full h-auto mb-3 mx-auto object-contain"
-            />
-            <p className="text-[13px] text-slate-500 font-light">
-              Ingresa tus credenciales para iniciar sesión
-            </p>
+        <div className="login-form-panel">
+          <div className="login-brand"><HeartPulse className="w-8 h-8" aria-hidden="true" /><span>HealthCure</span></div>
+          <div className="w-full mt-10">
+            <h1 className="text-3xl font-semibold tracking-tight text-[#17324c]">Bienvenido a tu espacio de atención</h1>
+            <p className="text-sm text-slate-600 leading-relaxed mt-3">Ingresa con tu cuenta para continuar con la atención de tus pacientes.</p>
           </div>
 
           <form
             onSubmit={handleLogin}
-            className="w-full max-w-[340px] flex flex-col gap-5 my-6"
+            className="w-full flex flex-col gap-5 mt-8"
           >
             {/* Etiquetas reales (ocultas visualmente): el placeholder solo no
                 da nombre accesible al campo, así que un lector de pantalla
                 anunciaba "cuadro de edición, en blanco". */}
-            <div className="relative flex items-center">
-              <Mail className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" />
-              <label htmlFor="login-email" className="sr-only">
+            <div>
+              <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-2">
                 Correo electrónico
               </label>
-              <input
+              <div className="relative flex items-center"><Mail className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" /><input
                 id="login-email"
                 type="email"
                 required
                 autoComplete="username"
+                aria-describedby={error ? 'login-error' : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="correo@healthcure.com"
                 className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17324c] focus:border-blue-900 transition-colors"
-              />
+              /></div>
             </div>
 
-            <div className="relative flex items-center">
-              <Lock className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" />
-              <label htmlFor="login-password" className="sr-only">
+            <div>
+              <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-2">
                 Contraseña
               </label>
-              <input
+              <div className="relative flex items-center"><Lock className="absolute left-3.5 text-slate-500 w-[18px] h-[18px]" aria-hidden="true" /><input
                 id="login-password"
                 type="password"
                 required
                 autoComplete="current-password"
+                aria-describedby={error ? 'login-error' : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Ingresa tu contraseña"
                 className="w-full py-3.5 pr-4 pl-11 rounded-md border border-slate-300 bg-white text-sm font-lexend outline-none text-slate-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17324c] focus:border-blue-900 transition-colors"
-              />
+              /></div>
             </div>
 
             {error && (
-              <p className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2.5" role="alert">
+              <p id="login-error" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2.5" role="alert">
                 {error}
               </p>
             )}
@@ -102,23 +102,23 @@ export default function LoginPage() {
 
             {/* text-slate-500 en vez de slate-400: el gris anterior daba
                 2.63:1 de contraste (WCAG AA exige 4.5:1 para texto normal). */}
-            <p className="text-[11px] text-slate-500 text-center leading-relaxed">
-              Cuentas de prueba: <br />
-              admin@healthcure.com / admin123 · dr.garcia@healthcure.com / doctor123
-            </p>
+            <details className="text-xs text-slate-600 leading-relaxed"><summary className="cursor-pointer py-2">Acceso para demostración</summary><p className="mt-2">admin@healthcure.com / admin123<br />dr.garcia@healthcure.com / doctor123</p></details>
           </form>
 
-          <div className="mb-2"></div>
+          <p className="text-xs text-slate-500 mt-8 leading-relaxed">Herramientas para el personal de salud, al servicio de cada paciente.</p>
         </div>
 
         {/* Panel Derecho: Logo derecho para pantallas grandes */}
-        <div className="flex-1 bg-[#56ccf2] hidden lg:flex justify-center items-center p-12">
-          <img
-            src={logoImage}
-            alt="Logo Grande"
-            className="w-[520px] lg:w-[580px] h-auto object-contain drop-shadow-xl"
-          />
-        </div>
+        <section className="login-care-panel" aria-labelledby="atencion-conectada">
+          <HeartPulse className="w-12 h-12" aria-hidden="true" />
+          <h2 id="atencion-conectada">Una atención conectada.<br />Una historia que continúa.</h2>
+          <p>Información clínica para acompañar cada etapa del cuidado.</p>
+          <div className="login-care-steps">
+            <div><ClipboardList aria-hidden="true" /><span>Conoce al paciente<small>Identificación, antecedentes y datos de la visita.</small></span></div>
+            <div><Stethoscope aria-hidden="true" /><span>Acompaña la valoración<small>Mediciones, señales de alarma y evaluación cardiovascular.</small></span></div>
+            <div><FileText aria-hidden="true" /><span>Da continuidad al cuidado<small>Atenciones, historia clínica y FUA.</small></span></div>
+          </div>
+        </section>
       </div>
     </div>
   );

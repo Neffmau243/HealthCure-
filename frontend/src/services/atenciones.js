@@ -1,6 +1,10 @@
-import { api } from './api'
+import { api, descargarBlob } from './api'
 
 export const atencionesService = {
+  async descargarFua(id) {
+    const { data } = await api.get(`/atenciones/${id}/fua`, { responseType: 'blob' })
+    descargarBlob(data, `fua_atencion_${id}.pdf`)
+  },
   /** POST /atenciones/ → registra diagnóstico/tratamiento */
   async crear(payload) {
     const { data } = await api.post('/atenciones/', payload)

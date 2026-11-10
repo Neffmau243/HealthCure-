@@ -181,7 +181,7 @@ la deriva de la probabilidad con los mismos umbrales del predictor ML
 |---------------|----------------|----------------|-------------------|
 | **alto** | ALTA PRIORIDAD - RIESGO ELEVADO | `rojo` | Priorizar atención médica. Evaluación por Cardiología requerida. |
 | **moderado** | RIESGO MODERADO - SEGUIMIENTO PREVENTIVO | `amarillo` | Programar consulta médica de control en los próximos 15 a 30 días. |
-| **bajo** | BAJO RIESGO - CONTROL DE RUTINA | `verde` | Mantener controles anuales de salud preventiva. |
+| **bajo** | BAJO RIESGO - CONTROL DE RUTINA | `verde` | Mantener seguimiento preventivo; acordar con el profesional de salud la fecha del próximo control. |
 
 > **Nota de diseño:** `codigo_color` es **semántico** ("verde"/"amarillo"/"rojo"),
 > no un hex. El spec pidió explícitamente "cadenas listas para consumir sin
@@ -193,7 +193,28 @@ la deriva de la probabilidad con los mismos umbrales del predictor ML
 |-------|-----------------|
 | **alto** | 1. Realizar Electrocardiograma (ECG) de base de inmediato.<br>2. Solicitar perfil lipídico completo, HbA1c y función renal (Creatinina/Urea).<br>3. Evaluar inicio o ajuste de tratamiento antihipertensivo/hipolipemiante. |
 | **moderado** | 1. Solicitar perfil lipídico y examen de glucosa en ayunas.<br>2. Monitoreo ambulatorio de presión arterial durante 1 semana.<br>3. Reforzar cambios en el estilo de vida (dieta cardioprotectora). |
-| **bajo** | 1. Continuar promoviendo la actividad física y hábitos saludables.<br>2. Reevaluación de triaje anual o según síntomas. |
+| **bajo** | 1. Revisar con el profesional de salud los antecedentes y las mediciones disponibles, aunque el índice se encuentre en la banda baja.<br>2. Mantener actividad física regular, adaptada a la capacidad del paciente y a las indicaciones del profesional de salud.<br>3. Favorecer una alimentación variada con frutas y verduras, moderar la sal y evitar el consumo de tabaco.<br>4. Acordar la fecha del próximo control según los antecedentes y la evaluación clínica; actualizar los datos si cambian los hábitos o el estado de salud.<br>5. La banda baja no descarta enfermedad ni evalúa los síntomas actuales. Si aparecen molestias, solicitar valoración profesional sin esperar a la siguiente evaluación del sistema. |
+
+**Procedencia de la orientación de banda baja.** Estos textos están escritos en
+`app/services/evaluacion_triaje_service.py`, en la rama `bajo` de
+`_nivel_de_alerta()`. El modelo calcula el índice; el servicio selecciona la misma
+lista para todas las evaluaciones de esa banda. No es una recomendación
+personalizada aprendida del dataset.
+
+La orientación sobre actividad física, alimentación y tabaco toma como referencia
+las medidas generales de prevención descritas por la
+[OMS](https://www.who.int/health-topics/cardiovascular-diseases/). Esto no valida los
+cortes del modelo ni convierte el texto en un protocolo clínico. La fecha del
+control se deja al profesional: el índice no demuestra que todas las personas de
+la banda baja deban esperar un año. Como ejemplo de que los intervalos preventivos
+dependen de edad y factores de riesgo, la
+[USPSTF](https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/hypertension-in-adults-screening/)
+distinge intervalos de cribado de hipertensión; esa recomendación no es un
+intervalo validado de reevaluación de este modelo.
+
+Los textos se guardan con cada evaluación nueva. Las evaluaciones que ya tienen
+triaje persistido conservan su orientación original; consultarlas no la reemplaza
+por esta versión.
 
 ### 6.3 Factores de riesgo (`_factores_de_riesgo`)
 

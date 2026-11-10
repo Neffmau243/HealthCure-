@@ -1,4 +1,7 @@
 // Funciones puras del módulo de triaje. No dependen de React.
+import { construirObservaciones } from './observaciones.js';
+import { parsePresion } from './presion.js';
+export { parsePresion } from './presion.js';
 
 // Umbral con el que se marca hipertensión a partir de UNA lectura de presión.
 const PRESION_SISTOLICA_ALTA = 140;
@@ -27,11 +30,6 @@ export const calcularPrioridadAutomatica = (temp, fc) => {
 };
 
 // "120/80" -> { sistolica: 120, diastolica: 80 }. Devuelve null si el formato no es válido.
-export const parsePresion = (texto) => {
-  const match = /^(\d{2,3})\s*\/\s*(\d{2,3})$/.exec(String(texto ?? '').trim());
-  if (!match) return null;
-  return { sistolica: Number(match[1]), diastolica: Number(match[2]) };
-};
 
 export const esPresionElevada = (texto) => {
   const presion = parsePresion(texto);
@@ -94,6 +92,12 @@ export const etiquetaSexo = (sexo) =>
  *
  * `datos` es lo que captura el ModalTriaje (signos vitales + antecedentes).
  */
+// EXPO-ML 03 | Convertir el formulario al JSON que entiende nuestra API.
+// Se envían 9 predictores y paciente_id, que vincula la evaluación al paciente.
+// La edad aún va en años: su categoría CDC se calcula en backend (EXPO-ML 09).
+// La presión se resume en un booleano y prediabetes/diabetes se agrupan en true;
+// temperatura, saturación, frecuencia cardíaca e IMC no entran a este vector.
+// Siguiente: services/evaluaciones.js, EXPO-ML 04.
 export const construirPayloadEvaluacion = (paciente, datos, edad) => ({
   paciente_id: paciente.id,
   edad: Number(edad),
@@ -107,6 +111,7 @@ export const construirPayloadEvaluacion = (paciente, datos, edad) => ({
   diabetes: String(datos.diabetes) !== '0',
   salud_general: Number(datos.saludGeneral) || 3,
   dificultad_para_caminar: Boolean(datos.dificultadCaminar),
+  observaciones_clinicas: construirObservaciones(datos),
 });
 
 // Clases Tailwind por semáforo del triaje clínico.

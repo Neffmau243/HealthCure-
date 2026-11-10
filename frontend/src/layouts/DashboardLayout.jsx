@@ -2,36 +2,18 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from "../components/layout/Sidebar";
 import Topbar from "../components/layout/Topbar";
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function DashboardLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.matchMedia('(min-width: 1024px)').matches);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-[#fcf6f4] font-lexend relative">
+    <div className="clinical-app flex h-dvh w-full overflow-hidden relative">
       <Sidebar sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-      {/* Con el menú cerrado el botón estaba en left:-20px, es decir la mitad
-          fuera de la pantalla (medido: 50% visible). Ahora queda siempre
-          dentro del viewport. */}
-      <button
-        onClick={() => setSidebarOpen(!sidebarOpen)}
-        aria-label={sidebarOpen ? 'Ocultar menú lateral' : 'Mostrar menú lateral'}
-        aria-expanded={sidebarOpen}
-        className="absolute top-1/2 -translate-y-1/2 z-60 w-11 h-11 bg-white hover:bg-slate-50 text-[#17324c] flex items-center justify-center rounded-full shadow-lg border border-sky-300 ring-2 ring-sky-400/20 transition-all duration-300 ease-in-out cursor-pointer"
-        style={{ left: sidebarOpen ? '236px' : '8px' }}
-      >
-        {sidebarOpen ? (
-          <ChevronLeft className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
-        ) : (
-          <ChevronRight className="w-5 h-5 stroke-[2.5]" aria-hidden="true" />
-        )}
-      </button>
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
+        <Topbar sidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
-        <Topbar toggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
-
-        <main className="flex-1 overflow-y-auto p-6 lg:p-8 bg-[#fcf6f4]">
+        <main id="contenido-principal" className="clinical-main flex-1 overflow-y-auto">
           <div className="max-w-7xl mx-auto">
             {/* Aquí se renderiza automáticamente la página hija activa de la URL */}
             <Outlet />
@@ -40,7 +22,7 @@ export default function DashboardLayout() {
       </div>
 
       {sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/40 z-30 lg:hidden backdrop-blur-xs" />
+        <button aria-label="Cerrar menú lateral" onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-slate-950/40 z-40 lg:hidden" />
       )}
     </div>
   );

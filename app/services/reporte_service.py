@@ -33,7 +33,10 @@ from app.models.evaluacion import Evaluacion
 from app.models.paciente import Paciente
 from app.models.usuario import Usuario
 from app.repositories.evaluacion_repository import EvaluacionRepository
+from app.repositories.atencion_repository import AtencionRepository
+from app.services.fua_atencion import generar_fua_atencion_pdf
 from app.mappers.evaluacion_mapper import EvaluacionMapper
+from app.services.alerta_clinica_service import SIGNOS, SINTOMAS
 
 # ============================================================
 # CONSTANTES DE MAQUETACIÓN (oficio peruano 215 x 330 mm)
@@ -315,15 +318,22 @@ def _resultado(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     clasificacion = response.clasificacion
     nombre_color = clasificacion.value if hasattr(clasificacion, "value") else str(clasificacion)
 
-    # Franja de color según clasificación
+    alerta = evaluacion.alerta_clinica
+    if alerta:
+        cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4, alerta["titulo"], size=10)
+        cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4, alerta["accion"])
+        for motivo in alerta["motivos"]:
+            cy = _parrafo(c, cy, MARGEN_MM + 2, ANCHO_CONTENIDO - 4, "- " + motivo)
+
+    # El nivel aprendido no se presenta como evaluación de la urgencia actual.
     cy = _salto(c, cy, 15)
-    color_fondo = COLOR_HEX.get(nombre_color, colors.white)
+    color_fondo = COLOR_HEX.get(triaje.codigo_color, colors.white)
     _rect(c, MARGEN_MM, cy, ANCHO_CONTENIDO, 14, fill=color_fondo)
     _texto(c, MARGEN_MM + 2, cy + 2.5,
-           f"NIVEL DE RIESGO: {nombre_color.upper()}  |  {triaje.nivel_alerta}",
+           f"BANDA DEL MODELO: {nombre_color.upper()}  |  No determina urgencia actual",
            size=10, font="Helvetica-Bold")
     _texto(c, MARGEN_MM + 2, cy + 8.5,
-           f"Probabilidad: {response.probabilidad * 100:.2f}%    Modelo: {response.modelo_version or 'N/D'}",
+           f"Indice de riesgo (0 a 100): {response.probabilidad * 100:.2f}    Modelo: {response.modelo_version or 'N/D'}",
            size=8)
     cy += 15.2
 
@@ -331,8 +341,8 @@ def _resultado(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     cy = _salto(c, cy, 6)
     _texto(c, MARGEN_MM + 2, cy, "ACCION SUGERIDA:", size=7.5, font="Helvetica-Bold",
            color=GRIS_LABEL)
-    cy = _parrafo(c, cy + 3.5, MARGEN_MM + 2, ANCHO_CONTENIDO - 4,
-                  triaje.accion_sugerida, size=8.5)
+    accion = alerta["accion"] if alerta else "Sin revisión actual de signos y síntomas registrada. El índice ML no descarta urgencia."
+    cy = _parrafo(c, cy + 3.5, MARGEN_MM + 2, ANCHO_CONTENIDO - 4, accion, size=8.5)
     cy += 1.5
     return cy
 
@@ -370,7 +380,9 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     _texto(c, MARGEN_MM + 2, cy, "EXAMENES / CONTROLES SUGERIDOS:", size=7.5,
            font="Helvetica-Bold", color=GRIS_LABEL)
     cy += 3.5
-    for r in (triaje.recomendaciones_medicas or []):
+    alerta = evaluacion.alerta_clinica
+    recomendaciones = triaje.recomendaciones_medicas if alerta and alerta["nivel"] == "sin_criterios_detectados" else [alerta["accion"] if alerta else "Valoración profesional según el estado actual; sin revisión de urgencia registrada."]
+    for r in (recomendaciones or []):
         cy = _parrafo(c, cy, MARGEN_MM + 5, ANCHO_CONTENIDO - 6, f"- {r}", size=8.5)
     cy += 1.5
     return cy
@@ -427,6 +439,15 @@ def generar_fua_pdf(evaluacion: Evaluacion) -> bytes:
     cy = _encabezado(c, TOPE_MM, evaluacion, paciente, num_fua)
     cy = _datos_paciente(c, cy, evaluacion, paciente)
     cy = _datos_atencion(c, cy, evaluacion, usuario)
+    if evaluacion.observaciones_clinicas:
+        obs = evaluacion.observaciones_clinicas
+        cy = _banda_titulo(c, cy, "OBSERVACIONES REGISTRADAS EN ESTA EVALUACION")
+        for campo,label in {**SIGNOS,"peso_kg":"Peso (kg)","talla_cm":"Talla (cm)"}.items():
+            valor = f"{obs[campo]:g}" if obs.get(campo) is not None else "Sin registrar"
+            cy = _parrafo(c, cy, MARGEN_MM+2, ANCHO_CONTENIDO-4, f"{label}: {valor}")
+        sintomas = obs.get("sintomas")
+        resumen = "No revisados" if sintomas is None else "; ".join(SINTOMAS[s] for s in sintomas) if sintomas else "Ausencia de los sintomas listados confirmada"
+        cy = _parrafo(c, cy, MARGEN_MM+2, ANCHO_CONTENIDO-4, "Sintomas: " + resumen)
     cy = _variables(c, cy, evaluacion, paciente)
     cy = _resultado(c, cy, evaluacion)
     cy = _factores(c, cy, evaluacion)
@@ -445,6 +466,11 @@ class ReporteService:
 
     def __init__(self, db):
         self.evaluacion_repo = EvaluacionRepository(db)
+        self.atencion_repo = AtencionRepository(db)
+
+    def generar_fua_atencion(self, atencion_id: int) -> Optional[bytes]:
+        atencion = self.atencion_repo.get_by_id(atencion_id)
+        return generar_fua_atencion_pdf(atencion) if atencion else None
 
     def generar_fua(self, evaluacion_id: int) -> Optional[bytes]:
         """

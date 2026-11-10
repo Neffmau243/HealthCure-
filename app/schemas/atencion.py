@@ -11,6 +11,8 @@ evaluación cardíaca que la originó.
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from app.core.clinica import TipoAtencion, GrupoEtario, CondicionMaterna
+from app.schemas.clinica import ObservacionesClinicas, AlertaClinica
 
 
 class AtencionCreate(BaseModel):
@@ -36,6 +38,12 @@ class AtencionCreate(BaseModel):
     tratamiento: str = Field(..., min_length=3, max_length=2000)
 
     indicaciones: Optional[str] = Field(None, max_length=2000)
+
+    tipo_atencion: TipoAtencion = TipoAtencion.ambulatoria
+    condicion_materna: CondicionMaterna = CondicionMaterna.ninguna
+    observaciones_clinicas: Optional[ObservacionesClinicas] = None
+    # Reutilización explícita y verificada; nunca se heredan signos automáticamente.
+    usar_observaciones_evaluacion: bool = False
 
 
 class AtencionResponse(BaseModel):
@@ -64,6 +72,12 @@ class AtencionResponse(BaseModel):
     diagnostico: str
     tratamiento: str
     indicaciones: Optional[str] = None
+    tipo_atencion: Optional[TipoAtencion] = None
+    grupo_etario: Optional[GrupoEtario] = None
+    condicion_materna: Optional[CondicionMaterna] = None
+    edad_al_atender: Optional[int] = None
+    observaciones_clinicas: Optional[ObservacionesClinicas] = None
+    alerta_clinica: Optional[AlertaClinica] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

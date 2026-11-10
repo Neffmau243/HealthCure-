@@ -1,14 +1,13 @@
 import { useState } from 'react'
 import { AuthContext } from './useAuth'
 import { authService } from '../services/auth'
+import { leerSesionGuardada } from '../utils/sesion'
 
 export const AuthProvider = ({ children }) => {
   // Persistimos la sesión en localStorage para sobrevivir recargas.
-  const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('user')
-    return saved ? JSON.parse(saved) : null
-  })
-  const [token, setToken] = useState(() => localStorage.getItem('token'))
+  const [sesion, setSesion] = useState(() => leerSesionGuardada())
+  const user = sesion?.user ?? null
+  const token = sesion?.token ?? null
 
   /**
    * Inicia sesión contra el backend real.
@@ -18,8 +17,7 @@ export const AuthProvider = ({ children }) => {
     const data = await authService.login(email, password)
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('user', JSON.stringify(data.usuario))
-    setToken(data.access_token)
-    setUser(data.usuario)
+    setSesion({ user: data.usuario, token: data.access_token })
     return data.usuario
   }
 
@@ -27,15 +25,14 @@ export const AuthProvider = ({ children }) => {
   const refrescarUsuario = async () => {
     const usuario = await authService.me()
     localStorage.setItem('user', JSON.stringify(usuario))
-    setUser(usuario)
+    setSesion((actual) => actual ? { ...actual, user: usuario } : null)
     return usuario
   }
 
   const logout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
-    setToken(null)
-    setUser(null)
+    setSesion(null)
   }
 
   const isAuthenticated = Boolean(token && user)

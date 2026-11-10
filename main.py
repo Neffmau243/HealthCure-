@@ -36,7 +36,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
-from app.api.v1 import auth, pacientes, evaluaciones, atenciones, admin, catalogos
+from app.api.v1 import auth, pacientes, evaluaciones, atenciones, admin, catalogos, clinica
 
 settings = get_settings()
 
@@ -95,6 +95,7 @@ app.include_router(evaluaciones.router, prefix="/api/v1")
 app.include_router(atenciones.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(catalogos.router, prefix="/api/v1")
+app.include_router(clinica.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])

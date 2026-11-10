@@ -1,0 +1,2991 @@
+{
+  "protocolo": {
+    "version": "3.0.0-experimental",
+    "fecha_utc": "2026-10-15T15:33:49.628993+00:00",
+    "seed": 20261015,
+    "fracciones_objetivo": {
+      "train": 0.6,
+      "calibration": 0.15,
+      "validation": 0.1,
+      "test": 0.15
+    },
+    "primario": "perfiles",
+    "escenarios": [
+      "filas",
+      "perfiles",
+      "sin_duplicados_completos"
+    ],
+    "features": [
+      "edad",
+      "presion_alta",
+      "colesterol_alto",
+      "tabaquismo",
+      "actividad_fisica",
+      "antecedente_acv",
+      "diabetes",
+      "salud_general",
+      "dificultad_para_caminar"
+    ],
+    "parametros_xgb_fijos": {
+      "n_estimators": 400,
+      "max_depth": 3,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8
+    },
+    "origen_parametros": "Configuración v2 previamente explorada en este mismo CSV; sin nueva búsqueda",
+    "calibracion": "sigmoid en calibration, con estimador congelado; sin reentrenar después",
+    "eleccion_variante_xgb": "menor Brier en validation; empate xgb_raw",
+    "eleccion_umbral": "máximo F1 en validation, empate mayor umbral; sin criterio clínico",
+    "bandas_app": "Sin cambios; 0.30/0.60 no se trasladan al candidato calibrado",
+    "bootstrap": 200,
+    "bootstrap_unidad": "perfil 9 features",
+    "subgrupos": "sexo, edades 18-44/45-64/65+, e intersecciones; umbral global fijo",
+    "dataset_sha256": "953fb23bb131736d7879539a071d3f6d1eaae8d4867ab05335d0ba89b94d5f99",
+    "runtime_sha256": {
+      "app\\resources\\modelo_cardiaco.joblib": "47f227f51c5ca15bff66cb24b4e9d1ea250e3f3c646cd7d13d017664871b666b",
+      "app\\resources\\modelo_cardiaco_metadata.json": "3b72fb45aca0bacc80e409b79d8992c0ea815fbc48e32cd862af44511fec9c94"
+    },
+    "codigo_sha256": {
+      "app/ml/experiment.py": "06cbd7af6f28f95ef76cd34e84b1d5ef348fd39bc06e2e3a275b30b276fee9eb",
+      "app/ml/dataset.py": "5381a8a2c8bb6622332703a3fc2a6f38202955f0d1829b38fda39583f1f3839e",
+      "app/ml/preprocessor.py": "8a20cf2c5d1223939817bafdad8a2d13feb317fd98779d97c89b2d6076da19b0",
+      "entrenar_modelo.py": "3ed13b0756dec281209cc66341c36bff835857221d15727760f6f72c82d78a33"
+    },
+    "librerias": {
+      "python": "3.12.10",
+      "sklearn": "1.9.0",
+      "xgboost": "3.4.1",
+      "pandas": "3.0.5",
+      "numpy": "2.5.2",
+      "joblib": "1.5.3"
+    },
+    "limite": "Reevaluación interna de datos ya estudiados, no test externo prospectivo."
+  },
+  "duplicados": {
+    "filas": 253680,
+    "duplicados_completos_excedentes": 23899,
+    "filas_en_grupos_completos_repetidos": 35086,
+    "perfiles_9_features_unicos": 5630,
+    "perfiles_9_features_con_ambas_etiquetas": 3263,
+    "nota": "Coincidencia de respuestas no identifica encuestados; no hay ID de persona."
+  },
+  "escenarios": {
+    "filas": {
+      "particiones": {
+        "train": {
+          "n": 152208,
+          "positivos": 14336,
+          "prevalencia": 0.094186902133922,
+          "perfiles": 5143
+        },
+        "calibration": {
+          "n": 38052,
+          "positivos": 3584,
+          "prevalencia": 0.094186902133922,
+          "perfiles": 3603
+        },
+        "validation": {
+          "n": 25368,
+          "positivos": 2389,
+          "prevalencia": 0.09417376222011983,
+          "perfiles": 3160
+        },
+        "test": {
+          "n": 38052,
+          "positivos": 3584,
+          "prevalencia": 0.094186902133922,
+          "perfiles": 3590
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 3389,
+        "train__validation": 3010,
+        "train__test": 3368,
+        "calibration__validation": 2578,
+        "calibration__test": 2811,
+        "validation__test": 2543
+      },
+      "decisiones": {
+        "umbrales": {
+          "xgb_raw": {
+            "umbral": 0.6962235569953918,
+            "f1_validation": 0.4114803625377643,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "xgb_sigmoid": {
+            "umbral": 0.20987730826066,
+            "f1_validation": 0.4114803625377643,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "logistic": {
+            "umbral": 0.2018560625708279,
+            "f1_validation": 0.4120040691759918,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          }
+        },
+        "brier_validation": {
+          "xgb_raw": 0.17039644718170166,
+          "xgb_sigmoid": 0.07123358523803111
+        },
+        "variante_xgb_seleccionada": "xgb_sigmoid",
+        "scale_pos_weight_train": 9.6171875,
+        "baseline_prevalencia_train": 0.094186902133922
+      },
+      "test": {
+        "xgb_raw": {
+          "umbral_validation": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.6962235569953918,
+            "roc_auc": 0.8422505582947537,
+            "average_precision": 0.3581062272599672,
+            "precision": 0.31992427827733083,
+            "recall": 0.5658482142857143,
+            "specificity": 0.8749274689567135,
+            "f1": 0.40874735463065603,
+            "alert_rate": 0.16658782718385368,
+            "brier": 0.17118500173091888,
+            "log_loss": 0.5000608563423157,
+            "ece_10_uniform": 0.2618026118724559,
+            "matriz_confusion": [
+              [
+                30157,
+                4311
+              ],
+              [
+                1556,
+                2028
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.5,
+            "roc_auc": 0.8422505582947537,
+            "average_precision": 0.3581062272599672,
+            "precision": 0.23101215853465973,
+            "recall": 0.81640625,
+            "specificity": 0.7174190553556923,
+            "f1": 0.36012307692307693,
+            "alert_rate": 0.33286029643645537,
+            "brier": 0.17118500173091888,
+            "log_loss": 0.5000608563423157,
+            "ece_10_uniform": 0.2618026118724559,
+            "matriz_confusion": [
+              [
+                24728,
+                9740
+              ],
+              [
+                658,
+                2926
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 9671,
+              "score_medio": 0.04659629985690117,
+              "fraccion_positiva": 0.0050666942405128736
+            },
+            {
+              "bin": 1,
+              "n": 5813,
+              "score_medio": 0.14219430088996887,
+              "fraccion_positiva": 0.01513848271116463
+            },
+            {
+              "bin": 2,
+              "n": 3674,
+              "score_medio": 0.24492543935775757,
+              "fraccion_positiva": 0.027490473598258028
+            },
+            {
+              "bin": 3,
+              "n": 3156,
+              "score_medio": 0.3513528108596802,
+              "fraccion_positiva": 0.058935361216730035
+            },
+            {
+              "bin": 4,
+              "n": 3072,
+              "score_medio": 0.45119622349739075,
+              "fraccion_positiva": 0.076171875
+            },
+            {
+              "bin": 5,
+              "n": 3163,
+              "score_medio": 0.550647497177124,
+              "fraccion_positiva": 0.1166613974075245
+            },
+            {
+              "bin": 6,
+              "n": 3265,
+              "score_medio": 0.6518120169639587,
+              "fraccion_positiva": 0.16814701378254213
+            },
+            {
+              "bin": 7,
+              "n": 3338,
+              "score_medio": 0.751289427280426,
+              "fraccion_positiva": 0.2516476932294787
+            },
+            {
+              "bin": 8,
+              "n": 2318,
+              "score_medio": 0.8444844484329224,
+              "fraccion_positiva": 0.36022433132010356
+            },
+            {
+              "bin": 9,
+              "n": 582,
+              "score_medio": 0.9259811639785767,
+              "fraccion_positiva": 0.5721649484536082
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 19158,
+              "fraccion": 0.5034689372437717,
+              "positivos": 238
+            },
+            "moderado": {
+              "n": 9391,
+              "fraccion": 0.24679386103227163,
+              "positivos": 789
+            },
+            "alto": {
+              "n": 9503,
+              "fraccion": 0.2497372017239567,
+              "positivos": 2557
+            }
+          },
+          "artefacto_sha256": "d9cac5309e6e5c773acaa365374155923ac41376bedf38140418b4e9cb9db547"
+        },
+        "xgb_sigmoid": {
+          "umbral_validation": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.20987730826066,
+            "roc_auc": 0.8422505582947537,
+            "average_precision": 0.3581062272599672,
+            "precision": 0.31992427827733083,
+            "recall": 0.5658482142857143,
+            "specificity": 0.8749274689567135,
+            "f1": 0.40874735463065603,
+            "alert_rate": 0.16658782718385368,
+            "brier": 0.07124203841798721,
+            "log_loss": 0.2412693721371167,
+            "ece_10_uniform": 0.00530985125864351,
+            "matriz_confusion": [
+              [
+                30157,
+                4311
+              ],
+              [
+                1556,
+                2028
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.5,
+            "roc_auc": 0.8422505582947537,
+            "average_precision": 0.3581062272599672,
+            "precision": 0.7083333333333334,
+            "recall": 0.014229910714285714,
+            "specificity": 0.9993907392363932,
+            "f1": 0.027899343544857767,
+            "alert_rate": 0.001892147587511826,
+            "brier": 0.07124203841798721,
+            "log_loss": 0.2412693721371167,
+            "ece_10_uniform": 0.00530985125864351,
+            "matriz_confusion": [
+              [
+                34447,
+                21
+              ],
+              [
+                3533,
+                51
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 26290,
+              "score_medio": 0.02673394696083773,
+              "fraccion_positiva": 0.028489920121719286
+            },
+            {
+              "bin": 1,
+              "n": 5017,
+              "score_medio": 0.14679117055851676,
+              "fraccion_positiva": 0.14470799282439706
+            },
+            {
+              "bin": 2,
+              "n": 3498,
+              "score_medio": 0.24958850583426972,
+              "fraccion_positiva": 0.23813607775871926
+            },
+            {
+              "bin": 3,
+              "n": 2257,
+              "score_medio": 0.3467829655388627,
+              "fraccion_positiva": 0.33495790872840053
+            },
+            {
+              "bin": 4,
+              "n": 918,
+              "score_medio": 0.4407685527343759,
+              "fraccion_positiva": 0.5108932461873639
+            },
+            {
+              "bin": 5,
+              "n": 72,
+              "score_medio": 0.5095776696817137,
+              "fraccion_positiva": 0.7083333333333334
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 34805,
+              "fraccion": 0.9146693997687375,
+              "positivos": 2308
+            },
+            "moderado": {
+              "n": 3247,
+              "fraccion": 0.08533060023126249,
+              "positivos": 1276
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          },
+          "artefacto_sha256": "cce2bf9fac53d726741fd0c2005885e889e368aa36731e5fd0a105ca6ff45844"
+        },
+        "logistic": {
+          "umbral_validation": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.2018560625708279,
+            "roc_auc": 0.8397881455651411,
+            "average_precision": 0.353304269339168,
+            "precision": 0.3357277882797732,
+            "recall": 0.4955357142857143,
+            "specificity": 0.8980503655564581,
+            "f1": 0.4002704530087897,
+            "alert_rate": 0.13902028802691055,
+            "brier": 0.07145697909477984,
+            "log_loss": 0.24245981578983872,
+            "ece_10_uniform": 0.007719544659946451,
+            "matriz_confusion": [
+              [
+                30954,
+                3514
+              ],
+              [
+                1808,
+                1776
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.5,
+            "roc_auc": 0.8397881455651411,
+            "average_precision": 0.353304269339168,
+            "precision": 0.553623188405797,
+            "recall": 0.10658482142857142,
+            "specificity": 0.9910641754670999,
+            "f1": 0.17875526438933084,
+            "alert_rate": 0.018133081046988332,
+            "brier": 0.07145697909477984,
+            "log_loss": 0.24245981578983872,
+            "ece_10_uniform": 0.007719544659946451,
+            "matriz_confusion": [
+              [
+                34160,
+                308
+              ],
+              [
+                3202,
+                382
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 26790,
+              "score_medio": 0.03291604634644932,
+              "fraccion_positiva": 0.0305337812616648
+            },
+            {
+              "bin": 1,
+              "n": 5898,
+              "score_medio": 0.1425807112581588,
+              "fraccion_positiva": 0.16480162767039674
+            },
+            {
+              "bin": 2,
+              "n": 2618,
+              "score_medio": 0.24465049303577802,
+              "fraccion_positiva": 0.25439266615737205
+            },
+            {
+              "bin": 3,
+              "n": 1392,
+              "score_medio": 0.34514189882937674,
+              "fraccion_positiva": 0.34698275862068967
+            },
+            {
+              "bin": 4,
+              "n": 664,
+              "score_medio": 0.4437715216757716,
+              "fraccion_positiva": 0.3960843373493976
+            },
+            {
+              "bin": 5,
+              "n": 367,
+              "score_medio": 0.541393800507663,
+              "fraccion_positiva": 0.5149863760217984
+            },
+            {
+              "bin": 6,
+              "n": 200,
+              "score_medio": 0.647756407736702,
+              "fraccion_positiva": 0.565
+            },
+            {
+              "bin": 7,
+              "n": 100,
+              "score_medio": 0.7381997603395054,
+              "fraccion_positiva": 0.66
+            },
+            {
+              "bin": 8,
+              "n": 23,
+              "score_medio": 0.829117737276928,
+              "fraccion_positiva": 0.6086956521739131
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 35306,
+              "fraccion": 0.9278355933985073,
+              "positivos": 2456
+            },
+            "moderado": {
+              "n": 2423,
+              "fraccion": 0.06367602228529382,
+              "positivos": 935
+            },
+            "alto": {
+              "n": 323,
+              "fraccion": 0.008488384316198886,
+              "positivos": 193
+            }
+          },
+          "artefacto_sha256": "a570dde6f9c6be9abd0219ae506b1878c0b546573e9e5c21627804ab5870ae49"
+        },
+        "prevalencia_train": {
+          "umbral_validation": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.094186902133922,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.08531572960033701,
+            "log_loss": 0.3121192256928852,
+            "ece_10_uniform": 0.0,
+            "matriz_confusion": [
+              [
+                34468,
+                0
+              ],
+              [
+                3584,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 38052,
+            "positivos": 3584,
+            "prevalencia": 0.094186902133922,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.094186902133922,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.08531572960033701,
+            "log_loss": 0.3121192256928852,
+            "ece_10_uniform": 0.0,
+            "matriz_confusion": [
+              [
+                34468,
+                0
+              ],
+              [
+                3584,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 38052,
+              "score_medio": 0.094186902133922,
+              "fraccion_positiva": 0.094186902133922
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 38052,
+              "fraccion": 1.0,
+              "positivos": 3584
+            },
+            "moderado": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          }
+        }
+      }
+    },
+    "perfiles": {
+      "particiones": {
+        "train": {
+          "n": 152725,
+          "positivos": 13822,
+          "prevalencia": 0.0905025372401375,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 36116,
+          "positivos": 3778,
+          "prevalencia": 0.10460737623214088,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 27564,
+          "positivos": 2495,
+          "prevalencia": 0.09051661587578,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 37275,
+          "positivos": 3798,
+          "prevalencia": 0.10189134808853119,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "decisiones": {
+        "umbrales": {
+          "xgb_raw": {
+            "umbral": 0.6976212859153748,
+            "f1_validation": 0.3975332068311195,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "xgb_sigmoid": {
+            "umbral": 0.21046901370059257,
+            "f1_validation": 0.3975332068311195,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "logistic": {
+            "umbral": 0.16738463283108587,
+            "f1_validation": 0.394110275689223,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          }
+        },
+        "brier_validation": {
+          "xgb_raw": 0.1745447814464569,
+          "xgb_sigmoid": 0.06922762397166103
+        },
+        "variante_xgb_seleccionada": "xgb_sigmoid",
+        "scale_pos_weight_train": 10.049413977716684,
+        "baseline_prevalencia_train": 0.0905025372401375
+      },
+      "test": {
+        "xgb_raw": {
+          "umbral_validation": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.6976212859153748,
+            "roc_auc": 0.8285192125257675,
+            "average_precision": 0.3513138400329552,
+            "precision": 0.29527606620756314,
+            "recall": 0.6434965771458663,
+            "specificity": 0.8257609702183589,
+            "f1": 0.40480331262939956,
+            "alert_rate": 0.2220523138832998,
+            "brier": 0.19071431457996368,
+            "log_loss": 0.5536912679672241,
+            "ece_10_uniform": 0.28748136218214976,
+            "matriz_confusion": [
+              [
+                27644,
+                5833
+              ],
+              [
+                1354,
+                2444
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.5,
+            "roc_auc": 0.8285192125257675,
+            "average_precision": 0.3513138400329552,
+            "precision": 0.2281142365097589,
+            "recall": 0.8370194839389152,
+            "specificity": 0.6786749111330167,
+            "f1": 0.3585203563775798,
+            "alert_rate": 0.37386988598256204,
+            "brier": 0.19071431457996368,
+            "log_loss": 0.5536912679672241,
+            "ece_10_uniform": 0.28748136218214976,
+            "matriz_confusion": [
+              [
+                22720,
+                10757
+              ],
+              [
+                619,
+                3179
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 6911,
+              "score_medio": 0.05519586428999901,
+              "fraccion_positiva": 0.0056431775430473155
+            },
+            {
+              "bin": 1,
+              "n": 6107,
+              "score_medio": 0.15675120055675507,
+              "fraccion_positiva": 0.019649582446373014
+            },
+            {
+              "bin": 2,
+              "n": 6091,
+              "score_medio": 0.2520230710506439,
+              "fraccion_positiva": 0.034477097356755866
+            },
+            {
+              "bin": 3,
+              "n": 2097,
+              "score_medio": 0.3471812903881073,
+              "fraccion_positiva": 0.04721030042918455
+            },
+            {
+              "bin": 4,
+              "n": 2133,
+              "score_medio": 0.4563550353050232,
+              "fraccion_positiva": 0.07079231129864041
+            },
+            {
+              "bin": 5,
+              "n": 3215,
+              "score_medio": 0.5492528676986694,
+              "fraccion_positiva": 0.10917573872472784
+            },
+            {
+              "bin": 6,
+              "n": 2464,
+              "score_medio": 0.6482419371604919,
+              "fraccion_positiva": 0.1578733766233766
+            },
+            {
+              "bin": 7,
+              "n": 4648,
+              "score_medio": 0.7532138824462891,
+              "fraccion_positiva": 0.23580034423407917
+            },
+            {
+              "bin": 8,
+              "n": 3012,
+              "score_medio": 0.8377949595451355,
+              "fraccion_positiva": 0.3346613545816733
+            },
+            {
+              "bin": 9,
+              "n": 597,
+              "score_medio": 0.9231489896774292,
+              "fraccion_positiva": 0.5611390284757118
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 19109,
+              "fraccion": 0.5126492287055667,
+              "positivos": 369
+            },
+            "moderado": {
+              "n": 7445,
+              "fraccion": 0.19973172367538564,
+              "positivos": 601
+            },
+            "alto": {
+              "n": 10721,
+              "fraccion": 0.2876190476190476,
+              "positivos": 2828
+            }
+          },
+          "ic95": {
+            "metodo": "percentil 95%, bootstrap por perfil; modelo y umbral fijos",
+            "repeticiones": 200,
+            "replicas_validas": 200,
+            "intervalos": {
+              "roc_auc": [
+                0.8039538823236482,
+                0.8486830862846897
+              ],
+              "average_precision": [
+                0.3218843939368478,
+                0.3749800626604332
+              ],
+              "f1": [
+                0.38040291279749205,
+                0.42772924639341553
+              ],
+              "brier": [
+                0.16107833146242936,
+                0.22282110378897782
+              ],
+              "recall": [
+                0.5675276194743226,
+                0.7121816863695921
+              ]
+            }
+          },
+          "subgrupos": [
+            {
+              "n": 21139,
+              "positivos": 1673,
+              "prevalencia": 0.07914281659491934,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.8403613632831018,
+              "average_precision": 0.3204578119968144,
+              "precision": 0.24303373140582443,
+              "recall": 0.6933652121936641,
+              "specificity": 0.8143943285728963,
+              "f1": 0.35991312441824386,
+              "alert_rate": 0.22579119163631203,
+              "brier": 0.19971506297588348,
+              "log_loss": 0.5743240118026733,
+              "ece_10_uniform": 0.3155555439338161,
+              "matriz_confusion": [
+                [
+                  15853,
+                  3613
+                ],
+                [
+                  513,
+                  1160
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer",
+              "recall_ic95_wilson": [
+                0.6708482208873225,
+                0.7149962467554496
+              ],
+              "fpr_ic95_wilson": [
+                0.18020625329354775,
+                0.19112915147140772
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 16136,
+              "positivos": 2125,
+              "prevalencia": 0.1316931085770947,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.82569942104313,
+              "average_precision": 0.4008642818874927,
+              "precision": 0.3664383561643836,
+              "recall": 0.6042352941176471,
+              "specificity": 0.8415530654485761,
+              "f1": 0.45620891810268255,
+              "alert_rate": 0.21715418939018344,
+              "brier": 0.1789228469133377,
+              "log_loss": 0.5266612768173218,
+              "ece_10_uniform": 0.2507026952875609,
+              "matriz_confusion": [
+                [
+                  11791,
+                  2220
+                ],
+                [
+                  841,
+                  1284
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre",
+              "recall_ic95_wilson": [
+                0.5832734098329754,
+                0.6248209967112334
+              ],
+              "fpr_ic95_wilson": [
+                0.15249426731368398,
+                0.1645868407300905
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6798,
+              "positivos": 91,
+              "prevalencia": 0.013386290085319212,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.8385654154999614,
+              "average_precision": 0.20467329916197463,
+              "precision": 0.36923076923076925,
+              "recall": 0.26373626373626374,
+              "specificity": 0.9938869837483226,
+              "f1": 0.3076923076923077,
+              "alert_rate": 0.009561635775228007,
+              "brier": 0.02919868938624859,
+              "log_loss": 0.1304178535938263,
+              "ece_10_uniform": 0.08608672796263875,
+              "matriz_confusion": [
+                [
+                  6666,
+                  41
+                ],
+                [
+                  67,
+                  24
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_18_44",
+              "recall_ic95_wilson": [
+                0.1841059871821194,
+                0.36250579489416473
+              ],
+              "fpr_ic95_wilson": [
+                0.004509520931471544,
+                0.00828193887985578
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15298,
+              "positivos": 1122,
+              "prevalencia": 0.07334292064322133,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.8038249352172636,
+              "average_precision": 0.27485130561601573,
+              "precision": 0.2793719545208446,
+              "recall": 0.45989304812834225,
+              "specificity": 0.9061089164785553,
+              "f1": 0.3475917817446952,
+              "alert_rate": 0.12073473656687149,
+              "brier": 0.15280203521251678,
+              "log_loss": 0.47223997116088867,
+              "ece_10_uniform": 0.26355481209618886,
+              "matriz_confusion": [
+                [
+                  12845,
+                  1331
+                ],
+                [
+                  606,
+                  516
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_45_64",
+              "recall_ic95_wilson": [
+                0.43091719005272233,
+                0.48914260229648276
+              ],
+              "fpr_ic95_wilson": [
+                0.08919902905643362,
+                0.09880317580336642
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15179,
+              "positivos": 2585,
+              "prevalencia": 0.17030107385203241,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.7589970846698975,
+              "average_precision": 0.3834169877468726,
+              "precision": 0.2991358994501178,
+              "recall": 0.7365570599613153,
+              "specificity": 0.6457837065269176,
+              "f1": 0.42547486033519555,
+              "alert_rate": 0.41932933658343763,
+              "brier": 0.30125951766967773,
+              "log_loss": 0.8253465294837952,
+              "ece_10_uniform": 0.4018034616388173,
+              "matriz_confusion": [
+                [
+                  8133,
+                  4461
+                ],
+                [
+                  681,
+                  1904
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_65_mas",
+              "recall_ic95_wilson": [
+                0.7192339767976315,
+                0.7531781115645189
+              ],
+              "fpr_ic95_wilson": [
+                0.34590887235051393,
+                0.3626126222243399
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3684,
+              "positivos": 47,
+              "prevalencia": 0.012757871878393051,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.8785531680892014,
+              "average_precision": 0.23073410996094487,
+              "precision": 0.38235294117647056,
+              "recall": 0.2765957446808511,
+              "specificity": 0.9942260104481716,
+              "f1": 0.32098765432098764,
+              "alert_rate": 0.009229098805646038,
+              "brier": 0.028536085039377213,
+              "log_loss": 0.12643903493881226,
+              "ece_10_uniform": 0.08638045509688629,
+              "matriz_confusion": [
+                [
+                  3616,
+                  21
+                ],
+                [
+                  34,
+                  13
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_18_44",
+              "recall_ic95_wilson": [
+                0.16936563369682642,
+                0.41758563624878886
+              ],
+              "fpr_ic95_wilson": [
+                0.0037797196892306877,
+                0.008811177041423068
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 8354,
+              "positivos": 495,
+              "prevalencia": 0.05925305242997367,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.8293798141743174,
+              "average_precision": 0.28333184852202475,
+              "precision": 0.26091081593927895,
+              "recall": 0.5555555555555556,
+              "specificity": 0.9008779742969844,
+              "f1": 0.35506778566817304,
+              "alert_rate": 0.12616710557816616,
+              "brier": 0.1545693278312683,
+              "log_loss": 0.4762415289878845,
+              "ece_10_uniform": 0.2811079371024011,
+              "matriz_confusion": [
+                [
+                  7080,
+                  779
+                ],
+                [
+                  220,
+                  275
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_45_64",
+              "recall_ic95_wilson": [
+                0.5115203337922415,
+                0.598735137214569
+              ],
+              "fpr_ic95_wilson": [
+                0.09270992060167346,
+                0.10592583556871057
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 9101,
+              "positivos": 1131,
+              "prevalencia": 0.12427205801560268,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.7832389808377349,
+              "average_precision": 0.3401736804036444,
+              "precision": 0.23663500678426053,
+              "recall": 0.770999115826702,
+              "specificity": 0.647051442910916,
+              "f1": 0.36212624584717606,
+              "alert_rate": 0.40490056037798045,
+              "brier": 0.31044694781303406,
+              "log_loss": 0.8456556797027588,
+              "ece_10_uniform": 0.43994367548023366,
+              "matriz_confusion": [
+                [
+                  5157,
+                  2813
+                ],
+                [
+                  259,
+                  872
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.7456175493095406,
+                0.7945460085472705
+              ],
+              "fpr_ic95_wilson": [
+                0.34253003257363496,
+                0.363508767908527
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3114,
+              "positivos": 44,
+              "prevalencia": 0.014129736673089274,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.7903871779686111,
+              "average_precision": 0.18653284816066953,
+              "precision": 0.3548387096774194,
+              "recall": 0.25,
+              "specificity": 0.993485342019544,
+              "f1": 0.29333333333333333,
+              "alert_rate": 0.00995504174694926,
+              "brier": 0.02998257987201214,
+              "log_loss": 0.13512495160102844,
+              "ece_10_uniform": 0.08573923465977056,
+              "matriz_confusion": [
+                [
+                  3050,
+                  20
+                ],
+                [
+                  33,
+                  11
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_18_44",
+              "recall_ic95_wilson": [
+                0.14574213828964888,
+                0.3944056635895915
+              ],
+              "fpr_ic95_wilson": [
+                0.0042212518796404955,
+                0.01004150675902862
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6944,
+              "positivos": 627,
+              "prevalencia": 0.09029377880184332,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.787224367854747,
+              "average_precision": 0.28170143456677377,
+              "precision": 0.30390920554854983,
+              "recall": 0.3843700159489633,
+              "specificity": 0.9126167484565458,
+              "f1": 0.33943661971830985,
+              "alert_rate": 0.11419930875576037,
+              "brier": 0.15067584812641144,
+              "log_loss": 0.4674258530139923,
+              "ece_10_uniform": 0.2424374605735017,
+              "matriz_confusion": [
+                [
+                  5765,
+                  552
+                ],
+                [
+                  386,
+                  241
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_45_64",
+              "recall_ic95_wilson": [
+                0.3471079197863511,
+                0.42304035126884315
+              ],
+              "fpr_ic95_wilson": [
+                0.08066774376042699,
+                0.09460029073120044
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6078,
+              "positivos": 1454,
+              "prevalencia": 0.23922342875946034,
+              "umbral": 0.6976212859153748,
+              "roc_auc": 0.7381143117899316,
+              "average_precision": 0.44743571546621863,
+              "precision": 0.3850746268656716,
+              "recall": 0.7097661623108665,
+              "specificity": 0.643598615916955,
+              "f1": 0.49927431059506533,
+              "alert_rate": 0.4409345179335308,
+              "brier": 0.2875024974346161,
+              "log_loss": 0.7949361801147461,
+              "ece_10_uniform": 0.34469351892253214,
+              "matriz_confusion": [
+                [
+                  2976,
+                  1648
+                ],
+                [
+                  422,
+                  1032
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.6859085457226377,
+                0.7325182978200429
+              ],
+              "fpr_ic95_wilson": [
+                0.3427214329447254,
+                0.37031973066972307
+              ],
+              "positivos_insuficientes": false
+            }
+          ],
+          "artefacto_sha256": "8e9b5e878e59bb5a73d14817e080270a815dea0de0f09e205dbd6a43be70a633"
+        },
+        "xgb_sigmoid": {
+          "umbral_validation": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.21046901370059257,
+            "roc_auc": 0.8285192125257675,
+            "average_precision": 0.3513138400329552,
+            "precision": 0.29527606620756314,
+            "recall": 0.6434965771458663,
+            "specificity": 0.8257609702183589,
+            "f1": 0.40480331262939956,
+            "alert_rate": 0.2220523138832998,
+            "brier": 0.07734126855156025,
+            "log_loss": 0.26071875843542625,
+            "ece_10_uniform": 0.00908967790143363,
+            "matriz_confusion": [
+              [
+                27644,
+                5833
+              ],
+              [
+                1354,
+                2444
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.5,
+            "roc_auc": 0.8285192125257675,
+            "average_precision": 0.3513138400329552,
+            "precision": 0.74,
+            "recall": 0.009741969457609268,
+            "specificity": 0.9996116736864116,
+            "f1": 0.019230769230769232,
+            "alert_rate": 0.0013413816230717639,
+            "brier": 0.07734126855156025,
+            "log_loss": 0.26071875843542625,
+            "ece_10_uniform": 0.00908967790143363,
+            "matriz_confusion": [
+              [
+                33464,
+                13
+              ],
+              [
+                3761,
+                37
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 23803,
+              "score_medio": 0.026147556000936743,
+              "fraccion_positiva": 0.02814771247321766
+            },
+            {
+              "bin": 1,
+              "n": 4785,
+              "score_medio": 0.1361937872493991,
+              "fraccion_positiva": 0.1270637408568443
+            },
+            {
+              "bin": 2,
+              "n": 4335,
+              "score_medio": 0.25018796683629513,
+              "fraccion_positiva": 0.22076124567474048
+            },
+            {
+              "bin": 3,
+              "n": 3447,
+              "score_medio": 0.33758408204463,
+              "fraccion_positiva": 0.31998839570641135
+            },
+            {
+              "bin": 4,
+              "n": 855,
+              "score_medio": 0.43869687869133467,
+              "fraccion_positiva": 0.49473684210526314
+            },
+            {
+              "bin": 5,
+              "n": 50,
+              "score_medio": 0.5122117696845337,
+              "fraccion_positiva": 0.74
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 32923,
+              "fraccion": 0.8832461435278337,
+              "positivos": 2235
+            },
+            "moderado": {
+              "n": 4352,
+              "fraccion": 0.11675385647216634,
+              "positivos": 1563
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          },
+          "ic95": {
+            "metodo": "percentil 95%, bootstrap por perfil; modelo y umbral fijos",
+            "repeticiones": 200,
+            "replicas_validas": 200,
+            "intervalos": {
+              "roc_auc": [
+                0.8039538823236482,
+                0.8486830862846897
+              ],
+              "average_precision": [
+                0.3218843939368478,
+                0.3749800626604332
+              ],
+              "f1": [
+                0.38040291279749205,
+                0.42772924639341553
+              ],
+              "brier": [
+                0.06576297309545455,
+                0.08921401858887093
+              ],
+              "recall": [
+                0.5675276194743226,
+                0.7121816863695921
+              ]
+            }
+          },
+          "subgrupos": [
+            {
+              "n": 21139,
+              "positivos": 1673,
+              "prevalencia": 0.07914281659491934,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.8403613632831018,
+              "average_precision": 0.3204578119968144,
+              "precision": 0.24303373140582443,
+              "recall": 0.6933652121936641,
+              "specificity": 0.8143943285728963,
+              "f1": 0.35991312441824386,
+              "alert_rate": 0.22579119163631203,
+              "brier": 0.06377754296639565,
+              "log_loss": 0.22224492046448008,
+              "ece_10_uniform": 0.02927020637143618,
+              "matriz_confusion": [
+                [
+                  15853,
+                  3613
+                ],
+                [
+                  513,
+                  1160
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer",
+              "recall_ic95_wilson": [
+                0.6708482208873225,
+                0.7149962467554496
+              ],
+              "fpr_ic95_wilson": [
+                0.18020625329354775,
+                0.19112915147140772
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 16136,
+              "positivos": 2125,
+              "prevalencia": 0.1316931085770947,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.82569942104313,
+              "average_precision": 0.4008642818874927,
+              "precision": 0.3664383561643836,
+              "recall": 0.6042352941176471,
+              "specificity": 0.8415530654485761,
+              "f1": 0.45620891810268255,
+              "alert_rate": 0.21715418939018344,
+              "brier": 0.09511045516192183,
+              "log_loss": 0.3111214890296152,
+              "ece_10_uniform": 0.028462140143922628,
+              "matriz_confusion": [
+                [
+                  11791,
+                  2220
+                ],
+                [
+                  841,
+                  1284
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre",
+              "recall_ic95_wilson": [
+                0.5832734098329754,
+                0.6248209967112334
+              ],
+              "fpr_ic95_wilson": [
+                0.15249426731368398,
+                0.1645868407300905
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6798,
+              "positivos": 91,
+              "prevalencia": 0.013386290085319212,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.8385654154999614,
+              "average_precision": 0.20467329916197463,
+              "precision": 0.36923076923076925,
+              "recall": 0.26373626373626374,
+              "specificity": 0.9938869837483226,
+              "f1": 0.3076923076923077,
+              "alert_rate": 0.009561635775228007,
+              "brier": 0.011820797021438395,
+              "log_loss": 0.057066047278149144,
+              "ece_10_uniform": 0.006150808072514925,
+              "matriz_confusion": [
+                [
+                  6666,
+                  41
+                ],
+                [
+                  67,
+                  24
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_18_44",
+              "recall_ic95_wilson": [
+                0.1841059871821194,
+                0.36250579489416473
+              ],
+              "fpr_ic95_wilson": [
+                0.004509520931471544,
+                0.00828193887985578
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15298,
+              "positivos": 1122,
+              "prevalencia": 0.07334292064322133,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.8038249352172636,
+              "average_precision": 0.27485130561601573,
+              "precision": 0.2793719545208446,
+              "recall": 0.45989304812834225,
+              "specificity": 0.9061089164785553,
+              "f1": 0.3475917817446952,
+              "alert_rate": 0.12073473656687149,
+              "brier": 0.06018974158329983,
+              "log_loss": 0.2178063712030084,
+              "ece_10_uniform": 0.008039535831705582,
+              "matriz_confusion": [
+                [
+                  12845,
+                  1331
+                ],
+                [
+                  606,
+                  516
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_45_64",
+              "recall_ic95_wilson": [
+                0.43091719005272233,
+                0.48914260229648276
+              ],
+              "fpr_ic95_wilson": [
+                0.08919902905643362,
+                0.09880317580336642
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15179,
+              "positivos": 2585,
+              "prevalencia": 0.17030107385203241,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.7589970846698975,
+              "average_precision": 0.3834169877468726,
+              "precision": 0.2991358994501178,
+              "recall": 0.7365570599613153,
+              "specificity": 0.6457837065269176,
+              "f1": 0.42547486033519555,
+              "alert_rate": 0.41932933658343763,
+              "brier": 0.12397096912618413,
+              "log_loss": 0.3951745743869842,
+              "ece_10_uniform": 0.016083519927794044,
+              "matriz_confusion": [
+                [
+                  8133,
+                  4461
+                ],
+                [
+                  681,
+                  1904
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_65_mas",
+              "recall_ic95_wilson": [
+                0.7192339767976315,
+                0.7531781115645189
+              ],
+              "fpr_ic95_wilson": [
+                0.34590887235051393,
+                0.3626126222243399
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3684,
+              "positivos": 47,
+              "prevalencia": 0.012757871878393051,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.8785531680892014,
+              "average_precision": 0.23073410996094487,
+              "precision": 0.38235294117647056,
+              "recall": 0.2765957446808511,
+              "specificity": 0.9942260104481716,
+              "f1": 0.32098765432098764,
+              "alert_rate": 0.009229098805646038,
+              "brier": 0.011079761850261667,
+              "log_loss": 0.05222986911548125,
+              "ece_10_uniform": 0.007016503638561447,
+              "matriz_confusion": [
+                [
+                  3616,
+                  21
+                ],
+                [
+                  34,
+                  13
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_18_44",
+              "recall_ic95_wilson": [
+                0.16936563369682642,
+                0.41758563624878886
+              ],
+              "fpr_ic95_wilson": [
+                0.0037797196892306877,
+                0.008811177041423068
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 8354,
+              "positivos": 495,
+              "prevalencia": 0.05925305242997367,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.8293798141743174,
+              "average_precision": 0.28333184852202475,
+              "precision": 0.26091081593927895,
+              "recall": 0.5555555555555556,
+              "specificity": 0.9008779742969844,
+              "f1": 0.35506778566817304,
+              "alert_rate": 0.12616710557816616,
+              "brier": 0.049214191994294394,
+              "log_loss": 0.1824463194747258,
+              "ece_10_uniform": 0.018087229292202495,
+              "matriz_confusion": [
+                [
+                  7080,
+                  779
+                ],
+                [
+                  220,
+                  275
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_45_64",
+              "recall_ic95_wilson": [
+                0.5115203337922415,
+                0.598735137214569
+              ],
+              "fpr_ic95_wilson": [
+                0.09270992060167346,
+                0.10592583556871057
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 9101,
+              "positivos": 1131,
+              "prevalencia": 0.12427205801560268,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.7832389808377349,
+              "average_precision": 0.3401736804036444,
+              "precision": 0.23663500678426053,
+              "recall": 0.770999115826702,
+              "specificity": 0.647051442910916,
+              "f1": 0.36212624584717606,
+              "alert_rate": 0.40490056037798045,
+              "brier": 0.09847712099658697,
+              "log_loss": 0.32759740500882883,
+              "ece_10_uniform": 0.049191683468382395,
+              "matriz_confusion": [
+                [
+                  5157,
+                  2813
+                ],
+                [
+                  259,
+                  872
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.7456175493095406,
+                0.7945460085472705
+              ],
+              "fpr_ic95_wilson": [
+                0.34253003257363496,
+                0.363508767908527
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3114,
+              "positivos": 44,
+              "prevalencia": 0.014129736673089274,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.7903871779686111,
+              "average_precision": 0.18653284816066953,
+              "precision": 0.3548387096774194,
+              "recall": 0.25,
+              "specificity": 0.993485342019544,
+              "f1": 0.29333333333333333,
+              "alert_rate": 0.00995504174694926,
+              "brier": 0.012697474468649403,
+              "log_loss": 0.06278746036461944,
+              "ece_10_uniform": 0.006212148009068114,
+              "matriz_confusion": [
+                [
+                  3050,
+                  20
+                ],
+                [
+                  33,
+                  11
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_18_44",
+              "recall_ic95_wilson": [
+                0.14574213828964888,
+                0.3944056635895915
+              ],
+              "fpr_ic95_wilson": [
+                0.0042212518796404955,
+                0.01004150675902862
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6944,
+              "positivos": 627,
+              "prevalencia": 0.09029377880184332,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.787224367854747,
+              "average_precision": 0.28170143456677377,
+              "precision": 0.30390920554854983,
+              "recall": 0.3843700159489633,
+              "specificity": 0.9126167484565458,
+              "f1": 0.33943661971830985,
+              "alert_rate": 0.11419930875576037,
+              "brier": 0.073393909392423,
+              "log_loss": 0.26034638735192445,
+              "ece_10_uniform": 0.018751844786179975,
+              "matriz_confusion": [
+                [
+                  5765,
+                  552
+                ],
+                [
+                  386,
+                  241
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_45_64",
+              "recall_ic95_wilson": [
+                0.3471079197863511,
+                0.42304035126884315
+              ],
+              "fpr_ic95_wilson": [
+                0.08066774376042699,
+                0.09460029073120044
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6078,
+              "positivos": 1454,
+              "prevalencia": 0.23922342875946034,
+              "umbral": 0.21046901370059257,
+              "roc_auc": 0.7381143117899316,
+              "average_precision": 0.44743571546621863,
+              "precision": 0.3850746268656716,
+              "recall": 0.7097661623108665,
+              "specificity": 0.643598615916955,
+              "f1": 0.49927431059506533,
+              "alert_rate": 0.4409345179335308,
+              "brier": 0.16214463017051842,
+              "log_loss": 0.4963624352804676,
+              "ece_10_uniform": 0.05716422560703866,
+              "matriz_confusion": [
+                [
+                  2976,
+                  1648
+                ],
+                [
+                  422,
+                  1032
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.6859085457226377,
+                0.7325182978200429
+              ],
+              "fpr_ic95_wilson": [
+                0.3427214329447254,
+                0.37031973066972307
+              ],
+              "positivos_insuficientes": false
+            }
+          ],
+          "artefacto_sha256": "d20e69f5ca053df7a1e459705f89dca5e8fb74d7af408c34281a559d490df27f"
+        },
+        "logistic": {
+          "umbral_validation": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.16738463283108587,
+            "roc_auc": 0.8258673403570579,
+            "average_precision": 0.3488827818097926,
+            "precision": 0.29069767441860467,
+            "recall": 0.6516587677725119,
+            "specificity": 0.8196074917107268,
+            "f1": 0.402046783625731,
+            "alert_rate": 0.22841046277665997,
+            "brier": 0.07738426075776035,
+            "log_loss": 0.2613186615009798,
+            "ece_10_uniform": 0.009771215836009369,
+            "matriz_confusion": [
+              [
+                27438,
+                6039
+              ],
+              [
+                1323,
+                2475
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.5,
+            "roc_auc": 0.8258673403570579,
+            "average_precision": 0.3488827818097926,
+            "precision": 0.56,
+            "recall": 0.08846761453396525,
+            "specificity": 0.9921139887086656,
+            "f1": 0.15279672578444747,
+            "alert_rate": 0.01609657947686117,
+            "brier": 0.07738426075776035,
+            "log_loss": 0.2613186615009798,
+            "ece_10_uniform": 0.009771215836009369,
+            "matriz_confusion": [
+              [
+                33213,
+                264
+              ],
+              [
+                3462,
+                336
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 25112,
+              "score_medio": 0.03475720382598661,
+              "fraccion_positiva": 0.03114049060210258
+            },
+            {
+              "bin": 1,
+              "n": 5110,
+              "score_medio": 0.14163065152058174,
+              "fraccion_positiva": 0.15616438356164383
+            },
+            {
+              "bin": 2,
+              "n": 3534,
+              "score_medio": 0.24150095704437813,
+              "fraccion_positiva": 0.25664968873797395
+            },
+            {
+              "bin": 3,
+              "n": 2054,
+              "score_medio": 0.34376108565498686,
+              "fraccion_positiva": 0.3062317429406037
+            },
+            {
+              "bin": 4,
+              "n": 865,
+              "score_medio": 0.4457827199232685,
+              "fraccion_positiva": 0.4
+            },
+            {
+              "bin": 5,
+              "n": 318,
+              "score_medio": 0.5416177763488534,
+              "fraccion_positiva": 0.4968553459119497
+            },
+            {
+              "bin": 6,
+              "n": 213,
+              "score_medio": 0.6419526569815679,
+              "fraccion_positiva": 0.6009389671361502
+            },
+            {
+              "bin": 7,
+              "n": 19,
+              "score_medio": 0.7191551598301369,
+              "fraccion_positiva": 0.6842105263157895
+            },
+            {
+              "bin": 8,
+              "n": 50,
+              "score_medio": 0.8454907950465238,
+              "fraccion_positiva": 0.74
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 33756,
+              "fraccion": 0.9055935613682092,
+              "positivos": 2487
+            },
+            "moderado": {
+              "n": 3237,
+              "fraccion": 0.08684104627766599,
+              "positivos": 1133
+            },
+            "alto": {
+              "n": 282,
+              "fraccion": 0.007565392354124748,
+              "positivos": 178
+            }
+          },
+          "ic95": {
+            "metodo": "percentil 95%, bootstrap por perfil; modelo y umbral fijos",
+            "repeticiones": 200,
+            "replicas_validas": 200,
+            "intervalos": {
+              "roc_auc": [
+                0.8009422061494305,
+                0.8470950702847416
+              ],
+              "average_precision": [
+                0.318370687722719,
+                0.37284902141769827
+              ],
+              "f1": [
+                0.37921989178181137,
+                0.42409500863223876
+              ],
+              "brier": [
+                0.06550022589844323,
+                0.08927823638071278
+              ],
+              "recall": [
+                0.5766747522840435,
+                0.7219463468601813
+              ]
+            }
+          },
+          "subgrupos": [
+            {
+              "n": 21139,
+              "positivos": 1673,
+              "prevalencia": 0.07914281659491934,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8370012354368513,
+              "average_precision": 0.31476626782912664,
+              "precision": 0.23646319205029406,
+              "recall": 0.6969515839808726,
+              "specificity": 0.8065858419808898,
+              "f1": 0.35311932162325865,
+              "alert_rate": 0.23326552817067978,
+              "brier": 0.06356187340396774,
+              "log_loss": 0.22259898959807592,
+              "ece_10_uniform": 0.027297975731101917,
+              "matriz_confusion": [
+                [
+                  15701,
+                  3765
+                ],
+                [
+                  507,
+                  1166
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer",
+              "recall_ic95_wilson": [
+                0.6744989679068953,
+                0.7185018113459436
+              ],
+              "fpr_ic95_wilson": [
+                0.18792632038061555,
+                0.19902297629213847
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 16136,
+              "positivos": 2125,
+              "prevalencia": 0.1316931085770947,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8242102381742078,
+              "average_precision": 0.40278921933933054,
+              "precision": 0.3653363103544516,
+              "recall": 0.616,
+              "specificity": 0.8376989508243523,
+              "f1": 0.45865451997196915,
+              "alert_rate": 0.22205007436787308,
+              "brier": 0.09549230775031253,
+              "log_loss": 0.31204344734353606,
+              "ece_10_uniform": 0.02971197273367603,
+              "matriz_confusion": [
+                [
+                  11737,
+                  2274
+                ],
+                [
+                  816,
+                  1309
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre",
+              "recall_ic95_wilson": [
+                0.5951295205298112,
+                0.6364518393489583
+              ],
+              "fpr_ic95_wilson": [
+                0.1562882903698838,
+                0.16849893410177408
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6798,
+              "positivos": 91,
+              "prevalencia": 0.013386290085319212,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8207473903761365,
+              "average_precision": 0.16491176096696405,
+              "precision": 0.4166666666666667,
+              "recall": 0.10989010989010989,
+              "specificity": 0.9979126285969883,
+              "f1": 0.17391304347826086,
+              "alert_rate": 0.00353045013239188,
+              "brier": 0.012246644458633764,
+              "log_loss": 0.05879525859667719,
+              "ece_10_uniform": 0.004723643755151844,
+              "matriz_confusion": [
+                [
+                  6693,
+                  14
+                ],
+                [
+                  81,
+                  10
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_18_44",
+              "recall_ic95_wilson": [
+                0.06079473021268493,
+                0.19058751461094692
+              ],
+              "fpr_ic95_wilson": [
+                0.0012438477223626618,
+                0.0035009311576154785
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15298,
+              "positivos": 1122,
+              "prevalencia": 0.07334292064322133,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8036627897619133,
+              "average_precision": 0.27406895868856584,
+              "precision": 0.27724867724867724,
+              "recall": 0.46702317290552586,
+              "specificity": 0.9036399548532731,
+              "f1": 0.34794156706507307,
+              "alert_rate": 0.12354556151130867,
+              "brier": 0.05998487127617313,
+              "log_loss": 0.21786566631474577,
+              "ece_10_uniform": 0.009704350044796665,
+              "matriz_confusion": [
+                [
+                  12810,
+                  1366
+                ],
+                [
+                  598,
+                  524
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_45_64",
+              "recall_ic95_wilson": [
+                0.43799256950371984,
+                0.49627881531673773
+              ],
+              "fpr_ic95_wilson": [
+                0.09161127050185842,
+                0.10132751987642467
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 15179,
+              "positivos": 2585,
+              "prevalencia": 0.17030107385203241,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.7557285422520134,
+              "average_precision": 0.3824490404380481,
+              "precision": 0.29409090909090907,
+              "recall": 0.7508704061895551,
+              "specificity": 0.6300619342544068,
+              "f1": 0.4226456178551987,
+              "alert_rate": 0.43481125238816787,
+              "brier": 0.12409230317760249,
+              "log_loss": 0.3958135566391615,
+              "ece_10_uniform": 0.014799011746923801,
+              "matriz_confusion": [
+                [
+                  7935,
+                  4659
+                ],
+                [
+                  644,
+                  1941
+                ]
+              ],
+              "aviso": null,
+              "grupo": "edad_65_mas",
+              "recall_ic95_wilson": [
+                0.733833397922564,
+                0.7671629051074516
+              ],
+              "fpr_ic95_wilson": [
+                0.36154707747823606,
+                0.3784083735640355
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3684,
+              "positivos": 47,
+              "prevalencia": 0.012757871878393051,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8513329316305818,
+              "average_precision": 0.15826298524366217,
+              "precision": 0.38461538461538464,
+              "recall": 0.10638297872340426,
+              "specificity": 0.9978003849326368,
+              "f1": 0.16666666666666666,
+              "alert_rate": 0.003528773072747014,
+              "brier": 0.01176422374636318,
+              "log_loss": 0.055437347968828696,
+              "ece_10_uniform": 0.005744068177652605,
+              "matriz_confusion": [
+                [
+                  3629,
+                  8
+                ],
+                [
+                  42,
+                  5
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_18_44",
+              "recall_ic95_wilson": [
+                0.04630478218108157,
+                0.22594269343738355
+              ],
+              "fpr_ic95_wilson": [
+                0.0011150067457823246,
+                0.0043346836747176045
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 8354,
+              "positivos": 495,
+              "prevalencia": 0.05925305242997367,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.8278017482369181,
+              "average_precision": 0.2790211204855424,
+              "precision": 0.2558795860771402,
+              "recall": 0.5494949494949495,
+              "specificity": 0.899351062476142,
+              "f1": 0.3491655969191271,
+              "alert_rate": 0.12724443380416567,
+              "brier": 0.04868873388372074,
+              "log_loss": 0.18328014952973568,
+              "ece_10_uniform": 0.01790146925122674,
+              "matriz_confusion": [
+                [
+                  7068,
+                  791
+                ],
+                [
+                  223,
+                  272
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_45_64",
+              "recall_ic95_wilson": [
+                0.5054506518453213,
+                0.5927769495971097
+              ],
+              "fpr_ic95_wilson": [
+                0.09419109194115813,
+                0.10749699589910541
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 9101,
+              "positivos": 1131,
+              "prevalencia": 0.12427205801560268,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.781870786448297,
+              "average_precision": 0.340297897528404,
+              "precision": 0.23060959792477304,
+              "recall": 0.7860300618921309,
+              "specificity": 0.6278544542032622,
+              "f1": 0.3565984757320497,
+              "alert_rate": 0.4235798263927041,
+              "brier": 0.09818144805408957,
+              "log_loss": 0.3263560577986101,
+              "ece_10_uniform": 0.04661968380169145,
+              "matriz_confusion": [
+                [
+                  5004,
+                  2966
+                ],
+                [
+                  242,
+                  889
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_0_mujer__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.7611818782596862,
+                0.8089418116805371
+              ],
+              "fpr_ic95_wilson": [
+                0.3615973329174448,
+                0.3828169483891448
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 3114,
+              "positivos": 44,
+              "prevalencia": 0.014129736673089274,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.7849607639917086,
+              "average_precision": 0.1790875869705259,
+              "precision": 0.45454545454545453,
+              "recall": 0.11363636363636363,
+              "specificity": 0.9980456026058632,
+              "f1": 0.18181818181818182,
+              "alert_rate": 0.0035324341682723185,
+              "brier": 0.012817369540202432,
+              "log_loss": 0.06276781567856347,
+              "ece_10_uniform": 0.003985157969150109,
+              "matriz_confusion": [
+                [
+                  3064,
+                  6
+                ],
+                [
+                  39,
+                  5
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_18_44",
+              "recall_ic95_wilson": [
+                0.04952780601092492,
+                0.23979152416608285
+              ],
+              "fpr_ic95_wilson": [
+                0.0008960161003298121,
+                0.004257619515858357
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6944,
+              "positivos": 627,
+              "prevalencia": 0.09029377880184332,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.7881847898344736,
+              "average_precision": 0.28424187442578763,
+              "precision": 0.3047158403869408,
+              "recall": 0.4019138755980861,
+              "specificity": 0.9089757796422352,
+              "f1": 0.3466299862448418,
+              "alert_rate": 0.11909562211981567,
+              "brier": 0.07357472320251925,
+              "log_loss": 0.2594738758801223,
+              "ece_10_uniform": 0.0184070863459269,
+              "matriz_confusion": [
+                [
+                  5742,
+                  575
+                ],
+                [
+                  375,
+                  252
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_45_64",
+              "recall_ic95_wilson": [
+                0.3642472610416746,
+                0.4407750654396281
+              ],
+              "fpr_ic95_wilson": [
+                0.08417729127167221,
+                0.09836825528851174
+              ],
+              "positivos_insuficientes": false
+            },
+            {
+              "n": 6078,
+              "positivos": 1454,
+              "prevalencia": 0.23922342875946034,
+              "umbral": 0.16738463283108587,
+              "roc_auc": 0.7355796918654184,
+              "average_precision": 0.4478654437449028,
+              "precision": 0.3832422586520947,
+              "recall": 0.7235213204951857,
+              "specificity": 0.6338667820069204,
+              "f1": 0.5010716837342224,
+              "alert_rate": 0.45162882527147086,
+              "brier": 0.16289037696488298,
+              "log_loss": 0.49981696186256697,
+              "ece_10_uniform": 0.060287617759379186,
+              "matriz_confusion": [
+                [
+                  2931,
+                  1693
+                ],
+                [
+                  402,
+                  1052
+                ]
+              ],
+              "aviso": null,
+              "grupo": "sexo_1_hombre__edad_65_mas",
+              "recall_ic95_wilson": [
+                0.6999659678927377,
+                0.7458987014560206
+              ],
+              "fpr_ic95_wilson": [
+                0.35236427781787266,
+                0.38012439729860864
+              ],
+              "positivos_insuficientes": false
+            }
+          ],
+          "artefacto_sha256": "caf4a7ac97c4363b593ee0140d215bb3bfe97009a9a7e4c89a36d571ddb915c9"
+        },
+        "prevalencia_train": {
+          "umbral_validation": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.10189134808853119,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.09163920628577346,
+            "log_loss": 0.3299788157520519,
+            "ece_10_uniform": 0.011388810848393716,
+            "matriz_confusion": [
+              [
+                33477,
+                0
+              ],
+              [
+                3798,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 37275,
+            "positivos": 3798,
+            "prevalencia": 0.10189134808853119,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.10189134808853119,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.09163920628577346,
+            "log_loss": 0.3299788157520519,
+            "ece_10_uniform": 0.011388810848393716,
+            "matriz_confusion": [
+              [
+                33477,
+                0
+              ],
+              [
+                3798,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 37275,
+              "score_medio": 0.09050253724013747,
+              "fraccion_positiva": 0.10189134808853119
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 37275,
+              "fraccion": 1.0,
+              "positivos": 3798
+            },
+            "moderado": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          }
+        }
+      }
+    },
+    "sin_duplicados_completos": {
+      "particiones": {
+        "train": {
+          "n": 136593,
+          "positivos": 13727,
+          "prevalencia": 0.10049563301194059,
+          "perfiles": 3378
+        },
+        "calibration": {
+          "n": 33831,
+          "positivos": 3743,
+          "prevalencia": 0.11063817209068606,
+          "perfiles": 844
+        },
+        "validation": {
+          "n": 24767,
+          "positivos": 2471,
+          "prevalencia": 0.09976985504905721,
+          "perfiles": 563
+        },
+        "test": {
+          "n": 34590,
+          "positivos": 3776,
+          "prevalencia": 0.10916449840994508,
+          "perfiles": 845
+        }
+      },
+      "perfiles_compartidos": {
+        "train__calibration": 0,
+        "train__validation": 0,
+        "train__test": 0,
+        "calibration__validation": 0,
+        "calibration__test": 0,
+        "validation__test": 0
+      },
+      "decisiones": {
+        "umbrales": {
+          "xgb_raw": {
+            "umbral": 0.6863501071929932,
+            "f1_validation": 0.3996085467297341,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "xgb_sigmoid": {
+            "umbral": 0.21976094040691965,
+            "f1_validation": 0.3996085467297341,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          },
+          "logistic": {
+            "umbral": 0.17616352624066495,
+            "f1_validation": 0.39633852577485146,
+            "seleccionado_en": "validation",
+            "criterio": "max F1; empate mayor umbral"
+          }
+        },
+        "brier_validation": {
+          "xgb_raw": 0.17820362746715546,
+          "xgb_sigmoid": 0.07598773962624226
+        },
+        "variante_xgb_seleccionada": "xgb_sigmoid",
+        "scale_pos_weight_train": 8.950681139360384,
+        "baseline_prevalencia_train": 0.10049563301194059
+      },
+      "test": {
+        "xgb_raw": {
+          "umbral_validation": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.6863501071929932,
+            "roc_auc": 0.8198592912381341,
+            "average_precision": 0.354729488455095,
+            "precision": 0.3028447506059446,
+            "recall": 0.628707627118644,
+            "specificity": 0.822645550723697,
+            "f1": 0.4087817477399914,
+            "alert_rate": 0.22662619254119687,
+            "brier": 0.19094140827655792,
+            "log_loss": 0.5533555746078491,
+            "ece_10_uniform": 0.2839930953529571,
+            "matriz_confusion": [
+              [
+                25349,
+                5465
+              ],
+              [
+                1402,
+                2374
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.5,
+            "roc_auc": 0.8198592912381341,
+            "average_precision": 0.354729488455095,
+            "precision": 0.2357310695065565,
+            "recall": 0.8236228813559322,
+            "specificity": 0.6727786071266307,
+            "f1": 0.3665507690494431,
+            "alert_rate": 0.38141081237351837,
+            "brier": 0.19094140827655792,
+            "log_loss": 0.5533555746078491,
+            "ece_10_uniform": 0.2839930953529571,
+            "matriz_confusion": [
+              [
+                20731,
+                10083
+              ],
+              [
+                666,
+                3110
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 6149,
+              "score_medio": 0.05629992485046387,
+              "fraccion_positiva": 0.006179866644982924
+            },
+            {
+              "bin": 1,
+              "n": 5579,
+              "score_medio": 0.1584904044866562,
+              "fraccion_positiva": 0.021150743860906974
+            },
+            {
+              "bin": 2,
+              "n": 5018,
+              "score_medio": 0.2513311505317688,
+              "fraccion_positiva": 0.037465125548027105
+            },
+            {
+              "bin": 3,
+              "n": 2273,
+              "score_medio": 0.33659714460372925,
+              "fraccion_positiva": 0.05499340079190497
+            },
+            {
+              "bin": 4,
+              "n": 2378,
+              "score_medio": 0.4537779688835144,
+              "fraccion_positiva": 0.08284272497897392
+            },
+            {
+              "bin": 5,
+              "n": 3346,
+              "score_medio": 0.5447707772254944,
+              "fraccion_positiva": 0.11476389719067544
+            },
+            {
+              "bin": 6,
+              "n": 2890,
+              "score_medio": 0.6573078036308289,
+              "fraccion_positiva": 0.17854671280276815
+            },
+            {
+              "bin": 7,
+              "n": 4109,
+              "score_medio": 0.7591837048530579,
+              "fraccion_positiva": 0.26016062302263326
+            },
+            {
+              "bin": 8,
+              "n": 2358,
+              "score_medio": 0.8359999656677246,
+              "fraccion_positiva": 0.36344359626802375
+            },
+            {
+              "bin": 9,
+              "n": 490,
+              "score_medio": 0.9191216230392456,
+              "fraccion_positiva": 0.5795918367346938
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 16746,
+              "fraccion": 0.4841283607979185,
+              "positivos": 344
+            },
+            "moderado": {
+              "n": 7997,
+              "fraccion": 0.23119398670135877,
+              "positivos": 706
+            },
+            "alto": {
+              "n": 9847,
+              "fraccion": 0.28467765250072274,
+              "positivos": 2726
+            }
+          },
+          "artefacto_sha256": "ee4c73f77abf453e759576502d3ecb6d9267f295b2e628bb20105cba26497679"
+        },
+        "xgb_sigmoid": {
+          "umbral_validation": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.21976094040691965,
+            "roc_auc": 0.8198592912381341,
+            "average_precision": 0.354729488455095,
+            "precision": 0.3028447506059446,
+            "recall": 0.628707627118644,
+            "specificity": 0.822645550723697,
+            "f1": 0.4087817477399914,
+            "alert_rate": 0.22662619254119687,
+            "brier": 0.08259649207686057,
+            "log_loss": 0.2765507440055058,
+            "ece_10_uniform": 0.008634907494162623,
+            "matriz_confusion": [
+              [
+                25349,
+                5465
+              ],
+              [
+                1402,
+                2374
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.5,
+            "roc_auc": 0.8198592912381341,
+            "average_precision": 0.354729488455095,
+            "precision": 0.7162162162162162,
+            "recall": 0.014036016949152543,
+            "specificity": 0.9993184915947296,
+            "f1": 0.027532467532467533,
+            "alert_rate": 0.002139346631974559,
+            "brier": 0.08259649207686057,
+            "log_loss": 0.2765507440055058,
+            "ece_10_uniform": 0.008634907494162623,
+            "matriz_confusion": [
+              [
+                30793,
+                21
+              ],
+              [
+                3723,
+                53
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 21489,
+              "score_medio": 0.02999293894620813,
+              "fraccion_positiva": 0.03145795523290986
+            },
+            {
+              "bin": 1,
+              "n": 4708,
+              "score_medio": 0.13890509278425914,
+              "fraccion_positiva": 0.13232795242141038
+            },
+            {
+              "bin": 2,
+              "n": 3770,
+              "score_medio": 0.25036216629997543,
+              "fraccion_positiva": 0.22413793103448276
+            },
+            {
+              "bin": 3,
+              "n": 3665,
+              "score_medio": 0.3396772395523814,
+              "fraccion_positiva": 0.3145975443383356
+            },
+            {
+              "bin": 4,
+              "n": 884,
+              "score_medio": 0.4467248458889474,
+              "fraccion_positiva": 0.4819004524886878
+            },
+            {
+              "bin": 5,
+              "n": 74,
+              "score_medio": 0.522204699117514,
+              "fraccion_positiva": 0.7162162162162162
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 29967,
+              "fraccion": 0.8663486556808326,
+              "positivos": 2144
+            },
+            "moderado": {
+              "n": 4623,
+              "fraccion": 0.1336513443191674,
+              "positivos": 1632
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          },
+          "artefacto_sha256": "f63d75da603aeefefe59952a3d5c1abacaf040f315e31feb9dee4565594cb5bd"
+        },
+        "logistic": {
+          "umbral_validation": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.17616352624066495,
+            "roc_auc": 0.8168954653632566,
+            "average_precision": 0.35046224107429497,
+            "precision": 0.29369455766003355,
+            "recall": 0.6488347457627118,
+            "specificity": 0.8087882131498669,
+            "f1": 0.4043571546459812,
+            "alert_rate": 0.2411679676206996,
+            "brier": 0.08264613579537937,
+            "log_loss": 0.2772264449052117,
+            "ece_10_uniform": 0.009690068418025662,
+            "matriz_confusion": [
+              [
+                24922,
+                5892
+              ],
+              [
+                1326,
+                2450
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.5,
+            "roc_auc": 0.8168954653632566,
+            "average_precision": 0.35046224107429497,
+            "precision": 0.5706214689265536,
+            "recall": 0.0802436440677966,
+            "specificity": 0.9926007658856364,
+            "f1": 0.14070118411887625,
+            "alert_rate": 0.015351257588898526,
+            "brier": 0.08264613579537937,
+            "log_loss": 0.2772264449052117,
+            "ece_10_uniform": 0.009690068418025662,
+            "matriz_confusion": [
+              [
+                30586,
+                228
+              ],
+              [
+                3473,
+                303
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 0,
+              "n": 22560,
+              "score_medio": 0.03813912332871522,
+              "fraccion_positiva": 0.03426418439716312
+            },
+            {
+              "bin": 1,
+              "n": 5124,
+              "score_medio": 0.14586937875634373,
+              "fraccion_positiva": 0.15866510538641687
+            },
+            {
+              "bin": 2,
+              "n": 3379,
+              "score_medio": 0.24336303843946927,
+              "fraccion_positiva": 0.2592482983131104
+            },
+            {
+              "bin": 3,
+              "n": 2142,
+              "score_medio": 0.3430834495359915,
+              "fraccion_positiva": 0.3123249299719888
+            },
+            {
+              "bin": 4,
+              "n": 854,
+              "score_medio": 0.4481313262351324,
+              "fraccion_positiva": 0.40046838407494145
+            },
+            {
+              "bin": 5,
+              "n": 282,
+              "score_medio": 0.5492765128689817,
+              "fraccion_positiva": 0.5106382978723404
+            },
+            {
+              "bin": 6,
+              "n": 180,
+              "score_medio": 0.6378013473704496,
+              "fraccion_positiva": 0.6055555555555555
+            },
+            {
+              "bin": 7,
+              "n": 33,
+              "score_medio": 0.7446828012430345,
+              "fraccion_positiva": 0.696969696969697
+            },
+            {
+              "bin": 8,
+              "n": 36,
+              "score_medio": 0.8515443002920358,
+              "fraccion_positiva": 0.75
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 31063,
+              "fraccion": 0.8980341139057532,
+              "positivos": 2462
+            },
+            "moderado": {
+              "n": 3278,
+              "fraccion": 0.09476727377854871,
+              "positivos": 1155
+            },
+            "alto": {
+              "n": 249,
+              "fraccion": 0.007198612315698179,
+              "positivos": 159
+            }
+          },
+          "artefacto_sha256": "749c59dd074480ed60f55a65916b96895af9706c23fc962cd09f86734751dbdb"
+        },
+        "prevalencia_train": {
+          "umbral_validation": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.10916449840994508,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.0973227599241389,
+            "log_loss": 0.3451704368809552,
+            "ece_10_uniform": 0.00866886539800446,
+            "matriz_confusion": [
+              [
+                30814,
+                0
+              ],
+              [
+                3776,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "umbral_0_5": {
+            "n": 34590,
+            "positivos": 3776,
+            "prevalencia": 0.10916449840994508,
+            "umbral": 0.5,
+            "roc_auc": 0.5,
+            "average_precision": 0.10916449840994508,
+            "precision": 0.0,
+            "recall": 0.0,
+            "specificity": 1.0,
+            "f1": 0.0,
+            "alert_rate": 0.0,
+            "brier": 0.0973227599241389,
+            "log_loss": 0.3451704368809552,
+            "ece_10_uniform": 0.00866886539800446,
+            "matriz_confusion": [
+              [
+                30814,
+                0
+              ],
+              [
+                3776,
+                0
+              ]
+            ],
+            "aviso": null
+          },
+          "calibracion_bins": [
+            {
+              "bin": 1,
+              "n": 34590,
+              "score_medio": 0.10049563301194062,
+              "fraccion_positiva": 0.10916449840994508
+            }
+          ],
+          "bandas_referencia_0_30_0_60": {
+            "bajo": {
+              "n": 34590,
+              "fraccion": 1.0,
+              "positivos": 3776
+            },
+            "moderado": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            },
+            "alto": {
+              "n": 0,
+              "fraccion": 0.0,
+              "positivos": 0
+            }
+          }
+        }
+      }
+    }
+  },
+  "runtime_intacto": true,
+  "artefactos": {
+    "calibracion.png": "89ad3e50155f92db1a182060e3781d00484410dbfa69d4bb5c20a893c57a6991",
+    "protocolo.json": "26f637329811bdb3e4171f251b44b4dac731880aa69cbfe3f56523fa0ff12576",
+    "subgrupos.csv": "bae49c1a433ae0ea0ba290da3314ceb6ddb498085496cfa7dd5eb54e6cf788db",
+    "codigo\\entrenar_modelo.py": "3ed13b0756dec281209cc66341c36bff835857221d15727760f6f72c82d78a33",
+    "filas\\decisiones_antes_test.json": "5eb6e7d70f94829bc9a2b48acac09a2097d43e117c7d81125e002053bd528cfa",
+    "filas\\logistic.joblib": "a570dde6f9c6be9abd0219ae506b1878c0b546573e9e5c21627804ab5870ae49",
+    "filas\\particiones.csv.gz": "275c016eebbd79e2f7ff8797f664c7ddfdbdf519b1686490fa4ece170a22caac",
+    "filas\\predicciones_test.csv.gz": "7e7359623e923e47e604148296186650ab1a55ea5d588ec145ce314673ad6afa",
+    "filas\\xgb_raw.joblib": "d9cac5309e6e5c773acaa365374155923ac41376bedf38140418b4e9cb9db547",
+    "filas\\xgb_sigmoid.joblib": "cce2bf9fac53d726741fd0c2005885e889e368aa36731e5fd0a105ca6ff45844",
+    "perfiles\\decisiones_antes_test.json": "e1c827b6e21deb26df4a5d1af3636c5d7a7f7a94aedcccdf9bda4cf55def4008",
+    "perfiles\\logistic.joblib": "caf4a7ac97c4363b593ee0140d215bb3bfe97009a9a7e4c89a36d571ddb915c9",
+    "perfiles\\particiones.csv.gz": "f68775f6a3985ad114f0b173514280a4ecb3437bde101eba2783979d179effac",
+    "perfiles\\predicciones_test.csv.gz": "da4abcdb3047d07087be891c5de8ea02c529ae989c4b387ad60a5e71e24422ed",
+    "perfiles\\xgb_raw.joblib": "8e9b5e878e59bb5a73d14817e080270a815dea0de0f09e205dbd6a43be70a633",
+    "perfiles\\xgb_sigmoid.joblib": "d20e69f5ca053df7a1e459705f89dca5e8fb74d7af408c34281a559d490df27f",
+    "referencia_activa\\modelo_cardiaco.joblib": "47f227f51c5ca15bff66cb24b4e9d1ea250e3f3c646cd7d13d017664871b666b",
+    "referencia_activa\\modelo_cardiaco_metadata.json": "3b72fb45aca0bacc80e409b79d8992c0ea815fbc48e32cd862af44511fec9c94",
+    "sin_duplicados_completos\\decisiones_antes_test.json": "83ec1925931f59780201946f1d38c3028238fad4f3bb7b1b3f273b53ca99b17b",
+    "sin_duplicados_completos\\logistic.joblib": "749c59dd074480ed60f55a65916b96895af9706c23fc962cd09f86734751dbdb",
+    "sin_duplicados_completos\\particiones.csv.gz": "1400bbdcffa173e7c71ff082cc237c25a660f6830d00cba83711a85d0ab2c6f7",
+    "sin_duplicados_completos\\predicciones_test.csv.gz": "d70c0c435114b72d63324c03ffe77371414b697a05078a47e68c4a9545e1393c",
+    "sin_duplicados_completos\\xgb_raw.joblib": "ee4c73f77abf453e759576502d3ecb6d9267f295b2e628bb20105cba26497679",
+    "sin_duplicados_completos\\xgb_sigmoid.joblib": "f63d75da603aeefefe59952a3d5c1abacaf040f315e31feb9dee4565594cb5bd",
+    "codigo\\app\\ml\\dataset.py": "5381a8a2c8bb6622332703a3fc2a6f38202955f0d1829b38fda39583f1f3839e",
+    "codigo\\app\\ml\\experiment.py": "06cbd7af6f28f95ef76cd34e84b1d5ef348fd39bc06e2e3a275b30b276fee9eb",
+    "codigo\\app\\ml\\preprocessor.py": "8a20cf2c5d1223939817bafdad8a2d13feb317fd98779d97c89b2d6076da19b0"
+  }
+}

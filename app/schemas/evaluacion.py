@@ -1,63 +1,49 @@
 """
-evaluacion.py — SCHEMAS (DTOs) PARA EVALUACIONES CARDÍACAS
+ARCHIVO 02 de 09 | Qué respuestas necesita una evaluación.
+Vienes de: entrenar_modelo.py (archivo 01).
+Muestra EvaluacionCreate: el número del paciente y las nueve respuestas.
+Después abre: app/services/evaluacion_service.py (archivo 03).
 
-Los schemas de evaluación tienen Doble función:
-  1. Definir qué datos RECIBE la API (EvaluacionCreate)
-  2. Definir qué datos RETORNA la API (EvaluacionResponse)
-  3. Transportar el resultado del modelo ML entre capas (PredictionResult)
+Aquí se define qué datos debe tener cada mensaje de una evaluación.
 
-Separación clave:
-  - EvaluacionCreate incluye paciente_id + variables predictoras
-  - EvaluacionResponse incluye TODO + el resultado de la predicción
-  - PredictionResult es solo el output del modelo ML (sin DB)
+EvaluacionCreate describe lo que recibimos de la pantalla.
+PredictionResult reúne lo que devuelve el predictor dentro del servidor.
+EvaluacionResponse describe el resultado completo que vuelve a la pantalla.
+Pydantic usa estas clases para revisar los tipos y los límites indicados.
 """
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional
 from datetime import datetime
 from enum import Enum
+from app.schemas.clinica import ObservacionesClinicas, AlertaClinica
 
 
 class ClasificacionEnum(str, Enum):
     """
-    Niveles de riesgo cardíaco calculados por el modelo.
-    Se derivan de la probabilidad:
-      - bajo:     probabilidad < 0.30 (30%)
-      - moderado: probabilidad 0.30 - 0.60 (30-60%)
-      - alto:     probabilidad > 0.60 (60%)
+    Los tres nombres permitidos para el nivel: bajo, moderado y alto.
+    El predictor elige uno según el puntaje y los límites de la ficha.
+    Habitualmente: menos de 0.30 es bajo, de 0.30 a menos de 0.60 moderado
+    y desde 0.60 alto. No representan porcentajes clínicos comprobados.
     """
     bajo = "bajo"
     moderado = "moderado"
     alto = "alto"
 
 
+# EXPO-ML 05a | Revisamos cómo deben llegar los datos desde la pantalla.
+# Los campos omitidos pueden recibir valores predeterminados; revisar el formato
+# no demuestra que la respuesta describa realmente el estado del paciente.
 class EvaluacionCreate(BaseModel):
     """
-    DTO de ENTRADA — lo que el frontend envía para hacer una evaluación.
-
-    Incluye:
-      - paciente_id: para saber de quién es la evaluación
-      - Variables predictoras: los datos que entran al modelo ML
-
-    Ejemplo JSON:
-    {
-        "paciente_id": 1,
-        "edad": 55,
-        "presion_alta": true,
-        "colesterol_alto": true,
-        "tabaquismo": false,
-        "actividad_fisica": true,
-        "antecedente_acv": false,
-        "diabetes": true,
-        "salud_general": 3,
-        "dificultad_para_caminar": false
-    }
+    Describe los datos que se reciben al pedir una evaluación.
+    Incluye el número del paciente y las nueve respuestas para calcular.
+    La edad es obligatoria. Si faltan los campos sí/no, se toma False;
+    si falta salud_general, se toma 3. Eso no prueba que se hayan respondido.
     """
-    paciente_id: int  # Obligatorio — debe existir en la tabla pacientes
+    paciente_id: int
 
-    # --- Variables predictoras (las que entra al modelo ML) ---
+    # La edad llega en años. Aquí se permiten 1 a 120; este límite no bloquea menores.
     edad: int = Field(..., ge=1, le=120)
-    # ge=1 → greater or equal (mayor o igual a 1)
-    # le=120 → less or equal (menor o igual a 120)
 
     presion_alta: bool = False
     colesterol_alto: bool = False
@@ -66,32 +52,21 @@ class EvaluacionCreate(BaseModel):
     antecedente_acv: bool = False
     diabetes: bool = False
 
+    # 1=excelente, 2=muy buena, 3=buena, 4=regular, 5=mala.
     salud_general: int = Field(3, ge=1, le=5)
-    # 1=excelente, 2=muy buena, 3=buena, 4=regular, 5=mala
 
     dificultad_para_caminar: bool = False
+    observaciones_clinicas: Optional[ObservacionesClinicas] = None
 
 
 class TriajeClinico(BaseModel):
     """
-    Interpretación clínica del resultado ML, lista para consumir.
-
-    TODO es texto plano / listas de strings — SIN HTML ni estilos.
-    El frontend renderiza colores y tarjetas a partir de codigo_color
-    ("verde" / "amarillo" / "rojo").
-
-    Ejemplo JSON:
-    {
-        "nivel_alerta": "RIESGO MODERADO - SEGUIMIENTO PREVENTIVO",
-        "codigo_color": "amarillo",
-        "accion_sugerida": "Programar consulta médica de control...",
-        "factores_riesgo_detectados": ["Hipertensión Arterial", ...],
-        "factores_protectores": ["Realiza Actividad Física Regular"],
-        "recomendaciones_medicas": ["Solicitar perfil lipídico..."]
-    }
+    Reúne los textos, listas y color que se muestran junto al resultado.
+    Por ejemplo, codigo_color=amarillo y una lista de recomendaciones.
+    Aquí solo se define su forma; los textos se eligen en el servicio de triaje.
     """
     nivel_alerta: str
-    codigo_color: str  # "verde" | "amarillo" | "rojo" (semáforo)
+    codigo_color: str
     accion_sugerida: str
     factores_riesgo_detectados: list[str]
     factores_protectores: list[str]
@@ -100,42 +75,14 @@ class TriajeClinico(BaseModel):
 
 class EvaluacionResponse(BaseModel):
     """
-    DTO de SALIDA — resultado completo de la evaluación.
-    Incluye TODOS los datos que se guardaron + la predicción del ML.
-
-    Ejemplo JSON:
-    {
-        "id": 1,
-        "paciente_id": 1,
-        "usuario_id": 1,
-        "edad": 55,
-        "presion_alta": true,
-        "colesterol_alto": true,
-        "tabaquismo": false,
-        "actividad_fisica": true,
-        "antecedente_acv": false,
-        "diabetes": true,
-        "salud_general": 3,
-        "dificultad_para_caminar": false,
-        "probabilidad": 0.734521,
-        "clasificacion": "alto",
-        "modelo_version": "1.0.0",
-        "triaje_clinico": {
-            "nivel_alerta": "ALTA PRIORIDAD - RIESGO ELEVADO",
-            "codigo_color": "rojo",
-            "accion_sugerida": "Priorizar atención médica. Evaluación por Cardiología requerida.",
-            "factores_riesgo_detectados": ["Hipertensión Arterial", "Dislipidemia (Colesterol Alto)"],
-            "factores_protectores": ["No Fumador"],
-            "recomendaciones_medicas": ["Realizar Electrocardiograma (ECG) de base de inmediato."]
-        },
-        "created_at": "2025-01-15T10:30:00"
-    }
+    Describe la evaluación completa que enviamos a la pantalla.
+    Contiene quién fue evaluado, quién lo evaluó, las respuestas, el puntaje,
+    el nivel, la versión del modelo, los textos del triaje y la fecha.
     """
     id: int
     paciente_id: int
     usuario_id: int
 
-    # Variables predictoras que se evaluaron
     edad: int
     presion_alta: bool
     colesterol_alto: bool
@@ -146,58 +93,41 @@ class EvaluacionResponse(BaseModel):
     salud_general: int
     dificultad_para_caminar: bool
 
-    # Resultado del modelo ML
-    probabilidad: float  # 0.0 a 1.0
+    probabilidad: float
     clasificacion: ClasificacionEnum
     modelo_version: Optional[str] = None
 
-    # Interpretación clínica para médicos/enfermeros (triaje)
     triaje_clinico: Optional[TriajeClinico] = None
-    # None si la evaluación es antigua y no tiene triaje persistido
+    observaciones_clinicas: Optional[ObservacionesClinicas] = None
+    alerta_clinica: Optional[AlertaClinica] = None
 
     created_at: datetime
 
-    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    # Permite construir la respuesta leyendo los datos de un registro guardado.
     model_config = ConfigDict(from_attributes=True)
 
 
 class ResumenEvaluaciones(BaseModel):
     """
-    DTO de SALIDA — agregados para el dashboard (SOLO LECTURA).
-
-    Existe para que los KPIs y la cola de triaje no se calculen contando
-    una página de resultados en el navegador: si el front pide `limit=200`
-    y hay 201 evaluaciones, el número mostrado sería falso sin avisar.
-
-    Aquí los conteos se hacen con COUNT en SQL, así que son exactos y no
-    traen filas al cliente.
-
-    Ejemplo JSON:
-    {
-        "total_evaluaciones": 39,
-        "total_hoy": 5,
-        "por_clasificacion": {"bajo": 17, "moderado": 10, "alto": 12},
-        "pacientes_evaluados_hoy": [1, 4, 7]
-    }
+    Reúne las cantidades que muestran los indicadores de la pantalla.
+    Incluye total, total de hoy, cantidad por nivel y pacientes evaluados hoy.
+    Los conteos vienen de la base completa, no solo de la página de resultados.
     """
     total_evaluaciones: int
     total_hoy: int
-    # Claves siempre presentes (con 0 si no hay casos de ese nivel)
+
     por_clasificacion: dict[str, int]
-    # IDs de pacientes ya triados HOY: define la cola de "pendientes"
+
+    # Números de los pacientes evaluados hoy, para saber quiénes siguen pendientes.
     pacientes_evaluados_hoy: list[int]
 
 
 class PredictionResult(BaseModel):
     """
-    DTO INTERNO — resultado puro del modelo ML.
-    NO se retorna al frontend directamente. Se usa internamente
-    en el mapper para construir EvaluacionResponse.
-
-    Flujo: preprocessor.py → model_loader.py → predictor.py → PredictionResult
-                                ↓
-              EvaluacionMapper.create_to_model() → dict → Evaluacion ORM
+    Es el resultado que el predictor pasa a los demás archivos del servidor.
+    Contiene puntaje, nivel y versión. Después el mapper lo junta con los datos
+    del paciente para guardar y construir la respuesta completa.
     """
-    probabilidad: float  # 0.0 a 1.0 (6 decimales)
-    clasificacion: ClasificacionEnum  # "bajo", "moderado" o "alto"
-    modelo_version: str  # Ej: "1.0.0"
+    probabilidad: float
+    clasificacion: ClasificacionEnum
+    modelo_version: str
