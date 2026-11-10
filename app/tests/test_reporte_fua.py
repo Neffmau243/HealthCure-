@@ -7,13 +7,23 @@ Cubre:
   - Test de INTEGRACIÓN del endpoint GET /api/v1/evaluaciones/{id}/fua
     (con SQLite en memoria, igual que el resto de la suite).
 
-El generador usa ReportLab. Como el contenido del PDF va comprimido,
-los tests verifican el header %PDF, el tamaño y que no explote; el
-contenido visual se valida abriendo el archivo.
+El PDF tiene DOS partes:
+  - página 1: el formulario FUA OFICIAL del SIS (plantilla) con los datos escritos encima
+  - páginas siguientes: anexo dibujado con ReportLab (resultado del modelo, factores...)
+
+Los tests verifican el header %PDF, que la página 1 contenga el texto del formulario
+oficial MÁS los datos del paciente, y que el anexo exista; el aspecto visual se valida
+abriendo el archivo.
 """
 from datetime import datetime, date
+from io import BytesIO
+
+from pypdf import PdfReader
 
 from app.services.reporte_service import generar_fua_pdf
+from app.services.fua_oficial import (
+    FuaDatos, RUTA_PLANTILLA, PAGE_W, PAGE_H, _codigo_tdi, pagina_fua_oficial, resumir,
+)
 from app.models.paciente import Paciente
 from app.models.usuario import Usuario
 from app.models.evaluacion import Evaluacion
@@ -134,6 +144,64 @@ def test_genera_pdf_sin_factores_persistidos():
     )
     pdf = generar_fua_pdf(eval_legacy)
     assert pdf[:5] == b"%PDF-"
+
+
+# ============================================================
+# Tests del formulario FUA oficial (plantilla + datos encima)
+# ============================================================
+def _paginas(pdf: bytes):
+    return PdfReader(BytesIO(pdf)).pages
+
+
+def test_plantilla_oficial_es_una_sola_pagina_sin_texto_de_la_directiva():
+    paginas = PdfReader(str(RUTA_PLANTILLA)).pages
+    assert len(paginas) == 1
+    texto = paginas[0].extract_text()
+    assert "FORMATO ÚNICO DE ATENCIÓN - FUA" in texto
+    assert "DIRECTIVA ADMINISTRATIVA" not in texto      # el encabezado de la Directiva se recortó
+
+
+def test_pagina_1_es_el_formulario_oficial_con_los_datos_del_paciente():
+    paginas = _paginas(generar_fua_pdf(_build_evaluacion()))
+    assert len(paginas) >= 2                              # formulario + anexo
+    p1 = paginas[0].extract_text()
+    for esperado in ["FORMATO ÚNICO DE ATENCIÓN - FUA",     # texto del formulario oficial
+                     "PÉREZ", "RODRÍGUEZ", "JUAN",           # apellidos y nombre
+                     "1032456789", "72769512",               # documento e historia clínica
+                     "00000008", "172.5", "85.3"]:           # correlativo, talla, peso
+        assert esperado in p1, esperado
+    assert "ANEXO AL FORMATO UNICO DE ATENCION" in paginas[1].extract_text()
+
+
+def test_pagina_del_formulario_es_oficio():
+    p1 = _paginas(generar_fua_pdf(_build_evaluacion()))[0]
+    assert abs(float(p1.mediabox.width) - PAGE_W) < 1
+    assert abs(float(p1.mediabox.height) - PAGE_H) < 1
+
+
+def test_formulario_sin_datos_opcionales_no_falla():
+    pdf = pagina_fua_oficial(FuaDatos())                  # todo vacío: solo la plantilla
+    assert len(_paginas(pdf)) == 1
+
+
+def test_formulario_con_seguro_de_otra_iafas_y_emergencia():
+    d = FuaDatos(tipo_documento="CE", documento="X123", tipo_seguro="EsSalud",
+                 codigo_seguro="67011841PSHR006", emergencia=True,
+                 fecha_atencion=datetime(2026, 11, 1, 23, 5))
+    texto = _paginas(pagina_fua_oficial(d))[0].extract_text()
+    assert "67011841PSHR006" in texto and "X123" in texto
+
+
+def test_codigo_tdi_segun_directiva():
+    assert _codigo_tdi("DNI") == "2"
+    assert _codigo_tdi("CE") == "3"
+    assert _codigo_tdi("Pasaporte") == ""                 # la Directiva no define código
+
+
+def test_resumir_diagnostico_largo_una_linea():
+    assert resumir("Hipertensión   arterial\nleve") == "Hipertensión arterial leve"
+    largo = resumir("x" * 300)
+    assert len(largo) == 78 and largo.endswith("…")
 
 
 # ============================================================
