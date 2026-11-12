@@ -11,6 +11,7 @@ import HistoriasClinicasPage from '../pages/HistoriasClinicasPage';
 import ConsultorioPage from '../pages/ConsultorioPage';             
 import AtencionesPage from '../pages/AtencionesPage';             
 import UsuariosPage from '../pages/UsuariosPage';                 
+import ReportesPage from '../pages/ReportesPage';
 
 export default function AppRouter() {
   return (
@@ -27,6 +28,7 @@ export default function AppRouter() {
               <Route path="historiales" element={<HistoriasClinicasPage />} />
               <Route path="consultorio" element={<ConsultorioPage />} />
               <Route path="atenciones" element={<AtencionesPage />} />
+              <Route path="reportes" element={<ReportesPage />} />
               <Route path="usuarios" element={<UsuariosPage />} />
             </Route>
           </Route>

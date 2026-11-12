@@ -154,3 +154,53 @@ button:disabled { cursor: not-allowed; }
   display: flex;
   flex-direction: column;
 }
+
+/* ── Reportes y análisis (dashboard analítico) ─────────────────────────── */
+.report-kpis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; }
+.report-kpi { background: #fff; border: 1px solid var(--clinical-line); border-radius: 14px; padding: 18px 20px; }
+.report-kpi-value { font-size: 1.875rem; line-height: 1.2; font-weight: 500; letter-spacing: -.03em; margin-top: 14px; font-variant-numeric: tabular-nums; color: var(--clinical-ink); }
+.report-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.report-span-2 { grid-column: span 2; }
+.report-span-3 { grid-column: span 3; }
+.report-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 10px; font-size: .75rem; color: var(--clinical-muted); }
+.report-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.report-legend i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.report-bar-track { height: 10px; background: #e9eff3; border-radius: 999px; overflow: hidden; }
+.report-bar { height: 100%; border-radius: 999px; position: relative; overflow: hidden; min-width: 3px; }
+.report-bar-hl { position: absolute; inset: 0 auto 0 0; }
+.report-segmentado { display: inline-flex; padding: 3px; background: #e9eff3; border-radius: 12px; }
+.report-segmentado button { min-height: 38px; padding: 0 14px; border-radius: 9px; font-size: .8125rem; color: var(--clinical-muted); cursor: pointer; }
+.report-segmentado button[aria-checked='true'] { background: #fff; color: var(--clinical-ink); font-weight: 500; box-shadow: 0 1px 3px #17324c26; }
+.report-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 14px; border: 1px solid #c3d1db; border-radius: 10px; background: #fff; color: var(--clinical-ink); font-size: .8125rem; font-weight: 500; cursor: pointer; transition: background-color 150ms, border-color 150ms; }
+.report-btn:hover:not(:disabled) { background: #f3f9fc; border-color: #9aafbd; }
+.report-btn:disabled { opacity: .5; }
+.report-btn-primario { background: #17324c; border-color: #17324c; color: #fff; }
+.report-btn-primario:hover:not(:disabled) { background: #20435f; border-color: #20435f; }
+.report-filtros { display: grid; grid-template-columns: 2fr 1fr 1fr 1.2fr 1.2fr auto; gap: 14px; align-items: end; padding: 18px 20px; border-bottom: 1px solid #edf1f4; }
+.report-filtros-acciones { display: flex; gap: 8px; }
+.report-campo { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.report-campo > span { font-size: .75rem; color: var(--clinical-muted); }
+.report-input { width: 100%; min-height: 40px; padding: 0 12px; border: 1px solid #c3d1db; border-radius: 10px; background: #fff; font-size: .8125rem; color: var(--clinical-ink); }
+.report-input-icono { padding-left: 36px; }
+.report-tabla { width: 100%; min-width: 820px; border-collapse: collapse; text-align: left; font-size: .8125rem; }
+.report-tabla thead { background: #edf3f6; }
+.report-tabla th { padding: 14px 16px; font-weight: 500; color: #42576a; font-size: .75rem; }
+.report-tabla td { padding: 14px 16px; border-bottom: 1px solid #edf1f4; vertical-align: middle; }
+.report-tabla tbody tr:hover { background: #f3f9fc; }
+.report-tabla th:first-child, .report-tabla td:first-child { padding-left: 20px; }
+@media (max-width: 1100px) {
+  .report-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .report-filtros { grid-template-columns: 1fr 1fr 1fr; }
+  .report-campo-q { grid-column: span 3; }
+}
+@media (max-width: 860px) {
+  .report-grid { grid-template-columns: 1fr; }
+  .report-span-2, .report-span-3 { grid-column: auto; }
+}
+@media (max-width: 640px) {
+  .report-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .report-kpi { padding: 14px; }
+  .report-kpi-value { font-size: 1.5rem; }
+  .report-filtros { grid-template-columns: 1fr 1fr; padding: 16px; }
+  .report-campo-q { grid-column: span 2; }
+}

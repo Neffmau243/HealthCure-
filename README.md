@@ -268,6 +268,17 @@ profesional que atendió y vínculo opcional a la evaluación que lo originó.
 | GET | `/api/v1/atenciones/by-paciente/{id}` | Historial de atenciones del paciente |
 | GET | `/api/v1/atenciones/{id}` | Ver una atención |
 
+### Reportes y análisis (requiere JWT)
+
+Agregados calculados en SQL (GROUP BY / COUNT) sobre `evaluaciones`. Las bandas son las del modelo
+(bajo / moderado / alto); el índice no es una probabilidad de enfermedad.
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/reportes/dashboard?dias=30` | KPIs, serie diaria, distribución por banda, distritos, factores y grupos de edad (`dias`: 7, 14, 30, 90, 180, 365) |
+| GET | `/api/v1/reportes/evaluaciones` | Tabla paginada con filtros `desde`, `hasta`, `clasificacion`, `distrito_id`, `q`, `limit`, `offset` |
+| GET | `/api/v1/reportes/evaluaciones/export` | CSV de las evaluaciones filtradas (**solo admin**, sin nombres ni documentos) |
+
 ### Catálogos (requiere JWT)
 
 | Método | Ruta | Descripción |
