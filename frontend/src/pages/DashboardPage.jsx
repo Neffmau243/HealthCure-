@@ -6,6 +6,7 @@ import { pacientesService } from '../services/pacientes';
 import { evaluacionesService } from '../services/evaluaciones';
 import { mensajeError } from '../services/api';
 import { Cargando, Alerta } from '../components/ui/Feedback';
+import PanelTendencia from '../components/reportes/PanelTendencia';
 import { clasesClasificacion, nombreCompleto } from '../utils/triaje';
 
 // Solo para la lista de "últimas evaluaciones". Los KPIs NO se calculan
@@ -113,6 +114,8 @@ export default function DashboardPage() {
               <p className="text-xs text-slate-600 leading-relaxed mt-5">Las bandas del modelo describen el índice cardiovascular. La urgencia se revisa en cada atención.</p>
             </section>
           </div>
+
+          <PanelTendencia />
 
           <div className="clinical-panel overflow-hidden">
             <div className="p-5 border-b border-slate-100 flex items-center justify-between">

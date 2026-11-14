@@ -175,7 +175,7 @@ def test_fua_pagina_textos_largos_sin_perder_datos(env):
     r = _atender(env, h, p, diagnostico=("Diagnóstico largo " * 100) + "FIN-DX", tratamiento=("Tratamiento largo " * 100) + "FIN-TX", indicaciones=("Control largo " * 100) + "FIN-IND")
     assert r.status_code == 201
     contenido = _pdf(env, h, r.json()["id"])
-    for marcador in ["FIN-DX", "FIN-TX", "FIN-IND", "Firmas y conformidad"]:
+    for marcador in ["FIN-DX", "FIN-TX", "FIN-IND", "ANEXO AL FORMATO ÚNICO DE ATENCIÓN"]:
         assert marcador in contenido
 
 

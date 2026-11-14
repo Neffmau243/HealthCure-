@@ -10,6 +10,7 @@ import {
   LogOut,
   X,
   HeartPulse,
+  BarChart3,
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { PERMISSIONS } from '../../constants/roles';
@@ -36,6 +37,12 @@ const SECCIONES = [
     items: [
       { id: 'historiales', label: 'Historias Clínicas', path: '/dashboard/historiales', icon: FileText },
       { id: 'atenciones', label: 'Historial de Atenciones', path: '/dashboard/atenciones', icon: History },
+    ],
+  },
+  {
+    titulo: 'Análisis',
+    items: [
+      { id: 'reportes', label: 'Reportes y análisis', path: '/dashboard/reportes', icon: BarChart3 },
     ],
   },
   {

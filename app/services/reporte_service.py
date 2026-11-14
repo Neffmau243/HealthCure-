@@ -1,20 +1,21 @@
 """
 reporte_service.py — SERVICIO: GENERACIÓN DE PDF (FORMATO ÚNICO DE ATENCIÓN)
 
-Genera un PDF descargable con el resultado de una evaluación cardíaca,
-maquetado siguiendo la estructura del FUA (Formato Único de Atención) del
-SIS peruano, para que médicos y enfermeros puedan imprimirlo y archivarlo.
+Genera el PDF descargable de una evaluación cardíaca en DOS partes:
 
-DISEÑO:
-  - ReportLab puro → 100% backend, sin frontend ni navegador.
-  - Tamaño de papel: OFICIO PERUANO (215 x 330 mm).
-  - Todo lo que el sistema conoce (paciente, factores, triaje) se imprime;
-    lo que debe llenar el profesional (firma, colegiatura, sello) queda
-    como espacio en blanco para completar a mano.
+  PÁGINA 1 — El FORMULARIO FUA OFICIAL del SIS (Anexo 1 de la Directiva
+            Administrativa N° 001-2021-SIS/GREP V.01) usado como PLANTILLA:
+            el sistema solo escribe encima los datos que conoce (paciente,
+            seguro, fecha, mediciones, profesional). Ver fua_oficial.py.
+  PÁGINA 2+ — ANEXO con lo que el FUA no tiene casilla: observaciones de la
+            visita, resultado del modelo ML (semáforo), factores y
+            recomendaciones. Se dibuja con ReportLab (oficio 215 x 330 mm).
+
+  - Lo que debe completar el profesional (firma, sello, colegiatura, CIE-10,
+    UPS, código de prestación) queda en blanco en el formulario.
   - Los textos clínicos provienen del MISMO servicio de triaje clínico,
     así el PDF y la API nunca se contradicen.
-  - Si el contenido no cabe en una página, se crean páginas adicionales
-    automáticamente (con el mismo encabezado institucional).
+  - Si el anexo no cabe en una página, se crean páginas adicionales.
 
 USO (desde un endpoint):
     pdf_bytes = ReporteService(db).generar_fua(evaluacion_id)
@@ -35,6 +36,7 @@ from app.models.usuario import Usuario
 from app.repositories.evaluacion_repository import EvaluacionRepository
 from app.repositories.atencion_repository import AtencionRepository
 from app.services.fua_atencion import generar_fua_atencion_pdf
+from app.services.fua_oficial import construir_datos, pagina_fua_oficial, unir_pdfs
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.services.alerta_clinica_service import SIGNOS, SINTOMAS
 
@@ -97,7 +99,7 @@ def _salto(c: canvas.Canvas, cy: float, alto_necesario: float) -> float:
 
 def _cabecera_pagina(c: canvas.Canvas) -> None:
     """Pequeña cabecera institucional que se repite en páginas 2+."""
-    _texto(c, MARGEN_MM, TOPE_MM, "HealthCure CardioPredict - FUA (Formato Unico de Atencion)",
+    _texto(c, MARGEN_MM, TOPE_MM, "HealthCure CardioPredict - ANEXO AL FUA (Formato Unico de Atencion)",
            size=6.5, color=GRIS_LABEL)
 
 
@@ -184,95 +186,45 @@ def _parrafo(c: canvas.Canvas, cy: float, x: float, w: float, texto: str,
 # ============================================================
 # CONSTRUCCIÓN DEL DOCUMENTO
 # ============================================================
-def _encabezado(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
-                paciente: Paciente, num_fua: str) -> float:
-    """Bloque superior: título + N° FUA + IPRESS."""
-    alto = 26.0
+def datos_fua_desde_evaluacion(evaluacion: Evaluacion):
+    """Datos que se escriben sobre el formulario FUA oficial (página 1)."""
+    return construir_datos(
+        paciente=evaluacion.paciente,
+        usuario=evaluacion.usuario,
+        observaciones=evaluacion.observaciones_clinicas,
+        fecha=evaluacion.created_at,
+        correlativo=evaluacion.id,
+        diagnosticos=[("Tamizaje de riesgo cardiovascular (apoyo de modelo ML)", "")],
+    )
+
+
+def _encabezado_anexo(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
+                      paciente: Paciente, num_fua: str) -> float:
+    """Encabezado compacto del anexo: título, N° FUA, fecha y paciente."""
+    alto = 20.0
     _rect(c, MARGEN_MM, cy, ANCHO_CONTENIDO, alto, lw=1.2)
 
-    # Institución
-    _texto(c, MARGEN_MM + 3, cy + 3, "MINISTERIO DE SALUD", size=7.5, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 3, cy + 7.6, "SEGURO INTEGRAL DE SALUD", size=7.5, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 3, cy + 12.2, "SIS - CardioPredict", size=7, color=GRIS_LABEL)
-
-    # Título central
-    _texto(c, MARGEN_MM + 38, cy + 5, "FORMATO UNICO DE ATENCION", size=14, font="Helvetica-Bold")
-    _texto(c, MARGEN_MM + 38, cy + 11.5, "FUA - Tamizaje de Riesgo Cardiovascular", size=9, color=GRIS_LABEL)
-    _texto(c, MARGEN_MM + 38, cy + 17.5,
-           f"N° de Historia Clinica: {paciente.numero_historia_clinica or '-----------'}",
-           size=7.5, color=GRIS_LABEL)
-
-    # N° FUA (esquina superior derecha)
-    _rect(c, PAGE_W_MM - MARGEN_MM - 52, cy + 2, 49, 11)
-    _texto(c, PAGE_W_MM - MARGEN_MM - 51 + 1.5, cy + 3.2, "N° FUA", size=6,
-           font="Helvetica-Bold", color=GRIS_LABEL)
-    _texto(c, PAGE_W_MM - MARGEN_MM - 51 + 1.5, cy + 7.4, num_fua, size=9,
+    _texto(c, MARGEN_MM + 3, cy + 3, "ANEXO AL FORMATO UNICO DE ATENCION (FUA)", size=12,
            font="Helvetica-Bold")
+    _texto(c, MARGEN_MM + 3, cy + 9, "Tamizaje de Riesgo Cardiovascular - HealthCure CardioPredict",
+           size=8.5, color=GRIS_LABEL)
+    apellidos = " ".join(p for p in [paciente.apellido_paterno, paciente.apellido_materno] if p)
+    _texto(c, MARGEN_MM + 3, cy + 14.5,
+           f"Paciente: {apellidos}, {paciente.nombres}   |   {paciente.tipo_documento} "
+           f"{paciente.documento_identidad}   |   H.C.: {paciente.numero_historia_clinica or '-----------'}",
+           size=7.5)
 
-    # Fila: fecha de atención
-    _rect(c, PAGE_W_MM - MARGEN_MM - 52, cy + 14.5, 49, 9)
+    # N° FUA y fecha (esquina superior derecha)
+    x_caja = PAGE_W_MM - MARGEN_MM - 52
+    _rect(c, x_caja, cy + 2, 49, 7)
+    _texto(c, x_caja + 1.5, cy + 2.8, "N° FUA", size=5.5, font="Helvetica-Bold", color=GRIS_LABEL)
+    _texto(c, x_caja + 14, cy + 3.2, num_fua, size=8.5, font="Helvetica-Bold")
+    _rect(c, x_caja, cy + 10, 49, 7.5)
     fecha = evaluacion.created_at
     fecha_txt = fecha.strftime("%d/%m/%Y %H:%M") if isinstance(fecha, datetime) else str(fecha or "")
-    _texto(c, PAGE_W_MM - MARGEN_MM - 51 + 1.5, cy + 15.7, "FECHA DE ATENCION", size=6,
-           font="Helvetica-Bold", color=GRIS_LABEL)
-    _texto(c, PAGE_W_MM - MARGEN_MM - 51 + 1.5, cy + 19.4, fecha_txt, size=8)
-
-    ipress = getattr(paciente, "distrito", None)
-    ipress_nombre = getattr(ipress, "nombre", "") if ipress else ""
-    _texto(c, MARGEN_MM + 3, cy + 21, f"IPRESS: {ipress_nombre or 'CardioPredict'}"
-           f"    |    RENAES: -------------------", size=7, color=GRIS_LABEL)
-
+    _texto(c, x_caja + 1.5, cy + 10.8, "FECHA", size=5.5, font="Helvetica-Bold", color=GRIS_LABEL)
+    _texto(c, x_caja + 14, cy + 11.3, fecha_txt, size=8)
     return cy + alto + 2.0
-
-
-def _datos_paciente(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
-                    paciente: Paciente) -> float:
-    """Bloque 1: datos del asegurado / paciente."""
-    cy = _banda_titulo(c, cy, "1. DATOS DEL PACIENTE (ASEGURADO)")
-
-    apellidos = " ".join(p for p in [paciente.apellido_paterno, paciente.apellido_materno] if p)
-
-    # Fila 1: documentos
-    cy = _fila_campos(c, cy, 12, [
-        (MARGEN_MM, 32, "Tipo Doc.", paciente.tipo_documento),
-        (MARGEN_MM + 33, 48, "N° Documento", paciente.documento_identidad),
-        (MARGEN_MM + 82, 60, "Código Filiación Seguro",
-         paciente.codigo_afiliacion_seguro or ""),
-        (MARGEN_MM + 143, ANCHO_CONTENIDO - 143, "Tipo Seguro", paciente.tipo_seguro),
-    ])
-
-    # Fila 2: nombres completos
-    cy = _fila_campos(c, cy, 12, [
-        (MARGEN_MM, ANCHO_CONTENIDO, "Apellidos y Nombres", f"{apellidos}, {paciente.nombres}"),
-    ])
-
-    # Fila 3: nacimiento / edad / sexo / dirección
-    fnac = paciente.fecha_nacimiento
-    fnac_txt = fnac.strftime("%d/%m/%Y") if isinstance(fnac, date) else str(fnac or "")
-    cy = _fila_campos(c, cy, 12, [
-        (MARGEN_MM, 60, "Fecha de Nacimiento", fnac_txt),
-        (MARGEN_MM + 61, 35, "Edad", f"{evaluacion.edad} años"),
-        (MARGEN_MM + 97, 30, "Sexo",
-         "Masculino" if paciente.sexo == "M" else "Femenino"),
-        (MARGEN_MM + 128, ANCHO_CONTENIDO - 128, "Dirección", paciente.direccion or ""),
-    ])
-    return cy
-
-
-def _datos_atencion(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
-                    usuario: Usuario) -> float:
-    """Bloque 2: datos de la atención."""
-    cy = _banda_titulo(c, cy, "2. DATOS DE LA ATENCION")
-
-    cy = _fila_campos(c, cy, 11, [
-        (MARGEN_MM, 90, "Tipo de Atención", "Evaluación preventiva (tamizaje)"),
-        (MARGEN_MM + 91, ANCHO_CONTENIDO - 91, "Profesional Responsable", usuario.nombre),
-    ])
-    cy = _fila_campos(c, cy, 11, [
-        (MARGEN_MM, ANCHO_CONTENIDO, "Concepto / Finalidad",
-         "Detección de riesgo cardiovascular con apoyo de modelo ML"),
-    ])
-    return cy
 
 
 def _variables(c: canvas.Canvas, cy: float, evaluacion: Evaluacion,
@@ -388,57 +340,15 @@ def _factores(c: canvas.Canvas, cy: float, evaluacion: Evaluacion) -> float:
     return cy
 
 
-def _firmas(c: canvas.Canvas, cy: float, usuario: Usuario) -> float:
-    """Bloque 6: firmas (profesional y paciente/apoderado)."""
-    cy = _banda_titulo(c, cy, "6. FIRMAS Y CONFORMIDAD")
-
-    ancho_mitad = (ANCHO_CONTENIDO - 6) / 2
-    alto = 38
-
-    # Profesional
-    cy = _salto(c, cy, alto + 2)
-    x1 = MARGEN_MM
-    _rect(c, x1, cy, ancho_mitad, alto)
-    _texto(c, x1 + 2, cy + 1.5, "PROFESIONAL DE SALUD RESPONSABLE", size=7,
-           font="Helvetica-Bold", color=GRIS_LABEL)
-    _texto(c, x1 + 2, cy + 7.5, usuario.nombre, size=8.5, font="Helvetica-Bold")
-    _texto(c, x1 + 2, cy + 13, "N° de colegiatura: ____________________", size=7.5)
-    _rect(c, x1 + 2, cy + 20, ancho_mitad - 4, 1.0)  # línea de firma
-    _texto(c, x1 + 2, cy + 22, "Firma y sello", size=6.5, color=GRIS_LABEL)
-
-    # Paciente / apoderado
-    x2 = MARGEN_MM + ancho_mitad + 6
-    _rect(c, x2, cy, ancho_mitad, alto)
-    _texto(c, x2 + 2, cy + 1.5, "PACIENTE / APODERADO", size=7,
-           font="Helvetica-Bold", color=GRIS_LABEL)
-    _rect(c, x2 + 2, cy + 9, ancho_mitad - 4, 11)  # recuadro de huella digital
-    _texto(c, x2 + 2, cy + 13.8, "Huella digital", size=6.5, color=GRIS_LABEL)
-    _rect(c, x2 + 2, cy + 26, ancho_mitad - 4, 1.0)  # línea de firma
-    _texto(c, x2 + 2, cy + 28, "Firma", size=6.5, color=GRIS_LABEL)
-
-    cy += alto + 1.5
-    return cy
-
-
-def generar_fua_pdf(evaluacion: Evaluacion) -> bytes:
-    """
-    Genera el PDF del FUA para una evaluación. Recibe el ORM (con relaciones
-    paciente/usuario accesibles) y devuelve los bytes del PDF.
-    """
+def _anexo_pdf(evaluacion: Evaluacion, num_fua: str) -> bytes:
+    """Páginas de anexo (observaciones, variables, resultado del modelo y factores)."""
     paciente: Paciente = evaluacion.paciente
     usuario: Usuario = evaluacion.usuario
 
-    num_fua = f"FUA-{evaluacion.id:06d}"
-
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=(PAGE_W_MM * mm, PAGE_H_MM * mm))
-    c.setTitle(f"FUA {num_fua} - {paciente.nombre_completo}")
-    c.setAuthor(usuario.nombre)
-    c.setSubject("Formato Unico de Atencion - Tamizaje de Riesgo Cardiovascular")
 
-    cy = _encabezado(c, TOPE_MM, evaluacion, paciente, num_fua)
-    cy = _datos_paciente(c, cy, evaluacion, paciente)
-    cy = _datos_atencion(c, cy, evaluacion, usuario)
+    cy = _encabezado_anexo(c, TOPE_MM, evaluacion, paciente, num_fua)
     if evaluacion.observaciones_clinicas:
         obs = evaluacion.observaciones_clinicas
         cy = _banda_titulo(c, cy, "OBSERVACIONES REGISTRADAS EN ESTA EVALUACION")
@@ -451,12 +361,30 @@ def generar_fua_pdf(evaluacion: Evaluacion) -> bytes:
     cy = _variables(c, cy, evaluacion, paciente)
     cy = _resultado(c, cy, evaluacion)
     cy = _factores(c, cy, evaluacion)
-    cy = _firmas(c, cy, usuario)
 
     _pie_pagina(c, cy)
     c.showPage()
     c.save()
     return buf.getvalue()
+
+
+def generar_fua_pdf(evaluacion: Evaluacion) -> bytes:
+    """
+    Genera el PDF del FUA para una evaluación. Recibe el ORM (con relaciones
+    paciente/usuario accesibles) y devuelve los bytes del PDF:
+      página 1 = formulario FUA oficial llenado + páginas siguientes = anexo.
+    """
+    paciente: Paciente = evaluacion.paciente
+    usuario: Usuario = evaluacion.usuario
+    num_fua = f"FUA-{evaluacion.id:06d}"
+
+    formulario = pagina_fua_oficial(datos_fua_desde_evaluacion(evaluacion))
+    anexo = _anexo_pdf(evaluacion, num_fua)
+    return unir_pdfs(
+        formulario, anexo,
+        titulo=f"{num_fua} - {paciente.nombre_completo}",
+        autor=usuario.nombre,
+    )
 
 
 class ReporteService:

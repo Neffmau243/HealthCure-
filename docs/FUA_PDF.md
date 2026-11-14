@@ -4,6 +4,15 @@
 > resultado de una evaluación cardíaca. Generado a partir del código fuente
 > actual del proyecto.
 
+> **ACTUALIZACIÓN — FUA OFICIAL COMO PLANTILLA.** Desde esta versión la página 1 del PDF
+> ya no se dibuja con ReportLab: es el **formulario oficial** (Anexo 1 de la Directiva
+> Administrativa N° 001-2021-SIS/GREP V.01, RJ N° 015-2021/SIS/J) guardado en
+> `app/resources/fua_plantilla.pdf`, y `app/services/fua_oficial.py` escribe encima los
+> datos del paciente. Las páginas siguientes son un **anexo** (resultado del modelo ML,
+> factores y recomendaciones) que sí se dibuja con ReportLab. Para regenerar la plantilla:
+> `python scripts/crear_plantilla_fua.py <directiva.pdf>` (el formulario está en la página 11).
+> Las secciones 5 y 6 de abajo describen ahora el contenido del **anexo**, no de la página 1.
+
 ---
 
 ## Tabla de Contenidos

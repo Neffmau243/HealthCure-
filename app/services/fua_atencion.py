@@ -1,4 +1,11 @@
-"""FUA final por visita, disponible con o sin evaluación cardiovascular."""
+"""
+FUA final por visita, disponible con o sin evaluación cardiovascular.
+
+Página 1 = formulario FUA OFICIAL del SIS llenado (ver fua_oficial.py).
+Páginas siguientes = ANEXO con lo que el formulario no resume: acto médico
+completo (diagnóstico, tratamiento, indicaciones), observaciones, alertas y
+evaluación cardiovascular asociada.
+"""
 from io import BytesIO
 from xml.sax.saxutils import escape
 
@@ -6,15 +13,45 @@ from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether,
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 
 from app.core.clinica import TIPOS_ATENCION, GRUPOS_ETARIOS, CONDICIONES_MATERNAS
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.services.alerta_clinica_service import SIGNOS, SINTOMAS
+from app.services.fua_oficial import construir_datos, pagina_fua_oficial, resumir, unir_pdfs
+
+
+def datos_fua_desde_atencion(atencion):
+    """Datos que se escriben sobre el formulario FUA oficial (página 1)."""
+    # Cada línea del diagnóstico del médico va en una fila de la casilla DIAGNÓSTICOS (máx. 5).
+    lineas = [l.strip() for l in (atencion.diagnostico or "").replace(";", "\n").splitlines() if l.strip()]
+    diagnosticos = [(resumir(l), "") for l in lineas[:5]]
+    if len(lineas) > 5 or any(len(" ".join(l.split())) > 78 for l in lineas[:5]):
+        diagnosticos[-1] = (diagnosticos[-1][0].rstrip("…") + "… (ver anexo)", "")
+    return construir_datos(
+        paciente=atencion.paciente,
+        usuario=atencion.usuario,
+        observaciones=atencion.observaciones_clinicas,
+        fecha=atencion.created_at,
+        correlativo=atencion.id,
+        emergencia=atencion.tipo_atencion == "emergencia",
+        diagnosticos=diagnosticos,
+    )
 
 
 def generar_fua_atencion_pdf(atencion) -> bytes:
+    """Formulario FUA oficial (pág. 1) + anexo con el detalle de la visita."""
+    anexo = _anexo_atencion_pdf(atencion)
+    formulario = pagina_fua_oficial(datos_fua_desde_atencion(atencion))
+    return unir_pdfs(
+        formulario, anexo,
+        titulo=f"FUA-AT-{atencion.id:06d} - {atencion.paciente.nombre_completo}",
+        autor=atencion.usuario.nombre,
+    )
+
+
+def _anexo_atencion_pdf(atencion) -> bytes:
     """Los campos de contexto provienen de la visita, nunca de la edad actual."""
     paciente, usuario = atencion.paciente, atencion.usuario
     buf = BytesIO()
@@ -50,7 +87,7 @@ def generar_fua_atencion_pdf(atencion) -> bytes:
         return table
 
     story = [
-        texto("FORMATO ÚNICO DE ATENCIÓN", "Title"),
+        texto("ANEXO AL FORMATO ÚNICO DE ATENCIÓN", "Title"),
         texto(f"HealthCure CardioPredict · FUA-AT-{atencion.id:06d}", "NotaFua"),
         Spacer(1, 5 * mm),
         texto("Datos del paciente", "Heading2"),
@@ -128,19 +165,12 @@ def generar_fua_atencion_pdf(atencion) -> bytes:
             texto("Evaluación cardiovascular", "Heading2"),
             texto("Sin evaluación ML asociada. No se ha calculado ni asignado un nivel de riesgo cardiovascular."),
         ])
-    story.append(KeepTogether([
-        texto("Firmas y conformidad", "Heading2"),
-        Spacer(1, 12 * mm),
-        tabla([("Profesional de salud", "Firma y sello: __________________________"),
-               ("Paciente / apoderado", "Firma: _______________________________")]),
-    ]))
-
     def pie(c, document):
         c.saveState()
         c.setFont("Helvetica", 8)
         c.setFillColor(colors.HexColor("#475569"))
         c.drawString(14 * mm, 11 * mm, f"HealthCure · FUA-AT-{atencion.id:06d}")
-        c.drawRightString(201 * mm, 11 * mm, f"Página {document.page}")
+        c.drawRightString(201 * mm, 11 * mm, f"Anexo · Página {document.page}")
         c.restoreState()
 
     doc.build(story, onFirstPage=pie, onLaterPages=pie)

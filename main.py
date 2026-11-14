@@ -22,6 +22,7 @@ Jerarquía de rutas:
     /api/v1/pacientes/*     → CRUD de pacientes
     /api/v1/evaluaciones/*  → Evaluaciones cardíacas (ML)
     /api/v1/atenciones/*    → Atenciones del consultorio (diagnóstico/tratamiento)
+    /api/v1/reportes/*      → Dashboard analítico y reportes de evaluaciones
     /api/v1/admin/*         → Administración (solo admins)
     /health                 → Health check (sin auth)
     /docs                   → Swagger UI (documentación interactiva)
@@ -36,7 +37,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import get_settings
-from app.api.v1 import auth, pacientes, evaluaciones, atenciones, admin, catalogos, clinica
+from app.api.v1 import auth, pacientes, evaluaciones, atenciones, admin, catalogos, clinica, reportes
 
 settings = get_settings()
 
@@ -96,6 +97,7 @@ app.include_router(atenciones.router, prefix="/api/v1")
 app.include_router(admin.router, prefix="/api/v1")
 app.include_router(catalogos.router, prefix="/api/v1")
 app.include_router(clinica.router, prefix="/api/v1")
+app.include_router(reportes.router, prefix="/api/v1")
 
 
 @app.get("/health", tags=["Health"])

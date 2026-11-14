@@ -15,6 +15,7 @@ export const PERMISSIONS = {
   '/dashboard/historiales': [ROLES.ADMIN, ROLES.USUARIO],
   '/dashboard/consultorio': [ROLES.ADMIN, ROLES.USUARIO],
   '/dashboard/atenciones': [ROLES.ADMIN, ROLES.USUARIO],
+  '/dashboard/reportes': [ROLES.ADMIN, ROLES.USUARIO],
   '/dashboard/usuarios': [ROLES.ADMIN],
 }
 

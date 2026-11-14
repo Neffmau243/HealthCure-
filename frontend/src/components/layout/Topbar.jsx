@@ -56,6 +56,7 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
     '/dashboard/historiales': 'Historias Clínicas',
     '/dashboard/consultorio': 'Consultorio Médico',
     '/dashboard/atenciones': 'Historial de Atenciones',
+    '/dashboard/reportes': 'Reportes y Análisis',
     '/dashboard/usuarios': 'Control de Usuarios',
   };
 
