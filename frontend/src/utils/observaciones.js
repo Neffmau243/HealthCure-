@@ -1,4 +1,5 @@
 import { parsePresion } from './presion.js'
+import { datosMaternos } from './clinica.js'
 
 export const SINTOMAS_ALARMA = {
   dolor_toracico: 'Dolor torácico actual',
@@ -38,6 +39,11 @@ export function construirObservaciones(form, condicionMaterna) {
   }
   obs.sintomas = form.sintomas?.length || form.sintomas_revisados ? (form.sintomas ?? []) : null
   obs.condicion_materna = condicionMaterna || form.condicion_materna || null
+  // Datos administrativos del FUA: no son predictores del modelo.
+  obs.tipo_atencion = form.tipo_atencion || null
+  obs.lugar_atencion = form.lugar_atencion || null
+  const maternos = datosMaternos({ ...form, condicion_materna: obs.condicion_materna })
+  if (maternos) obs.datos_maternos = maternos
   return obs
 }
 

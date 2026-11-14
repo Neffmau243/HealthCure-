@@ -41,10 +41,10 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
       if (evento.key === 'Escape') setMenuAbierto(null);
     };
 
-    document.addEventListener('mousedown', alClicFuera);
+    document.addEventListener('pointerdown', alClicFuera);
     document.addEventListener('keydown', alTeclear);
     return () => {
-      document.removeEventListener('mousedown', alClicFuera);
+      document.removeEventListener('pointerdown', alClicFuera);
       document.removeEventListener('keydown', alTeclear);
     };
   }, [menuAbierto]);
@@ -64,7 +64,7 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
   const alternar = (menu) => setMenuAbierto((prev) => (prev === menu ? null : menu));
 
   return (
-    <header className="clinical-topbar h-16 lg:h-20 flex items-center justify-between px-4 lg:px-8 z-30 shrink-0">
+    <header className="clinical-topbar h-16 lg:h-[72px] flex items-center justify-between px-4 lg:px-8 z-30 shrink-0">
       <div className="flex items-center gap-2 lg:gap-4">
         {/* Botón del menú lateral */}
         <button
@@ -102,7 +102,7 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
           <button
             onClick={() => alternar('notificaciones')}
             aria-label="Notificaciones"
-            aria-haspopup="menu"
+            aria-controls="panel-notificaciones"
             aria-expanded={menuAbierto === 'notificaciones'}
             className="relative p-2.5 min-h-11 min-w-11 rounded-full hover:bg-slate-100 text-slate-700 transition-colors cursor-pointer border border-slate-200 flex items-center justify-center"
           >
@@ -111,8 +111,10 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
 
           {menuAbierto === 'notificaciones' && (
             <div
-              role="menu"
-              className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white border border-slate-200 rounded-xl shadow-xl py-2 z-50"
+              id="panel-notificaciones"
+              role="region"
+              aria-label="Notificaciones"
+              className="fixed left-4 right-4 top-[72px] sm:absolute sm:left-auto sm:top-auto sm:right-0 sm:mt-2 sm:w-80 bg-white rounded-xl shadow-xl py-2 z-50"
             >
               <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between">
                 <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
@@ -130,7 +132,7 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
         <div className="relative" ref={refUsuario}>
           <button
             onClick={() => alternar('usuario')}
-            aria-haspopup="menu"
+            aria-controls="panel-cuenta"
             aria-expanded={menuAbierto === 'usuario'}
             aria-label={`Cuenta de ${user?.nombre ?? 'usuario'}`}
             className="flex items-center gap-2 lg:gap-3 py-1.5 px-2 lg:px-3 min-h-11 rounded-full hover:bg-slate-100 transition-colors cursor-pointer border border-slate-200"
@@ -152,8 +154,8 @@ export default function Topbar({ toggleSidebar, sidebarOpen }) {
 
           {menuAbierto === 'usuario' && (
             <div
-              role="menu"
-              className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-lg shadow-xl py-1 z-50"
+              id="panel-cuenta"
+              className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-xl py-1 z-50"
             >
               <div className="px-4 py-2 border-b border-slate-100">
                 <p className="text-xs text-slate-500">Conectado como</p>

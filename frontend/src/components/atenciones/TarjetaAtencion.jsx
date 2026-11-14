@@ -2,8 +2,7 @@ import { useState } from 'react'
 import { FileDown, Loader2 } from 'lucide-react'
 import { atencionesService } from '../../services/atenciones'
 import { mensajeError } from '../../services/api'
-import { TIPOS_ATENCION, CONDICIONES_MATERNAS, etiquetaGrupo } from '../../utils/clinica'
-import AlertaClinica from '../clinica/AlertaClinica'
+import { TIPOS_ATENCION, LUGARES_ATENCION, CONDICIONES_MATERNAS, CAMPOS_MATERNOS, etiquetaGrupo } from '../../utils/clinica'
 
 export default function TarjetaAtencion({ atencion: a, mostrarPaciente = false }) {
   const [descargando, setDescargando] = useState(false)
@@ -41,10 +40,16 @@ export default function TarjetaAtencion({ atencion: a, mostrarPaciente = false }
       </div>
       <dl className="visit-context">
         <div><dt>Tipo de atención</dt><dd>{TIPOS_ATENCION[a.tipo_atencion] ?? 'No registrado'}</dd></div>
+        <div><dt>Lugar de atención</dt><dd>{LUGARES_ATENCION[a.lugar_atencion] ?? 'No registrado'}</dd></div>
         <div><dt>Grupo al atender</dt><dd>{etiquetaGrupo(a.grupo_etario)}{a.edad_al_atender != null ? ` · ${a.edad_al_atender} años` : ''}</dd></div>
         <div><dt>Condición materna</dt><dd>{CONDICIONES_MATERNAS[a.condicion_materna] ?? 'No registrada'}</dd></div>
       </dl>
-      <AlertaClinica alerta={a.alerta_clinica} observaciones={a.observaciones_clinicas} historica />
+      {CAMPOS_MATERNOS[a.condicion_materna] && <dl className="visit-context">
+        {CAMPOS_MATERNOS[a.condicion_materna].map(([campo, titulo, tipo]) => {
+          const valor = a.observaciones_clinicas?.datos_maternos?.[campo]
+          return <div key={campo}><dt>{titulo}</dt><dd>{valor == null ? 'Sin registrar' : tipo === 'date' ? valor.split('-').reverse().join('/') : valor}</dd></div>
+        })}
+      </dl>}
       <div className="visit-notes">
         <div><h4>Diagnóstico</h4><p>{a.diagnostico}</p></div>
         <div><h4>Tratamiento</h4><p>{a.tratamiento}</p></div>

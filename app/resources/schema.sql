@@ -90,6 +90,7 @@ CREATE TABLE pacientes (
     -- Mediciones
     talla_cm                DECIMAL(5,1) NULL,
     peso_kg                 DECIMAL(5,1) NULL,
+    contexto_atencion       JSON NULL,
 
     created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -166,6 +167,7 @@ CREATE TABLE atenciones (
     indicaciones    TEXT         NULL,
 
     tipo_atencion       VARCHAR(20) NULL,
+    lugar_atencion      VARCHAR(20) NULL,
     grupo_etario        VARCHAR(20) NULL,
     condicion_materna   VARCHAR(20) NULL,
     edad_al_atender     SMALLINT NULL,

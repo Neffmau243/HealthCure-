@@ -19,8 +19,7 @@ import { Cargando, Alerta } from '../components/ui/Feedback';
 import { pacientesService } from '../services/pacientes';
 import { evaluacionesService } from '../services/evaluaciones';
 import { mensajeError } from '../services/api';
-import { etiquetaGrupo } from '../utils/clinica';
-import { hayAlerta } from '../utils/observaciones';
+import { datosMaternos, etiquetaCategoria, etiquetaGrupo } from '../utils/clinica';
 import {
   calcularEdad,
   construirPayloadEvaluacion,
@@ -40,6 +39,8 @@ const FILTROS = [
 export default function TriajePage() {
   const navigate = useNavigate();
   const refResultado = useRef(null);
+  // Evita dos POST si se hace doble clic antes de que React desactive el botón.
+  const enviandoRef = useRef(false);
 
   const [pacientes, setPacientes] = useState([]);
   const [evaluaciones, setEvaluaciones] = useState([]);
@@ -56,6 +57,7 @@ export default function TriajePage() {
   const [guardando, setGuardando] = useState(false);
   const [errorModal, setErrorModal] = useState(null);
   const [resultado, setResultado] = useState(null);
+  const [confirmacion, setConfirmacion] = useState(null);
 
   const cargarTodo = async () => {
     try {
@@ -140,7 +142,8 @@ export default function TriajePage() {
   const evaluados = evaluadosHoy;
 
   const guardarTriaje = async (datos) => {
-    if (!pacienteSeleccionado) return;
+    if (!pacienteSeleccionado || enviandoRef.current) return;
+    enviandoRef.current = true;
     setGuardando(true);
     setErrorModal(null);
     try {
@@ -160,6 +163,7 @@ export default function TriajePage() {
     } catch (e) {
       setErrorModal(mensajeError(e, 'No se pudo registrar el triaje'));
     } finally {
+      enviandoRef.current = false;
       setGuardando(false);
     }
   };
@@ -167,6 +171,24 @@ export default function TriajePage() {
   const abrirTriaje = (paciente) => {
     setErrorModal(null);
     setPacienteSeleccionado(paciente);
+  };
+
+  const guardarContexto = async (form) => {
+    if (!pacienteSeleccionado || guardando) return;
+    setGuardando(true);
+    setErrorModal(null);
+    try {
+      const actualizado = await pacientesService.actualizarContexto(pacienteSeleccionado.id, {
+        condicion_materna: form.condicion_materna, datos_maternos: datosMaternos(form),
+      });
+      setPacientes(lista => lista.map(p => p.id === actualizado.id ? actualizado : p));
+      setPacienteSeleccionado(null);
+      setConfirmacion('Categoría y datos para el FUA actualizados. No se generó una evaluación cardiovascular.');
+    } catch (error) {
+      setErrorModal(mensajeError(error, 'No se pudo actualizar la categoría'));
+    } finally {
+      setGuardando(false);
+    }
   };
 
   const termino = busqueda.trim().toLowerCase();
@@ -193,7 +215,7 @@ export default function TriajePage() {
     },
     {
       titulo: 'Paciente',
-      render: (row) => <span className="font-medium text-slate-900">{nombreCompleto(row)}</span>,
+      render: (row) => <div><span className="font-medium text-slate-900">{nombreCompleto(row)}</span><span className="block text-xs text-slate-600 mt-1">{etiquetaCategoria(row.contexto_atencion?.condicion_materna, row.grupo_etario)}</span></div>,
     },
     {
       titulo: 'Edad',
@@ -215,7 +237,7 @@ export default function TriajePage() {
       titulo: 'Estado',
       render: (row) => {
         if (calcularEdad(row.fecha_nacimiento) < 18) {
-          return <span className="text-xs text-slate-600">Triaje ML bloqueado: menor de 18 años</span>;
+          return <span className="text-xs text-slate-600">Atención sin ML · menor de 18 años</span>;
         }
         const lista = evaluacionesPorPaciente[row.id];
         const triadoHoy = idsEvaluadosHoy.has(row.id);
@@ -232,9 +254,8 @@ export default function TriajePage() {
         const ev = lista[0];
         return (
           <div className="flex flex-wrap items-center gap-2">
-            {hayAlerta(ev.alerta_clinica) && <span className="text-xs font-bold text-rose-800">{ev.alerta_clinica.titulo}</span>}
             <span
-              className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${hayAlerta(ev.alerta_clinica) ? 'bg-slate-100 text-slate-700' : clasesClasificacion(ev.clasificacion)}`}
+              className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${clasesClasificacion(ev.clasificacion)}`}
               title="Índice de riesgo del modelo (ordena el riesgo; no es probabilidad de enfermedad)"
             >
               Banda ML {ev.clasificacion} · {(ev.probabilidad * 100).toFixed(1)}
@@ -283,7 +304,7 @@ export default function TriajePage() {
   return (
     <div className="space-y-6">
       {/* Encabezado */}
-      <PageHeader title="Triaje y evaluación" description="Valora los signos y síntomas de la visita. Las alertas clínicas acompañan la revisión del riesgo cardiovascular.">
+      <PageHeader title="Triaje y evaluación" description="Registra la categoría de atención y los datos del FUA, o realiza la evaluación cardiovascular con los datos del paciente.">
         <button
           onClick={() => navigate('/dashboard/pacientes')}
           className="flex items-center justify-center gap-2 px-4 py-3 min-h-11 bg-[#17324c] hover:bg-slate-800 text-white rounded-xl text-sm font-medium shadow-md transition cursor-pointer w-full sm:w-auto"
@@ -294,6 +315,7 @@ export default function TriajePage() {
       </PageHeader>
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
+      {confirmacion && <Alerta tipo="exito" onClose={() => setConfirmacion(null)}>{confirmacion}</Alerta>}
 
       {/* Guía del proceso: deja claro el flujo paciente → triaje → modelo ML */}
       <div className="workflow-guide">
@@ -364,7 +386,7 @@ export default function TriajePage() {
                 <BrainCircuit className="w-4 h-4 text-indigo-600" /> El modelo ML calcula el riesgo
               </p>
               <p className="text-xs text-slate-500 mt-0.5">
-                Índice cardiovascular y clasificación. Las alertas actuales se revisan por separado.
+                Índice cardiovascular y banda del modelo a partir de las nueve variables registradas.
               </p>
               <p className="text-xs font-semibold text-indigo-800 mt-2">
                 {(resumen?.total_evaluaciones ?? evaluaciones.length)}{' '}
@@ -475,6 +497,7 @@ export default function TriajePage() {
           ultimaEvaluacion={evaluacionesPorPaciente[pacienteSeleccionado.id]?.[0] ?? null}
           onClose={() => setPacienteSeleccionado(null)}
           onGuardar={guardarTriaje}
+          onGuardarContexto={guardarContexto}
           guardando={guardando}
           error={errorModal}
         />

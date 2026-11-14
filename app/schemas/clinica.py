@@ -3,7 +3,8 @@ from enum import Enum
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from app.core.clinica import CondicionMaterna
+from app.core.clinica import CondicionMaterna, LugarAtencion, TipoAtencion
+from app.schemas.contexto_paciente import ContextoPaciente, DatosMaternos
 
 
 class SintomaAlarma(str, Enum):
@@ -33,9 +34,15 @@ class ObservacionesClinicas(BaseModel):
     # None = no revisados. [] = el profesional confirmó que no están presentes.
     sintomas: list[SintomaAlarma] | None = None
     condicion_materna: CondicionMaterna | None = None
+    datos_maternos: DatosMaternos | None = None
+    # Datos administrativos del FUA capturados junto con la visita.
+    tipo_atencion: TipoAtencion | None = None
+    lugar_atencion: LugarAtencion | None = None
 
     @model_validator(mode="after")
     def validar_presion(self):
+        ContextoPaciente(condicion_materna=self.condicion_materna or CondicionMaterna.ninguna,
+                         datos_maternos=self.datos_maternos)
         s, d = self.presion_sistolica, self.presion_diastolica
         if (s is None) != (d is None):
             raise ValueError("Registra ambas cifras de presión o deja ambas sin registrar")

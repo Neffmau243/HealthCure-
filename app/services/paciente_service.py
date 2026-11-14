@@ -17,6 +17,7 @@ from typing import Optional
 from app.repositories.paciente_repository import PacienteRepository
 from app.repositories.distrito_repository import DistritoRepository
 from app.repositories.localidad_repository import LocalidadRepository
+from app.schemas.contexto_paciente import ContextoPaciente
 from app.schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse
 )
@@ -97,6 +98,7 @@ class PacienteService:
             raise ValueError("Ya existe un paciente con ese número de historia clínica")
 
         self._validar_ubicacion(data.distrito_id, data.localidad_id)
+        data.contexto_atencion.validar_sexo(data.sexo)
 
         paciente = self.repo.create(
             usuario_creador_id=usuario_creador_id,
@@ -116,6 +118,7 @@ class PacienteService:
             codigo_afiliacion_seguro=data.codigo_afiliacion_seguro,
             talla_cm=data.talla_cm,
             peso_kg=data.peso_kg,
+            contexto_atencion=data.contexto_atencion.model_dump(mode="json", exclude_none=True),
         )
         return PacienteResponse.model_validate(paciente)
 
@@ -130,6 +133,14 @@ class PacienteService:
         return [PacienteResponse.model_validate(p) for p in pacientes]
 
     # --- UPDATE ---
+
+    def actualizar_contexto(self, paciente_id: int, contexto: ContextoPaciente) -> Optional[PacienteResponse]:
+        paciente = self.repo.get_by_id(paciente_id)
+        if not paciente:
+            return None
+        contexto.validar_sexo(paciente.sexo)
+        self.repo.update(paciente, contexto_atencion=contexto.model_dump(mode="json", exclude_none=True))
+        return PacienteResponse.model_validate(paciente)
 
     def update(
         self,
@@ -169,6 +180,10 @@ class PacienteService:
 
         # model_dump(exclude_unset=True) → solo campos que el usuario envió
         update_data = data.model_dump(exclude_unset=True)
+        contexto = ContextoPaciente.model_validate(update_data.get("contexto_atencion") or paciente.contexto_atencion or {})
+        contexto.validar_sexo(update_data.get("sexo", paciente.sexo))
+        if "contexto_atencion" in update_data:
+            update_data["contexto_atencion"] = contexto.model_dump(mode="json", exclude_none=True)
 
         # --- Validaciones de duplicados (solo si cambian) ---
         if "numero_historia_clinica" in update_data and update_data["numero_historia_clinica"]:
@@ -185,7 +200,7 @@ class PacienteService:
         # --- Convertir enums a strings para SQLAlchemy ---
         for campo in ("sexo", "tipo_documento", "tipo_seguro"):
             if campo in update_data and update_data[campo] is not None:
-                update_data[campo] = update_data[campo].value
+                update_data[campo] = getattr(update_data[campo], "value", update_data[campo])
 
         self.repo.update(paciente, **update_data)
         # Recargar para traer los catálogos actualizados en la respuesta

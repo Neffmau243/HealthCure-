@@ -17,6 +17,7 @@ Rutas:
 Autenticación: TODOS requieren token JWT válido.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Annotated
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -25,8 +26,26 @@ from app.schemas.paciente import (
     PacienteCreate, PacienteUpdate, PacienteResponse
 )
 from app.api.deps import get_current_user, require_admin
+from app.schemas.contexto_paciente import ContextoPaciente
 
 router = APIRouter(prefix="/pacientes", tags=["Pacientes"])
+
+
+@router.put("/{paciente_id}/contexto-atencion", response_model=PacienteResponse)
+def actualizar_contexto_atencion(
+    paciente_id: int,
+    data: ContextoPaciente,
+    db: Annotated[Session, Depends(get_db)],
+    _user: Annotated[dict, Depends(get_current_user)],
+):
+    """El personal registra la categoría de la visita sin modificar identidad ni ejecutar ML."""
+    try:
+        paciente = PacienteService(db).actualizar_contexto(paciente_id, data)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error))
+    if paciente is None:
+        raise HTTPException(status_code=404, detail="Paciente no encontrado")
+    return paciente
 
 
 @router.get("/", response_model=list[PacienteResponse])
@@ -159,6 +178,8 @@ def update_paciente(
         )
     except PermissionError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     if not resultado:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Paciente no encontrado")

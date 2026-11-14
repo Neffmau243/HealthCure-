@@ -66,6 +66,7 @@ def _pdf(env, headers, atencion_id):
     (17, "nino", "ambulatoria", "ninguna", "Niño/a"),
     (30, "adulto", "emergencia", "gestante", "Adulto/a"),
     (30, "adulto", "ambulatoria", "puerpera", "Adulto/a"),
+    (45, "adulto", "referencia", "ninguna", "Adulto/a"),
     (70, "adulto_mayor", "ambulatoria", "ninguna", "Adulto/a mayor"),
 ])
 def test_e2e_contexto_de_visita_hasta_el_fua(env, edad, grupo, tipo, condicion, etiqueta):
@@ -96,6 +97,18 @@ def test_e2e_contexto_de_visita_hasta_el_fua(env, edad, grupo, tipo, condicion, 
     assert "Diagnóstico de prueba E2E" in contenido
     assert "Tratamiento de prueba E2E" in contenido
     assert "Sin evaluación ML asociada" in contenido
+
+
+def test_e2e_lugar_extramural_en_el_fua(env):
+    headers = _login(env)
+    paciente = _paciente(env, headers, 30, documento="E2E-10009")
+    r = _atender(env, headers, paciente, tipo_atencion="referencia", lugar_atencion="extramural")
+    assert r.status_code == 201, r.text
+    atencion = r.json()
+    assert (atencion["tipo_atencion"], atencion["lugar_atencion"]) == ("referencia", "extramural")
+    contenido = _pdf(env, headers, atencion["id"])
+    assert "Referencia" in contenido
+    assert "Extramural" in contenido
 
 
 def test_e2e_visitas_preservan_su_contexto_y_edad(env):
@@ -187,7 +200,7 @@ def test_migracion_aditiva_idempotente_conserva_historial():
             db.execute(text("INSERT INTO atenciones VALUES (1, 'Registro previo')"))
         migrar(engine)
         migrar(engine)
-        assert len(inspect(engine).get_columns("atenciones")) == 6
+        assert len(inspect(engine).get_columns("atenciones")) == 7
         with engine.connect() as db:
             row = db.execute(text("SELECT diagnostico, tipo_atencion, grupo_etario, condicion_materna, edad_al_atender FROM atenciones")).one()
             assert tuple(row) == ("Registro previo", None, None, None, None)

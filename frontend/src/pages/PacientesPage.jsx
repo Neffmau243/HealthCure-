@@ -9,7 +9,7 @@ import { pacientesService } from '../services/pacientes';
 import { catalogosService } from '../services/catalogos';
 import { mensajeError } from '../services/api';
 import { calcularEdad, etiquetaSexo, nombreCompleto } from '../utils/triaje';
-import { etiquetaGrupo } from '../utils/clinica';
+import { contextoPaciente, datosMaternos, etiquetaCategoria, etiquetaGrupo } from '../utils/clinica';
 
 // Opcional = "" -> null (evita strings vacíos y choques de UNIQUE en la BD)
 const opcional = (valor) => {
@@ -40,6 +40,7 @@ const FORM_VACIO = {
   codigo_afiliacion_seguro: '',
   talla_cm: '',
   peso_kg: '',
+  contexto_atencion: { condicion_materna: 'ninguna', datos_maternos: {} },
 };
 
 export default function PacientesPage() {
@@ -124,6 +125,7 @@ export default function PacientesPage() {
       [name]: value,
       // Al cambiar de distrito, reseteamos la localidad (pertenece al distrito previo)
       ...(name === 'distrito_id' ? { localidad_id: '' } : {}),
+      ...(name === 'sexo' && value !== 'F' ? { contexto_atencion: { condicion_materna: 'ninguna', datos_maternos: {} } } : {}),
     }));
     if (name === 'distrito_id') {
       setLocalidades([]);
@@ -159,6 +161,7 @@ export default function PacientesPage() {
       codigo_afiliacion_seguro: paciente.codigo_afiliacion_seguro ?? '',
       talla_cm: paciente.talla_cm ?? '',
       peso_kg: paciente.peso_kg ?? '',
+      contexto_atencion: contextoPaciente(paciente),
     });
     setLocalidades([]);
     setCargandoLocalidades(Boolean(paciente.distrito_id));
@@ -190,6 +193,7 @@ export default function PacientesPage() {
         codigo_afiliacion_seguro: opcional(formData.codigo_afiliacion_seguro),
         talla_cm: numeroOpcional(formData.talla_cm),
         peso_kg: numeroOpcional(formData.peso_kg),
+        contexto_atencion: { condicion_materna: formData.contexto_atencion.condicion_materna, datos_maternos: datosMaternos(formData.contexto_atencion) },
       };
 
       if (pacienteEditando) {
@@ -233,6 +237,7 @@ export default function PacientesPage() {
         <div className="patient-identity">
           <span className="patient-avatar" aria-hidden="true">{`${row.nombres?.[0] ?? ''}${row.apellido_paterno?.[0] ?? ''}`}</span>
           <div><p className="font-medium text-slate-900">{nombreCompleto(row)}</p>
+          <p className="text-xs text-slate-600 mt-1">{etiquetaCategoria(row.contexto_atencion?.condicion_materna, row.grupo_etario)}</p>
           {row.numero_historia_clinica && (
             <p className="text-xs text-slate-400">H.C. {row.numero_historia_clinica}</p>
           )}</div>
@@ -334,6 +339,7 @@ export default function PacientesPage() {
         onClose={() => setIsModalOpen(false)}
         formData={formData}
         onChange={handleInputChange}
+        onContextoChange={(contexto) => setFormData(prev => ({ ...prev, contexto_atencion: contexto }))}
         onSubmit={handleSubmit}
         esEdicion={!!pacienteEditando}
         distritos={distritos}

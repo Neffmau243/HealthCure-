@@ -44,9 +44,9 @@ export default function ReportesPage() {
     <div className="space-y-6">
       <PageHeader title="Reportes y análisis" description="Panorama de las evaluaciones del centro: tendencia, distribución por banda del modelo, distritos y factores de riesgo registrados.">
         <div className="flex items-center gap-2">
-          <div role="radiogroup" aria-label="Periodo del reporte" className="report-segmentado">
+          <div role="group" aria-label="Periodo del reporte" className="report-segmentado">
             {PERIODOS.map((p) => (
-              <button key={p.dias} type="button" role="radio" aria-checked={dias === p.dias} onClick={() => setDias(p.dias)}>{p.etiqueta}</button>
+              <button key={p.dias} type="button" aria-pressed={dias === p.dias} onClick={() => setDias(p.dias)}>{p.etiqueta}</button>
             ))}
           </div>
           <button type="button" className="report-btn" onClick={() => setVersion((v) => v + 1)} disabled={cargando} aria-label="Actualizar datos" title="Actualizar datos">
@@ -67,10 +67,10 @@ export default function ReportesPage() {
 
           <div className="report-kpis">
             <TarjetaKpi titulo="Evaluaciones" valor={miles(k.evaluaciones)} detalle={`${miles(k.evaluaciones_hoy)} hoy`} icono={Activity} />
-            <TarjetaKpi titulo="Pacientes evaluados" valor={miles(k.pacientes_evaluados)} detalle={`de ${miles(k.pacientes_registrados)} registrados`} icono={Users} tono="text-indigo-700 bg-indigo-50" />
-            <TarjetaKpi titulo="Banda alta del modelo" valor={miles(k.riesgo_alto)} detalle={`${k.porcentaje_alto} % de las evaluaciones`} icono={AlertTriangle} tono="text-rose-700 bg-rose-50" />
-            <TarjetaKpi titulo="Índice promedio" valor={k.indice_promedio.toFixed(1)} detalle="escala 0–100 del modelo" icono={Gauge} tono="text-amber-700 bg-amber-50" />
-            <TarjetaKpi titulo="Promedio diario" valor={resumen.promedioDiario} detalle={resumen.pico ? `Pico: ${resumen.pico.total} el ${fechaCorta(resumen.pico.fecha)}` : 'Sin evaluaciones'} icono={CalendarCheck} tono="text-emerald-700 bg-emerald-50" />
+            <TarjetaKpi titulo="Pacientes evaluados" valor={miles(k.pacientes_evaluados)} detalle={`de ${miles(k.pacientes_registrados)} registrados`} icono={Users} />
+            <TarjetaKpi titulo="Banda alta del modelo" valor={miles(k.riesgo_alto)} detalle={`${k.porcentaje_alto} % de las evaluaciones`} icono={AlertTriangle} />
+            <TarjetaKpi titulo="Índice promedio" valor={k.indice_promedio.toFixed(1)} detalle="escala 0–100 del modelo" icono={Gauge} />
+            <TarjetaKpi titulo="Promedio diario" valor={resumen.promedioDiario} detalle={resumen.pico ? `Pico: ${resumen.pico.total} el ${fechaCorta(resumen.pico.fecha)}` : 'Sin evaluaciones'} icono={CalendarCheck} />
           </div>
 
           <div className="report-grid mt-6">
@@ -112,7 +112,6 @@ export default function ReportesPage() {
 
           <p className="text-xs text-slate-500 leading-relaxed mt-4 max-w-3xl">
             Las bandas describen el índice del modelo de aprendizaje automático (no es una probabilidad de enfermedad ni mide urgencia).
-            La urgencia se revisa en cada atención con las alertas clínicas.
           </p>
         </div>
       )}

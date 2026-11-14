@@ -5,7 +5,13 @@ from enum import Enum
 
 class TipoAtencion(str, Enum):
     ambulatoria = "ambulatoria"
+    referencia = "referencia"
     emergencia = "emergencia"
+
+
+class LugarAtencion(str, Enum):
+    intramural = "intramural"
+    extramural = "extramural"
 
 
 class GrupoEtario(str, Enum):
@@ -20,7 +26,8 @@ class CondicionMaterna(str, Enum):
     puerpera = "puerpera"
 
 
-TIPOS_ATENCION = {"ambulatoria": "Ambulatoria", "emergencia": "Emergencia"}
+TIPOS_ATENCION = {"ambulatoria": "Ambulatoria", "referencia": "Referencia", "emergencia": "Emergencia"}
+LUGARES_ATENCION = {"intramural": "Intramural", "extramural": "Extramural"}
 GRUPOS_ETARIOS = {
     "nino": "Niño/a",
     "adulto": "Adulto/a", "adulto_mayor": "Adulto/a mayor",

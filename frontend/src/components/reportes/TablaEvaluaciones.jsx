@@ -107,21 +107,21 @@ export default function TablaEvaluaciones({ puedeExportar }) {
 
       {error && <div className="px-5 pb-4"><Alerta onClose={() => setError(null)}>{error}</Alerta></div>}
 
-      <div className="w-full overflow-x-auto" aria-busy={cargando}>
+      <p className="sm:hidden px-5 py-3 text-xs text-slate-600">Desliza la tabla para consultar todas las columnas.</p>
+      <div className="w-full overflow-x-auto" aria-busy={cargando} role="region" aria-label="Tabla de evaluaciones con desplazamiento horizontal" tabIndex={0}>
         <table className="report-tabla">
           <caption className="sr-only">Evaluaciones, más recientes primero</caption>
           <thead>
             <tr>
               <th scope="col">Fecha</th><th scope="col">Paciente</th><th scope="col">Edad</th>
               <th scope="col">Distrito</th><th scope="col">Banda del modelo</th><th scope="col" className="text-right">Índice</th>
-              <th scope="col">Urgencia revisada</th>
             </tr>
           </thead>
           <tbody>
             {cargando && datos.items.length === 0 ? (
-              <tr><td colSpan={7}><Cargando texto="Cargando evaluaciones..." /></td></tr>
+              <tr><td colSpan={6}><Cargando texto="Cargando evaluaciones..." /></td></tr>
             ) : datos.items.length === 0 ? (
-              <tr><td colSpan={7} className="p-10 text-center text-slate-500">No hay evaluaciones con estos filtros.</td></tr>
+              <tr><td colSpan={6} className="p-10 text-center text-slate-500">No hay evaluaciones con estos filtros.</td></tr>
             ) : datos.items.map((f) => (
               <tr key={f.id} className={cargando ? 'opacity-60' : ''}>
                 <td className="whitespace-nowrap tabular-nums">{fechaHora(f.fecha)}</td>
@@ -130,7 +130,6 @@ export default function TablaEvaluaciones({ puedeExportar }) {
                 <td>{f.distrito ?? <span className="text-slate-400">Sin distrito</span>}</td>
                 <td><span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${clasesClasificacion(f.clasificacion)}`}>{f.clasificacion}</span></td>
                 <td className="text-right tabular-nums" title="Índice del modelo (0-100). Ordena el riesgo; no es probabilidad de enfermedad">{f.indice.toFixed(1)}</td>
-                <td className="text-xs text-slate-600">{f.alerta ?? 'No revisada'}</td>
               </tr>
             ))}
           </tbody>

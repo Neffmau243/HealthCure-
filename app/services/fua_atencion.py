@@ -16,7 +16,7 @@ from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 
-from app.core.clinica import TIPOS_ATENCION, GRUPOS_ETARIOS, CONDICIONES_MATERNAS
+from app.core.clinica import TIPOS_ATENCION, LUGARES_ATENCION, GRUPOS_ETARIOS, CONDICIONES_MATERNAS
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.services.alerta_clinica_service import SIGNOS, SINTOMAS
 from app.services.fua_oficial import construir_datos, pagina_fua_oficial, resumir, unir_pdfs
@@ -36,6 +36,9 @@ def datos_fua_desde_atencion(atencion):
         fecha=atencion.created_at,
         correlativo=atencion.id,
         emergencia=atencion.tipo_atencion == "emergencia",
+        referencia=atencion.tipo_atencion == "referencia",
+        lugar_atencion=atencion.lugar_atencion or "",
+        condicion_materna=atencion.condicion_materna,
         diagnosticos=diagnosticos,
     )
 
@@ -102,6 +105,7 @@ def _anexo_atencion_pdf(atencion) -> bytes:
         tabla([
             ("Fecha de atención", atencion.created_at.strftime("%d/%m/%Y %H:%M")),
             ("Tipo de atención", TIPOS_ATENCION.get(atencion.tipo_atencion)),
+            ("Lugar de atención", LUGARES_ATENCION.get(atencion.lugar_atencion)),
             ("Edad al atender", f"{atencion.edad_al_atender} años" if atencion.edad_al_atender is not None else None),
             ("Grupo etario al atender", GRUPOS_ETARIOS.get(atencion.grupo_etario)),
             ("Condición materna", CONDICIONES_MATERNAS.get(atencion.condicion_materna)),
@@ -110,6 +114,20 @@ def _anexo_atencion_pdf(atencion) -> bytes:
     ]
     if atencion.grupo_etario is None:
         story.append(texto("Atención antigua: el contexto no se capturó; no se deduce del estado actual del paciente.", "NotaFua"))
+    datos_maternos = (atencion.observaciones_clinicas or {}).get("datos_maternos") or {}
+    if atencion.condicion_materna in ("gestante", "puerpera"):
+        campos = {
+            "gestante": [("fecha_probable_parto", "Fecha probable de parto"), ("edad_gestacional_semanas", "Edad gestacional (semanas)"),
+                         ("numero_control_prenatal", "Número de control prenatal"), ("altura_uterina_cm", "Altura uterina (cm)")],
+            "puerpera": [("fecha_parto", "Fecha de parto"), ("numero_control_puerperal", "Número de control puerperal")],
+        }[atencion.condicion_materna]
+        filas = []
+        for campo, etiqueta in campos:
+            valor = datos_maternos.get(campo)
+            if campo.startswith("fecha_") and valor:
+                valor = "/".join(valor.split("-")[::-1])
+            filas.append((etiqueta, valor))
+        story.extend([texto("Salud materna de esta atención", "Heading2"), tabla(filas)])
     def bloque_clinico(observaciones, alerta, titulo):
         bloques = [texto(titulo, "Heading2")]
         if alerta:

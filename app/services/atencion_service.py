@@ -16,6 +16,7 @@ from app.schemas.atencion import AtencionCreate, AtencionResponse
 from app.core.clinica import calcular_edad, calcular_edad_meses, grupo_por_edad, CondicionMaterna
 from datetime import date
 from app.schemas.clinica import ObservacionesClinicas
+from app.schemas.contexto_paciente import ContextoPaciente
 from app.services.alerta_clinica_service import evaluar_alertas
 
 
@@ -64,9 +65,16 @@ class AtencionService:
                 raise ValueError("La evaluación asociada no tiene mediciones para reutilizar")
             if evaluacion.created_at.date() != date.today():
                 raise ValueError("Las mediciones de otra fecha no son observaciones actuales; registra mediciones nuevas")
-            observaciones = ObservacionesClinicas.model_validate(evaluacion.observaciones_clinicas).model_copy(update={"condicion_materna": data.condicion_materna})
+            observaciones = ObservacionesClinicas.model_validate(evaluacion.observaciones_clinicas)
         elif observaciones and observaciones.condicion_materna is not None and observaciones.condicion_materna != data.condicion_materna:
             raise ValueError("La condición materna de las mediciones no coincide con la atención")
+        datos_maternos = data.datos_maternos if "datos_maternos" in data.model_fields_set else (observaciones.datos_maternos if observaciones else None)
+        contexto = ContextoPaciente(condicion_materna=data.condicion_materna, datos_maternos=datos_maternos)
+        contexto.validar_sexo(paciente.sexo)
+        if observaciones is not None or contexto.datos_maternos is not None:
+            valores = observaciones.model_dump() if observaciones else {}
+            valores.update(condicion_materna=data.condicion_materna, datos_maternos=contexto.datos_maternos)
+            observaciones = ObservacionesClinicas.model_validate(valores)
         alerta = evaluar_alertas(observaciones, edad, data.condicion_materna, sexo=paciente.sexo, edad_meses=calcular_edad_meses(paciente.fecha_nacimiento))
         if data.usar_observaciones_evaluacion:
             alerta["origen_evaluacion_id"] = evaluacion.id
@@ -79,12 +87,14 @@ class AtencionService:
             tratamiento=data.tratamiento,
             indicaciones=data.indicaciones,
             tipo_atencion=data.tipo_atencion.value,
+            lugar_atencion=data.lugar_atencion.value,
             condicion_materna=data.condicion_materna.value,
             grupo_etario=grupo_por_edad(edad).value,
             edad_al_atender=edad,
             observaciones_clinicas=observaciones.model_dump(mode="json") if observaciones else None,
             alerta_clinica=alerta,
         )
+        paciente.contexto_atencion = contexto.model_dump(mode="json", exclude_none=True)
         return AtencionResponse.model_validate(atencion)
 
     def get_by_id(self, atencion_id: int) -> Optional[AtencionResponse]:

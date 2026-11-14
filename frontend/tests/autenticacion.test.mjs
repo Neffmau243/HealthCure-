@@ -1,11 +1,17 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { AxiosError } from 'axios'
-import { api } from '../src/services/api.js'
+import { api, mensajeError } from '../src/services/api.js'
 import { authService } from '../src/services/auth.js'
 import { leerSesionGuardada } from '../src/utils/sesion.js'
 
 const usuario = { id: 1, rol: 'admin', email: 'admin@example.com' }
+
+test('los fallos de conexión y espera muestran una acción recuperable', () => {
+  assert.match(mensajeError({ code: 'ERR_NETWORK', message: 'Network Error' }), /conectar.*Vuelve a intentarlo/)
+  assert.match(mensajeError({ code: 'ECONNABORTED' }), /tardando.*Vuelve a intentarlo/)
+  assert.equal(mensajeError({ response: { data: { detail: 'Revisa la fecha' } } }), 'Revisa la fecha')
+})
 
 function crearAlmacen(valores = {}) {
   const datos = new Map(Object.entries(valores))

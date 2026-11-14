@@ -448,7 +448,7 @@ Es el **corazón diferenciador** de HealthCure. Mientras el modelo ML dice _"0.4
 
 - **Alertas ante datos críticos y sus límites:** [`docs/ALERTAS_CLINICAS.md`](docs/ALERTAS_CLINICAS.md). Aplicar `python -m scripts.migrar_alertas_clinicas` en bases existentes.
 
-- **Tipo de atención, grupo etario, condición materna, historial y FUA final:** [`docs/CONTEXTO_ATENCION.md`](docs/CONTEXTO_ATENCION.md). En bases existentes aplicar `python -m scripts.migrar_contexto_atencion` y reiniciar el backend.
+- **Categoría General / Gestante / Puérpera, datos maternos, historial y FUA final:** [`docs/CONTEXTO_ATENCION.md`](docs/CONTEXTO_ATENCION.md). En bases existentes aplicar `python -m scripts.migrar_contexto_atencion` y `python -m scripts.migrar_categoria_paciente`, y reiniciar el backend.
 
 - **Modelo ML (entrada, entrenamiento, métricas y entregables):** [`docs/MODELO_ML.md`](docs/MODELO_ML.md) — arquitectura del pipeline, qué datos espera, cómo se entrenó/versiona y qué métricas entrega.
 - **Ficha del modelo (Model Card):** [`docs/MODEL_CARD.md`](docs/MODEL_CARD.md) — uso previsto y fuera de alcance, datos de entrenamiento, métricas con su interpretación clínica, calibración, evaluación por subgrupos, consideraciones éticas y limitaciones conocidas.

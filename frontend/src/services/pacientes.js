@@ -1,6 +1,10 @@
 import { api } from './api'
 
 export const pacientesService = {
+  async actualizarContexto(id, contexto) {
+    const { data } = await api.put(`/pacientes/${id}/contexto-atencion`, contexto)
+    return data
+  },
   /** GET /pacientes/ → lista completa */
   async listar() {
     const { data } = await api.get('/pacientes/')

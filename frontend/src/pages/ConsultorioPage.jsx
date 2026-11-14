@@ -1,5 +1,5 @@
 import PageHeader from '../components/ui/PageHeader';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   Search,
@@ -7,24 +7,24 @@ import {
   BrainCircuit,
   Stethoscope,
   CheckCircle2,
-  History,
   Loader2,
+  FileDown,
 } from 'lucide-react';
 import { pacientesService } from '../services/pacientes';
 import { evaluacionesService } from '../services/evaluaciones';
 import { atencionesService } from '../services/atenciones';
 import { mensajeError } from '../services/api';
-import { Cargando, Alerta } from '../components/ui/Feedback';
+import { Cargando, Alerta, Vacio } from '../components/ui/Feedback';
 import TarjetaTriaje from '../components/triaje/TarjetaTriaje';
 import TarjetaAtencion from '../components/atenciones/TarjetaAtencion';
-import { TIPOS_ATENCION, CONDICIONES_MATERNAS, etiquetaGrupo } from '../utils/clinica';
+import { TIPOS_ATENCION, LUGARES_ATENCION, contextoPaciente, datosMaternos, etiquetaCategoria, etiquetaGrupo, evaluacionDeHoy } from '../utils/clinica';
 import { calcularEdad, etiquetaSexo, nombreCompleto, clasesClasificacion } from '../utils/triaje';
-import ObservacionesForm from '../components/clinica/ObservacionesForm';
-import AlertaClinica from '../components/clinica/AlertaClinica';
-import { construirObservaciones, hayAlerta } from '../utils/observaciones';
-import { useAlertaClinica } from '../hooks/useAlertaClinica';
+import MedicionesFuaForm from '../components/atenciones/MedicionesFuaForm';
+import { construirObservaciones, formDesdeObservaciones } from '../utils/observaciones';
+import ContextoPacienteForm from '../components/clinica/ContextoPacienteForm';
 
-const FORM_VACIO = { diagnostico: '', tratamiento: '', indicaciones: '', tipo_atencion: 'ambulatoria', condicion_materna: 'ninguna' };
+const FORM_VACIO = { diagnostico: '', tratamiento: '', indicaciones: '', tipo_atencion: 'ambulatoria', lugar_atencion: 'intramural', condicion_materna: 'ninguna', usar_observaciones_evaluacion: false };
+const nuevoFormulario = (paciente) => ({ ...FORM_VACIO, ...contextoPaciente(paciente) });
 
 export default function ConsultorioPage() {
   const location = useLocation();
@@ -44,10 +44,12 @@ export default function ConsultorioPage() {
   const [guardando, setGuardando] = useState(false);
   const [errorForm, setErrorForm] = useState(null);
   const [exito, setExito] = useState(null);
+  const [atencionGuardada, setAtencionGuardada] = useState(null);
+  const [descargandoFua, setDescargandoFua] = useState(false);
+  const resultadoRef = useRef(null);
+  const pacienteRef = useRef(null);
+  const busquedaRef = useRef(null);
   const observaciones = construirObservaciones(form, form.condicion_materna);
-  const observacionesVigentes = form.usar_observaciones_evaluacion && evaluacionSeleccionada?.observaciones_clinicas
-    ? {...evaluacionSeleccionada.observaciones_clinicas,condicion_materna:form.condicion_materna} : observaciones;
-  const revision = useAlertaClinica(pacienteSeleccionado?.id, observacionesVigentes);
 
   useEffect(() => {
     let activo = true;
@@ -59,6 +61,7 @@ export default function ConsultorioPage() {
         const inicial = lista.find((p) => p.id === pacienteInicialId);
         if (inicial) {
           setPacienteSeleccionado(inicial);
+          setForm(nuevoFormulario(inicial));
           setCargandoDetalle(true);
         }
       })
@@ -68,6 +71,12 @@ export default function ConsultorioPage() {
   }, [pacienteInicialId]);
 
   const pacienteId = pacienteSeleccionado?.id;
+  useEffect(() => {
+    if (pacienteId && window.matchMedia('(max-width: 1023px)').matches) {
+      pacienteRef.current?.scrollIntoView({ block: 'start' });
+      pacienteRef.current?.focus({ preventScroll: true });
+    }
+  }, [pacienteId]);
   useEffect(() => {
     if (!pacienteId) return;
     let activo = true;
@@ -80,7 +89,7 @@ export default function ConsultorioPage() {
         if (!activo) return;
         setEvaluaciones(evs);
         setAtenciones(ats);
-        setEvaluacionSeleccionada(evs[0] ?? null);
+        setEvaluacionSeleccionada(null);
       } catch (e) {
         if (!activo) return;
         setError(mensajeError(e, 'No se pudo cargar el historial del paciente'));
@@ -96,8 +105,11 @@ export default function ConsultorioPage() {
 
   const seleccionarPaciente = (paciente) => {
     if (guardando || paciente.id === pacienteId) return;
+    if (pacienteSeleccionado && JSON.stringify(form) !== JSON.stringify(nuevoFormulario(pacienteSeleccionado))
+      && !window.confirm('Tienes datos de una atención sin guardar. ¿Descartarlos para cambiar de paciente?')) return;
     setPacienteSeleccionado(paciente);
-    setForm(FORM_VACIO);
+    setForm(nuevoFormulario(paciente));
+    setAtencionGuardada(null);
     setErrorForm(null);
     setExito(null);
     setError(null);
@@ -114,21 +126,27 @@ export default function ConsultorioPage() {
     setErrorForm(null);
     setExito(null);
     try {
-      await atencionesService.crear({
+      const nueva = await atencionesService.crear({
         paciente_id: pacienteSeleccionado.id,
         evaluacion_id: evaluacionSeleccionada?.id ?? null,
         diagnostico: form.diagnostico.trim(),
         tratamiento: form.tratamiento.trim(),
         indicaciones: form.indicaciones.trim() || null,
         tipo_atencion: form.tipo_atencion,
+        lugar_atencion: form.lugar_atencion,
         condicion_materna: form.condicion_materna,
+        datos_maternos: datosMaternos(form),
         observaciones_clinicas: form.usar_observaciones_evaluacion ? null : observaciones,
         usar_observaciones_evaluacion: Boolean(form.usar_observaciones_evaluacion),
       });
-      setForm(FORM_VACIO);
+      const actualizado = { ...pacienteSeleccionado, contexto_atencion: { condicion_materna: form.condicion_materna, datos_maternos: datosMaternos(form) } };
+      setPacienteSeleccionado(actualizado);
+      setPacientes(lista => lista.map(p => p.id === actualizado.id ? actualizado : p));
+      setForm(nuevoFormulario(actualizado));
+      setEvaluacionSeleccionada(null);
+      setAtencionGuardada(nueva);
       setExito('Atención registrada correctamente.');
-      const ats = await atencionesService.porPaciente(pacienteSeleccionado.id);
-      setAtenciones(ats);
+      setAtenciones(lista => [nueva, ...lista]);
     } catch (err) {
       setErrorForm(mensajeError(err, 'No se pudo registrar la atención'));
     } finally {
@@ -136,10 +154,28 @@ export default function ConsultorioPage() {
     }
   };
 
+  useEffect(() => {
+    if (atencionGuardada) {
+      resultadoRef.current?.scrollIntoView({ block: 'start' });
+      resultadoRef.current?.focus({ preventScroll: true });
+    }
+  }, [atencionGuardada]);
+
+  const descargarFua = async () => {
+    setDescargandoFua(true);
+    try {
+      await atencionesService.descargarFua(atencionGuardada.id);
+    } catch (e) {
+      setErrorForm(mensajeError(e, 'No se pudo descargar el FUA'));
+    } finally {
+      setDescargandoFua(false);
+    }
+  };
+
   const termino = busqueda.trim().toLowerCase();
   const pacientesDisponibles = termino
     ? pacientes.filter((p) =>
-        [p.documento_identidad, p.nombre_completo, p.apellido_paterno, p.nombres]
+        [p.documento_identidad, p.nombre_completo, p.apellido_paterno, p.apellido_materno, p.nombres]
           .filter(Boolean)
           .some((c) => String(c).toLowerCase().includes(termino))
       )
@@ -147,7 +183,7 @@ export default function ConsultorioPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Consultorio médico" description="Integra la valoración del paciente, documenta la atención y emite su FUA." />
+      <PageHeader title="Consultorio médico" description="Selecciona al paciente, confirma la categoría de esta visita y registra la atención para emitir su FUA." />
 
       {error && <Alerta onClose={() => setError(null)}>{error}</Alerta>}
 
@@ -165,6 +201,7 @@ export default function ConsultorioPage() {
                 aria-hidden="true"
               />
               <input
+                ref={busquedaRef}
                 type="text"
                 placeholder="Buscar por documento o nombre..."
                 aria-label="Buscar paciente por documento o nombre"
@@ -188,6 +225,7 @@ export default function ConsultorioPage() {
                       key={p.id}
                       type="button"
                       disabled={guardando}
+                      aria-pressed={pacienteSeleccionado?.id === p.id}
                       onClick={() => seleccionarPaciente(p)}
                       className={`w-full text-left p-3 rounded-xl border text-sm cursor-pointer transition disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-sky-600 ${
                         pacienteSeleccionado?.id === p.id
@@ -201,6 +239,7 @@ export default function ConsultorioPage() {
                         {calcularEdad(p.fecha_nacimiento) ?? '—'} años · {etiquetaSexo(p.sexo)}
                         {' · '}{etiquetaGrupo(p.grupo_etario)}
                       </p>
+                      {p.contexto_atencion?.condicion_materna !== 'ninguna' && p.contexto_atencion?.condicion_materna && <p className="text-xs font-medium text-sky-800 mt-1">{etiquetaCategoria(p.contexto_atencion.condicion_materna, p.grupo_etario)}</p>}
                     </button>
                   ))
                 )}
@@ -209,7 +248,7 @@ export default function ConsultorioPage() {
           </div>
 
           {/* Evaluaciones del paciente */}
-          <div className="clinical-panel p-5">
+          {pacienteSeleccionado && <div className="clinical-panel p-5">
             <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
               <BrainCircuit className="w-5 h-5 text-indigo-600" /> Evaluaciones del paciente
             </h3>
@@ -228,11 +267,14 @@ export default function ConsultorioPage() {
               </p>
             ) : (
               <div className="space-y-2 max-h-64 overflow-y-auto">
+                <button type="button" disabled={guardando} aria-pressed={!evaluacionSeleccionada}
+                  onClick={() => { setEvaluacionSeleccionada(null); setForm(prev => ({ ...prev, usar_observaciones_evaluacion: false })); }}
+                  className="w-full p-3 min-h-11 text-left text-xs rounded-lg bg-slate-100 hover:bg-slate-200 cursor-pointer">Atender sin vincular una evaluación ML</button>
                 {evaluaciones.map((ev) => (
                   <button
                     key={ev.id}
                     disabled={guardando}
-                    onClick={() => {setEvaluacionSeleccionada(ev); setForm({...form,usar_observaciones_evaluacion:false});}}
+                    onClick={() => {const obs = ev.observaciones_clinicas ?? {}; setEvaluacionSeleccionada(ev); setForm({...form,usar_observaciones_evaluacion:false,tipo_atencion:obs.tipo_atencion ?? form.tipo_atencion,lugar_atencion:obs.lugar_atencion ?? form.lugar_atencion});}}
                     className={`w-full text-left p-3 rounded-xl border transition cursor-pointer ${
                       evaluacionSeleccionada?.id === ev.id
                         ? 'bg-indigo-50 border-indigo-300'
@@ -250,20 +292,18 @@ export default function ConsultorioPage() {
                     <p className="text-[11px] text-slate-500 mt-1">
                       {new Date(ev.created_at).toLocaleString()} · {ev.edad} años
                     </p>
-                    {hayAlerta(ev.alerta_clinica) && <p className="mt-1 text-xs font-semibold text-rose-900">{ev.alerta_clinica.titulo}</p>}
                   </button>
                 ))}
               </div>
             )}
-          </div>
+          </div>}
         </div>
 
         {/* COLUMNA DERECHA: Resultado ML + acto médico */}
         <div className="space-y-6 lg:col-span-2">
-          <div className="space-y-3">
-            <h3 className="font-semibold text-slate-800 flex items-center gap-2">
-              <BrainCircuit className="w-5 h-5 text-indigo-600" /> Resultado del modelo
-            </h3>
+          {!pacienteSeleccionado && <Vacio titulo="Selecciona un paciente para empezar" detalle="La categoría y los datos del FUA se confirman en cada visita. Una misma persona puede pasar de atención general a gestante o puérpera sin modificar su historial." icono={Stethoscope} />}
+          {pacienteSeleccionado && <details className="consultation-reference">
+            <summary>Evaluación cardiovascular de referencia (opcional)</summary>
 
             {!pacienteSeleccionado ? (
               <p className="text-sm text-slate-400 py-6 text-center">
@@ -276,53 +316,42 @@ export default function ConsultorioPage() {
                 {cargandoDetalle ? 'Cargando evaluación…' : 'Sin evaluación ML asociada. La atención y el FUA están disponibles.'}
               </p>
             )}
-          </div>
+          </details>}
 
-          <form
+          {pacienteSeleccionado && <form
             onSubmit={handleSubmit}
+            onChange={() => setExito(null)}
             className="consultation-form space-y-5"
           >
             <h3 className="font-semibold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Stethoscope className="w-5 h-5 text-sky-600" /> Registro de la atención
             </h3>
+            <div ref={pacienteRef} tabIndex={-1} className="pb-4 border-b border-slate-100 scroll-mt-5">
+              <div className="flex flex-wrap items-center justify-between gap-2"><h2 className="text-base font-semibold text-slate-800">{nombreCompleto(pacienteSeleccionado)}</h2>
+                <button type="button" disabled={guardando} onClick={() => busquedaRef.current?.focus()} className="lg:hidden report-btn">Cambiar paciente</button></div>
+              <p className="text-xs text-slate-600 mt-1">Doc. {pacienteSeleccionado.documento_identidad} · {calcularEdad(pacienteSeleccionado.fecha_nacimiento)} años · {etiquetaGrupo(pacienteSeleccionado.grupo_etario)}</p>
+            </div>
 
             {errorForm && <Alerta>{errorForm}</Alerta>}
-            {exito && <Alerta tipo="exito">{exito}</Alerta>}
+            {exito && <div ref={resultadoRef} tabIndex={-1} className="space-y-3 scroll-mt-5"><Alerta tipo="exito">{exito} Puedes descargar el FUA de esta visita.</Alerta>
+              <button type="button" onClick={descargarFua} disabled={descargandoFua} className="report-btn"><FileDown className="w-4 h-4" aria-hidden="true" />{descargandoFua ? 'Generando FUA…' : `Descargar FUA de atención #${atencionGuardada.id}`}</button>
+            </div>}
 
-            <fieldset disabled={!pacienteSeleccionado || cargandoDetalle || guardando} className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-800 mb-2">Contexto de esta atención</legend>
-              <p className="text-xs text-slate-600">
-                Grupo por edad: <strong>{etiquetaGrupo(pacienteSeleccionado?.grupo_etario)}</strong>.
-                {' '}La edad y el grupo quedarán registrados con esta atención.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="cons-tipo-atencion" className="block text-xs font-semibold text-slate-700 mb-1">Tipo de atención *</label>
-                  <select id="cons-tipo-atencion" required value={form.tipo_atencion} onChange={(e) => setForm({ ...form, tipo_atencion: e.target.value })}
-                    className="w-full p-3 min-h-11 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400">
-                    {Object.entries(TIPOS_ATENCION).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="cons-condicion-materna" className="block text-xs font-semibold text-slate-700 mb-1">Condición materna *</label>
-                  <select id="cons-condicion-materna" required value={form.condicion_materna} disabled={pacienteSeleccionado?.sexo !== 'F'}
-                    aria-describedby="cons-contexto-ayuda" onChange={(e) => setForm({ ...form, condicion_materna: e.target.value })}
-                    className="w-full p-3 min-h-11 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400 disabled:opacity-60">
-                    {Object.entries(CONDICIONES_MATERNAS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                </div>
-              </div>
-              <p id="cons-contexto-ayuda" className="text-xs text-slate-600">Gestante y puérpera se registran según la evaluación del profesional, en pacientes con sexo femenino registrado. El tipo de atención no lo decide el puntaje ML.</p>
-            </fieldset>
+            <fieldset disabled={guardando || cargandoDetalle} className="space-y-5">
+            <ContextoPacienteForm value={form} onChange={setForm} sexo={pacienteSeleccionado.sexo} grupo={pacienteSeleccionado.grupo_etario} />
 
             {pacienteSeleccionado && <>
-              <AlertaClinica {...revision} observaciones={observacionesVigentes} />
-              {evaluacionSeleccionada?.observaciones_clinicas && <label className="flex items-start gap-2 text-sm text-slate-700">
+              <details className="consultation-reference">
+              <summary>Datos para el FUA: mediciones, atención y lugar (opcional)</summary>
+              <div className="space-y-4">
+              {evaluacionDeHoy(evaluacionSeleccionada) && evaluacionSeleccionada?.observaciones_clinicas && <label className="flex items-start gap-2 text-sm text-slate-700">
                 <input type="checkbox" checked={Boolean(form.usar_observaciones_evaluacion)} disabled={guardando || cargandoDetalle}
                   onChange={e => setForm({...form,usar_observaciones_evaluacion:e.target.checked})} className="mt-1 w-4 h-4 shrink-0 accent-[#17324c]" />
                 <span>He verificado que las mediciones de evaluación #{evaluacionSeleccionada.id} ({new Date(evaluacionSeleccionada.created_at).toLocaleString()}) corresponden a esta visita. Usarlas sin volver a transcribir. Solo se admiten evaluaciones de hoy.</span>
               </label>}
-              <ObservacionesForm value={form} onChange={setForm} disabled={guardando || cargandoDetalle || form.usar_observaciones_evaluacion} />
+              <MedicionesFuaForm value={form.usar_observaciones_evaluacion ? formDesdeObservaciones(evaluacionSeleccionada.observaciones_clinicas) : form} onChange={setForm} disabled={guardando || cargandoDetalle || form.usar_observaciones_evaluacion} />
+              </div>
+              </details>
             </>}
 
             <div>
@@ -382,8 +411,8 @@ export default function ConsultorioPage() {
               </div>
             </div>
 
+            </fieldset>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-4 pt-4 border-t border-slate-200">
-              {hayAlerta(revision.alerta) && <p role="alert" className="mr-3 text-sm font-semibold text-rose-900">{revision.alerta.titulo}. No esperar al registro para solicitar valoración.</p>}
               <button
                 type="submit"
                 disabled={!pacienteSeleccionado || guardando || cargandoDetalle}
@@ -397,14 +426,12 @@ export default function ConsultorioPage() {
                 <span>{guardando ? 'Guardando...' : 'Registrar Atención'}</span>
               </button>
             </div>
-          </form>
+          </form>}
 
           {/* Atenciones previas */}
           {pacienteSeleccionado && (
-            <div className="clinical-panel p-5">
-              <h3 className="font-semibold text-slate-800 flex items-center gap-2 mb-3">
-                <History className="w-5 h-5 text-slate-500" /> Atenciones registradas
-              </h3>
+            <details className="clinical-panel p-5">
+              <summary className="font-semibold text-slate-800 cursor-pointer min-h-11">Atenciones registradas ({atenciones.length})</summary>
 
               {cargandoDetalle ? (
                 <Cargando texto="Cargando atenciones..." />
@@ -421,7 +448,7 @@ export default function ConsultorioPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </details>
           )}
         </div>
       </div>

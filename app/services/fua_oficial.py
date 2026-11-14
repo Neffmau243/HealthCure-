@@ -65,6 +65,7 @@ IPRESS_NOM = (201.7, 514.9, 150.7, 162.0)
 # --- Personal que atiende / lugar / atención (casillas de aspa: x, y centro) ---
 ASPA_PERSONAL_IPRESS = (134.8, 177.5)
 ASPA_LUGAR_INTRAMURAL = (247.5, 177.5)
+ASPA_LUGAR_EXTRAMURAL = (247.5, 186.4)
 ASPA_ATENCION_AMBULATORIA = (299.2, 177.5)
 ASPA_ATENCION_REFERENCIA = (299.2, 186.4)
 ASPA_ATENCION_EMERGENCIA = (299.2, 194.5)
@@ -83,6 +84,9 @@ NOM_PRIMER = (84.8, 293.7, 254.5, 267.2)
 NOM_OTROS = (296.7, 514.9, 254.5, 267.2)
 ASPA_SEXO_M = (131.5, 277.5)
 ASPA_SEXO_F = (131.5, 284.7)
+ASPA_GESTANTE = (131.5, 304.0)
+ASPA_PUERPERA = (131.5, 314.0)
+PARTO_FILA = (274.0, 288.7)
 HISTORIA_CLINICA = (336.3, 417.9, 274.0, 288.7)
 # Fecha de nacimiento: una celda por dígito  (DD MM AAAA)
 NAC_FILA = (288.7, 303.4)
@@ -106,6 +110,10 @@ PESO = (142.4, 173.6, 461.3, 470.8)
 TALLA = (226.6, 253.7, 461.3, 470.8)
 PRESION = (314.8, 347.6, 461.3, 470.8)
 IMC = (300.0, 347.6, 532.5, 548.3)
+CONTROL_PRENATAL = (111.6, 125.7, 481.8, 492.2)
+EDAD_GESTACIONAL = (111.6, 125.7, 492.2, 503.7)
+ALTURA_UTERINA = (111.6, 125.7, 503.7, 516.8)
+CONTROL_PUERPERAL = (111.6, 125.7, 531.3, 547.9)
 
 # --- Diagnósticos (5 filas): descripción y CIE-10 de ingreso ---
 DX_FILAS = [(567.7, 576.9), (576.9, 586.1), (586.1, 595.3), (595.3, 604.5), (604.5, 613.5)]
@@ -139,6 +147,10 @@ class FuaDatos:
     # Atención
     fecha_atencion: Optional[datetime] = None
     emergencia: bool = False
+    referencia: bool = False
+    lugar_atencion: str = ""                     # "intramural" | "extramural" | vacío
+    condicion_materna: str = ""
+    datos_maternos: dict = field(default_factory=dict)
     # Mediciones
     peso_kg: Optional[float] = None
     talla_cm: Optional[float] = None
@@ -224,8 +236,8 @@ def _dibujar_datos(c: canvas.Canvas, d: FuaDatos) -> None:
     _texto_en_celda(c, IPRESS_COD, IPRESS_RENAES, size=9, align="center")
     _texto_en_celda(c, IPRESS_NOM, IPRESS_NOMBRE.upper(), size=8.5, align="center", font="Helvetica-Bold")
     _aspa(c, ASPA_PERSONAL_IPRESS)
-    _aspa(c, ASPA_LUGAR_INTRAMURAL)
-    _aspa(c, ASPA_ATENCION_EMERGENCIA if d.emergencia else ASPA_ATENCION_AMBULATORIA)
+    _aspa(c, ASPA_LUGAR_EXTRAMURAL if d.lugar_atencion == "extramural" else ASPA_LUGAR_INTRAMURAL)
+    _aspa(c, ASPA_ATENCION_EMERGENCIA if d.emergencia else ASPA_ATENCION_REFERENCIA if d.referencia else ASPA_ATENCION_AMBULATORIA)
 
     # --- Asegurado: documento y seguro ---
     _texto_en_celda(c, TDI, _codigo_tdi(d.tipo_documento), size=9, align="center", font="Helvetica-Bold")
@@ -255,6 +267,14 @@ def _dibujar_datos(c: canvas.Canvas, d: FuaDatos) -> None:
     elif d.sexo == "F":
         _aspa(c, ASPA_SEXO_F)
     _texto_en_celda(c, HISTORIA_CLINICA, d.historia_clinica, size=8.5, align="center", font="Helvetica-Bold")
+    if d.condicion_materna in ("gestante", "puerpera"):
+        _aspa(c, ASPA_GESTANTE if d.condicion_materna == "gestante" else ASPA_PUERPERA)
+        fecha_parto = d.datos_maternos.get("fecha_probable_parto" if d.condicion_materna == "gestante" else "fecha_parto")
+        if fecha_parto:
+            f = date.fromisoformat(fecha_parto)
+            _digitos(c, NAC_DD, PARTO_FILA, f"{f.day:02d}")
+            _digitos(c, NAC_MM, PARTO_FILA, f"{f.month:02d}")
+            _digitos(c, NAC_AAAA, PARTO_FILA, f"{f.year:04d}")
     if d.fecha_nacimiento:
         f = d.fecha_nacimiento
         _digitos(c, NAC_DD, NAC_FILA, f"{f.day:02d}")
@@ -280,6 +300,11 @@ def _dibujar_datos(c: canvas.Canvas, d: FuaDatos) -> None:
     if d.peso_kg and d.talla_cm:
         imc = float(d.peso_kg) / ((float(d.talla_cm) / 100) ** 2)
         _texto_en_celda(c, IMC, f"{imc:.1f}", size=8.5, align="center", font="Helvetica-Bold")
+
+    casillas = [("numero_control_prenatal", CONTROL_PRENATAL), ("edad_gestacional_semanas", EDAD_GESTACIONAL),
+                ("altura_uterina_cm", ALTURA_UTERINA)] if d.condicion_materna == "gestante" else [("numero_control_puerperal", CONTROL_PUERPERAL)] if d.condicion_materna == "puerpera" else []
+    for campo, celda in casillas:
+        _texto_en_celda(c, celda, _fmt_num(d.datos_maternos.get(campo)), size=8, align="center", font="Helvetica-Bold")
 
     # --- Diagnósticos (máx. 5) ---
     for i, (descripcion, cie10) in enumerate(d.diagnosticos[:len(DX_FILAS)]):
@@ -307,9 +332,10 @@ def resumir(texto: Optional[str], maximo: int = 78) -> str:
 
 
 def construir_datos(paciente, usuario, observaciones: Optional[dict], fecha: Optional[datetime],
-                    correlativo: Optional[int], emergencia: bool = False,
+                    correlativo: Optional[int], emergencia: bool = False, referencia: bool = False,
+                    lugar_atencion: str = "",
                     diagnosticos: Optional[List[Tuple[str, str]]] = None,
-                    nota_pie: str = "") -> FuaDatos:
+                    nota_pie: str = "", condicion_materna: Optional[str] = None) -> FuaDatos:
     """Arma FuaDatos con lo que ya conoce el sistema (sirve para evaluación y para atención)."""
     obs = observaciones or {}
     return FuaDatos(
@@ -326,6 +352,10 @@ def construir_datos(paciente, usuario, observaciones: Optional[dict], fecha: Opt
         fecha_nacimiento=paciente.fecha_nacimiento if isinstance(paciente.fecha_nacimiento, date) else None,
         fecha_atencion=fecha if isinstance(fecha, datetime) else None,
         emergencia=emergencia,
+        referencia=referencia,
+        lugar_atencion=lugar_atencion,
+        condicion_materna=condicion_materna or obs.get("condicion_materna") or "",
+        datos_maternos=obs.get("datos_maternos") or {},
         peso_kg=_primero(obs.get("peso_kg"), paciente.peso_kg),
         talla_cm=_primero(obs.get("talla_cm"), paciente.talla_cm),
         presion_sistolica=obs.get("presion_sistolica"),

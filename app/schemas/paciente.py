@@ -19,6 +19,7 @@ from typing import Optional
 from datetime import date, datetime
 from enum import Enum
 from app.core.clinica import GrupoEtario
+from app.schemas.contexto_paciente import ContextoPaciente
 
 
 class SexoEnum(str, Enum):
@@ -115,6 +116,7 @@ class PacienteCreate(BaseModel):
     # --- Mediciones (opcionales) ---
     talla_cm: Optional[float] = Field(None, gt=0, le=300)
     peso_kg: Optional[float] = Field(None, gt=0, le=500)
+    contexto_atencion: ContextoPaciente = Field(default_factory=ContextoPaciente)
 
 
 class PacienteUpdate(BaseModel):
@@ -144,6 +146,7 @@ class PacienteUpdate(BaseModel):
     activo: Optional[bool] = None
     talla_cm: Optional[float] = Field(None, gt=0, le=300)
     peso_kg: Optional[float] = Field(None, gt=0, le=500)
+    contexto_atencion: Optional[ContextoPaciente] = None
     # No se puede actualizar documento_identidad (es unique y se usa como búsqueda)
 
 
@@ -182,6 +185,7 @@ class PacienteResponse(BaseModel):
     """
     id: int
     grupo_etario: Optional[GrupoEtario] = None
+    contexto_atencion: Optional[ContextoPaciente] = None
     tipo_documento: TipoDocumentoEnum
     documento_identidad: str
     numero_historia_clinica: Optional[str] = None

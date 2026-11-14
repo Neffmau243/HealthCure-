@@ -18,7 +18,7 @@ Distritos y localidades vienen de catálogos que gestiona el admin
 ELIGE las opciones disponibles — no las crea.
 """
 from sqlalchemy import (
-    Column, BigInteger, String, Enum, Date, Numeric, Boolean,
+    Column, BigInteger, String, Enum, Date, Numeric, Boolean, JSON,
     DateTime, ForeignKey, func
 )
 from sqlalchemy.orm import relationship
@@ -115,6 +115,8 @@ class Paciente(Base):
     # Numeric(5,1) = hasta 999.9 cm (ej: 175.5 cm)
 
     peso_kg = Column(Numeric(5, 1), nullable=True)
+    # Contexto actual editable. Cada evaluación/atención conserva su propia instantánea.
+    contexto_atencion = Column(JSON, nullable=True)
     # Numeric(5,1) = hasta 999.9 kg (ej: 72.3 kg)
 
     # --- Timestamps ---

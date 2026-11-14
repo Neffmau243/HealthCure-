@@ -24,6 +24,7 @@ from app.schemas.evaluacion import (
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.exceptions.ml_exceptions import MLException
 from app.core.clinica import calcular_edad
+from app.schemas.contexto_paciente import ContextoPaciente
 
 
 class EvaluacionService:
@@ -80,6 +81,10 @@ class EvaluacionService:
 
         # EXPO-ML 13 | Pedimos al repositorio que guarde la evaluación.
         evaluacion = self.evaluacion_repo.create(**evaluacion_data)
+        if data.observaciones_clinicas and data.observaciones_clinicas.condicion_materna is not None:
+            contexto = ContextoPaciente(condicion_materna=data.observaciones_clinicas.condicion_materna,
+                                        datos_maternos=data.observaciones_clinicas.datos_maternos)
+            paciente.contexto_atencion = contexto.model_dump(mode="json", exclude_none=True)
 
         # EXPO-ML 14 | Preparamos la respuesta para que la pantalla pueda mostrarla.
         return EvaluacionMapper.to_response(evaluacion)

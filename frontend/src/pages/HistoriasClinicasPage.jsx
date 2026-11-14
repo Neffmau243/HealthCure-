@@ -19,6 +19,7 @@ export default function HistoriasClinicasPage() {
   const [resultados, setResultados] = useState([]);
   const [buscando, setBuscando] = useState(false);
   const [errorBusqueda, setErrorBusqueda] = useState(null);
+  const [buscado, setBuscado] = useState(null);
 
   const [paciente, setPaciente] = useState(null);
   const [evaluaciones, setEvaluaciones] = useState([]);
@@ -67,6 +68,7 @@ export default function HistoriasClinicasPage() {
     if (!termino) return;
     setBuscando(true);
     setErrorBusqueda(null);
+    setBuscado(termino);
     try {
       const data = await pacientesService.buscar(termino);
       setResultados(data);
@@ -78,6 +80,7 @@ export default function HistoriasClinicasPage() {
     } catch (err) {
       setErrorBusqueda(mensajeError(err, 'No se pudo buscar el paciente'));
       setResultados([]);
+      setPaciente(null);
     } finally {
       setBuscando(false);
     }
@@ -190,8 +193,14 @@ export default function HistoriasClinicasPage() {
             )}
           </div>
         </>
-      ) : (
-        resultados.length === 0 && (
+      ) : resultados.length === 0 ? (
+        buscado ? (
+          <Vacio
+            titulo="No se encontró ese documento"
+            detalle={`No hay pacientes que coincidan con «${buscado}». Verifica el número de documento o regístralo en Pacientes.`}
+            icono={FileText}
+          />
+        ) : (
           <div className="clinical-panel p-6 text-center py-12">
             <FileText className="w-12 h-12 text-slate-300 mx-auto mb-3" />
             <h3 className="text-base font-semibold text-slate-700">
@@ -202,7 +211,7 @@ export default function HistoriasClinicasPage() {
             </p>
           </div>
         )
-      )}
+      ) : null}
     </div>
   );
 }

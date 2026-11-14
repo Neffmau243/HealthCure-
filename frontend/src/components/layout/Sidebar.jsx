@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/useAuth';
 import { PERMISSIONS } from '../../constants/roles';
+import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
 
 // Menú agrupado por secciones, en el orden del flujo real de atención:
 // registrar paciente → triaje → consulta → historial.
@@ -53,10 +54,14 @@ const SECCIONES = [
   },
 ];
 
-export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
+export default function Sidebar({ sidebarOpen, setSidebarOpen, mobileOpen }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { refContenedor, propsContenedor } = useDialogoAccesible({
+    abierto: mobileOpen,
+    onClose: () => setSidebarOpen(false),
+  });
 
   // Solo se muestran los módulos permitidos y las secciones con al menos un módulo.
   const seccionesVisibles = SECCIONES.map((seccion) => ({
@@ -67,13 +72,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
     }),
   })).filter((seccion) => seccion.items.length > 0);
 
-  const irA = (path) => {
-    navigate(path);
+  const cerrarEnMovil = () => {
     if (window.innerWidth < 1024) setSidebarOpen(false);
   };
 
   return (
     <aside
+      {...(mobileOpen ? propsContenedor : { ref: refContenedor })}
       id="navegacion-principal"
       aria-label="Navegación principal"
       inert={!sidebarOpen}
@@ -88,11 +93,10 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
           <button onClick={() => setSidebarOpen(false)} aria-label="Cerrar navegación" className="lg:hidden absolute right-1 top-2 min-h-11 min-w-11 inline-flex items-center justify-center"><X className="w-4 h-4" /></button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-6 px-3 flex flex-col gap-6">
+        <nav className="flex-1 overflow-y-auto py-4 px-3 flex flex-col gap-3" aria-label="Módulos del sistema">
           {seccionesVisibles.map((seccion) => (
             <div key={seccion.titulo} className="flex flex-col gap-1">
-              {/* /60 daba 3.84:1 de contraste (WCAG AA exige 4.5:1). Con /80 sube a ~5:1. */}
-              <p className="px-4 text-[10px] font-bold uppercase tracking-widest text-[#17324c]/80">
+              <p className="px-3.5 mb-1 text-[11px] font-medium text-[#536577]">
                 {seccion.titulo}
               </p>
 
@@ -100,11 +104,13 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                 const IconComponent = item.icon;
                 const isActive = location.pathname === item.path;
                 return (
-                  <button
+                  <NavLink
                     key={item.id}
-                    onClick={() => irA(item.path)}
+                    to={item.path}
+                    end
+                    onClick={cerrarEnMovil}
                     aria-current={isActive ? 'page' : undefined}
-                    className={`sidebar-link flex items-center gap-3 w-full px-3.5 py-3 min-h-11 rounded-xl text-sm font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                    className={`sidebar-link flex items-center gap-3 w-full px-3.5 py-2.5 min-h-11 rounded-lg text-[13px] font-medium transition-colors cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-[#17324c] text-white'
                         : 'text-[#17324c] hover:bg-white/45'
@@ -126,7 +132,7 @@ export default function Sidebar({ sidebarOpen, setSidebarOpen }) {
                         {item.paso}
                       </span>
                     )}
-                  </button>
+                  </NavLink>
                 );
               })}
             </div>

@@ -1,3 +1,4 @@
+import { ChartNoAxesColumn } from 'lucide-react';
 import { BANDAS, escalaEje, fechaCorta, indicesEtiquetas } from '../../utils/reportes';
 
 // Columnas apiladas: una por día, divididas por banda del modelo.
@@ -16,6 +17,16 @@ export default function GraficoTendencia({ serie, titulo = 'Evaluaciones por dí
   const y = (v) => M.arriba + areaH - (v / max) * areaH;
   const etiquetados = new Set(indicesEtiquetas(serie.length, serie.length > 14 ? 7 : serie.length > 7 ? 8 : 7));
   const total = serie.reduce((s, p) => s + p.total, 0);
+
+  if (total === 0) {
+    return (
+      <div className="report-chart-empty" role="status">
+        <ChartNoAxesColumn className="w-7 h-7 mb-1" aria-hidden="true" />
+        <strong>Sin evaluaciones en este periodo</strong>
+        <p>Al registrar una evaluación, podrás consultar aquí su tendencia.</p>
+      </div>
+    );
+  }
 
   return (
     <figure>

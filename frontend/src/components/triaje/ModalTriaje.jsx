@@ -1,58 +1,60 @@
 import { cloneElement, useId, useState } from 'react';
 import { Loader2, Info, BrainCircuit } from 'lucide-react';
-import { calcularIMC, edadACategoria, obtenerEdad, nombreCompleto } from '../../utils/triaje';
+import { edadACategoria, obtenerEdad, nombreCompleto, parsePresion } from '../../utils/triaje';
 import { Alerta } from '../ui/Feedback';
 import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
-import ObservacionesForm from '../clinica/ObservacionesForm';
-import AlertaClinica from '../clinica/AlertaClinica';
-import { construirObservaciones, hayAlerta } from '../../utils/observaciones';
-import { useAlertaClinica } from '../../hooks/useAlertaClinica';
+import MedicionesFuaForm from '../atenciones/MedicionesFuaForm';
+import ContextoPacienteForm from '../clinica/ContextoPacienteForm';
+import { contextoPaciente } from '../../utils/clinica';
 
 const inputClass =
   'w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none';
 
 const FORM_INICIAL = {
   // Signos vitales
-  peso: '',
-  altura: '',
+  peso_kg: '',
+  talla_cm: '',
   presionArterial: '',
-  temperatura: '',
-  frecuenciaCardiaca: '',
-  saturacion: '',
   // Antecedentes
   hipertensionPrevia: false,
   colesterolAlto: false,
-  chequeoColesterol: false,
   derrame: false,
   dificultadCaminar: false,
   // Hábitos
   fuma: false,
   actividadFisica: false,
-  frutas: false,
-  verduras: false,
-  alcoholExcesivo: false,
   // Percepción de salud
   diabetes: '0',
   saludGeneral: '3',
-  diasSaludMental: 0,
-  diasSaludFisica: 0,
+  // Datos administrativos del FUA (no entran al modelo)
+  tipo_atencion: 'ambulatoria',
+  lugar_atencion: 'intramural',
 };
+
+// Orden visible del formulario. El paso 4 no interviene en el modelo.
+const PASOS = [
+  ['1', 'Signos de hoy'],
+  ['2', 'Antecedentes y hábitos'],
+  ['3', 'Salud general'],
+  ['4', 'FUA (opcional)'],
+];
 
 /**
  * Arma el formulario precargando:
  *   - Peso y talla del REGISTRO del paciente (lo que se capturó al registrarlo).
- *   - Antecedentes, hábitos y percepción de salud de su ÚLTIMA evaluación,
- *     porque son datos que no cambian entre consultas.
- * Lo que no se pueda deducir (presión, temperatura, FC, saturación) se deja vacío.
+ *   - Antecedentes, hábitos y percepción de salud de su última evaluación,
+ *     como referencia que debe verificarse en cada visita.
+ * El indicador anterior de presión alta no prueba un diagnóstico previo.
+ * La lectura de presión se registra para esta visita.
  */
 const formInicialTriaje = (paciente, ultimaEvaluacion) => ({
   ...FORM_INICIAL,
+  ...contextoPaciente(paciente),
   // Del registro administrativo del paciente
-  peso: paciente?.peso_kg ?? '',
-  altura: paciente?.talla_cm ?? '',
+  peso_kg: paciente?.peso_kg ?? '',
+  talla_cm: paciente?.talla_cm ?? '',
   ...(ultimaEvaluacion
     ? {
-        hipertensionPrevia: Boolean(ultimaEvaluacion.presion_alta),
         colesterolAlto: Boolean(ultimaEvaluacion.colesterol_alto),
         derrame: Boolean(ultimaEvaluacion.antecedente_acv),
         dificultadCaminar: Boolean(ultimaEvaluacion.dificultad_para_caminar),
@@ -64,15 +66,23 @@ const formInicialTriaje = (paciente, ultimaEvaluacion) => ({
     : {}),
 });
 
-function Seccion({ titulo, children, nota }) {
+function NumeroPaso({ children }) {
   return (
-    <fieldset className="space-y-3">
-      <legend className="w-full mb-2">
-        <span className="flex flex-wrap items-center gap-2">
-          <span className="text-sm font-semibold text-slate-800">{titulo}</span>
+    <span className="w-6 h-6 shrink-0 rounded-full bg-[#17324c] text-white text-[11px] font-bold flex items-center justify-center">
+      {children}
+    </span>
+  );
+}
 
+function Seccion({ paso, titulo, nota, children }) {
+  return (
+    <fieldset className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+      <legend className="w-full mb-1">
+        <span className="flex flex-wrap items-center gap-2">
+          <NumeroPaso>{paso}</NumeroPaso>
+          <span className="text-sm font-semibold text-slate-800">{titulo}</span>
+          {nota && <span className="text-[11px] font-normal text-slate-500">{nota}</span>}
         </span>
-        {nota && <span className="block text-xs text-slate-500 mt-1 font-normal">{nota}</span>}
       </legend>
       {children}
     </fieldset>
@@ -108,7 +118,11 @@ function Campo({ label, children, ayuda }) {
 /** La casilla ya envuelve al input, así que su etiqueta sí está asociada. */
 function Casilla({ name, label, checked, onChange }) {
   return (
-    <label className="flex items-start gap-2 text-sm text-slate-700 cursor-pointer">
+    <label
+      className={`flex items-start gap-2.5 text-sm text-slate-700 cursor-pointer rounded-xl border p-3 min-h-11 transition ${
+        checked ? 'bg-sky-50 border-sky-300' : 'bg-slate-50/60 border-slate-200 hover:bg-slate-50'
+      }`}
+    >
       <input
         type="checkbox"
         name={name}
@@ -122,22 +136,20 @@ function Casilla({ name, label, checked, onChange }) {
 }
 
 // EXPO-ML 02 | Capturar las respuestas de la evaluación del paciente seleccionado.
-// Las secciones indican qué datos utiliza el modelo. Los campos complementarios
-// de este modal no se envían ni se guardan mediante el POST de evaluación.
+// Los predictores se envían al modelo; los datos de visita se guardan en observaciones.
 // Al guardar, TriajePage llama a construirPayloadEvaluacion: EXPO-ML 03.
 export default function ModalTriaje({
   paciente,
   ultimaEvaluacion,
   onClose,
   onGuardar,
+  onGuardarContexto,
   guardando,
   error,
 }) {
   // El modal solo se monta al abrirse, así el formulario arranca con los datos
   // precargados del paciente y de su última evaluación.
   const [form, setForm] = useState(() => formInicialTriaje(paciente, ultimaEvaluacion));
-  const observaciones = construirObservaciones(form);
-  const revision = useAlertaClinica(paciente?.id, observaciones);
 
   // Scroll bloqueado, Escape, clic fuera y foco inicial: ver el hook.
   const { propsContenedor, alClicFondo } = useDialogoAccesible({
@@ -154,10 +166,12 @@ export default function ModalTriaje({
     setForm((prev) => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
-  const imc = calcularIMC(form.peso, form.altura);
   // El modelo solo aplica a adultos con edad conocida (el dataset es de 18 años o más).
   const edad = obtenerEdad(paciente);
   const sinEdadValida = edadACategoria(edad) === null;
+
+  // Lectura ya capturada, mostrada desglosada para que se vea qué se guarda.
+  const presion = parsePresion(form.presionArterial);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -185,79 +199,34 @@ export default function ModalTriaje({
             <span className="font-semibold text-slate-700">{nombreCompleto(paciente)}</span> (Doc:{' '}
             {paciente?.documento_identidad}) · {edad != null ? `${edad} años` : 'edad desconocida'}
           </p>
+          <ol className="mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1">
+            {PASOS.map(([numero, titulo], indice) => (
+              <li key={numero} className="flex items-center gap-1.5">
+                {indice > 0 && (
+                  <span className="text-slate-300 text-xs" aria-hidden="true">
+                    ›
+                  </span>
+                )}
+                <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+                  <span className="font-bold text-slate-700">{numero}</span> {titulo}
+                </span>
+              </li>
+            ))}
+          </ol>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
-          <div className="overflow-y-auto px-6 lg:px-8 py-5 space-y-6 flex-1">
+          <div className="overflow-y-auto px-6 lg:px-8 py-5 space-y-4 flex-1">
             {error && <Alerta>{error}</Alerta>}
-            <AlertaClinica {...revision} observaciones={observaciones} />
 
             {precargado && (
               <div className="flex items-start gap-2.5 text-xs text-sky-900 bg-sky-50 border border-sky-200 rounded-xl p-3">
                 <Info className="w-4 h-4 mt-0.5 shrink-0 text-sky-600" aria-hidden="true" />
                 <span>
-                  Precargamos
-                  {tieneRegistro ? ' el peso y la talla de su registro' : ''}
-                  {tieneRegistro && ultimaEvaluacion ? ' y' : ''}
-                  {ultimaEvaluacion ? ' los antecedentes de su última evaluación' : ''}.
-                  Verifícalos y actualízalos si hace falta.
+                  Hay datos precargados de registros anteriores. Revísalos y corrige lo que haya cambiado en esta visita.
                 </span>
               </div>
             )}
-
-            <Seccion
-              titulo="Presión arterial"
-              usadaPorModelo
-              nota="Registra la medición de esta visita. El antecedente de hipertensión se indica más adelante."
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Campo label="Presión Arterial (mmHg)">
-                  <input
-                    type="text"
-                    name="presionArterial"
-                    required
-                    pattern="\d{2,3}\s*/\s*\d{2,3}"
-                    title="Formato: 120/80"
-                    value={form.presionArterial}
-                    onChange={handleChange}
-                    placeholder="120/80"
-                    className={inputClass}
-                  />
-                </Campo>
-              </div>
-            </Seccion>
-
-            <Seccion
-              titulo="Mediciones de la visita"
-              nota="Se guardan para apoyar la valoración clínica. Deja el campo vacío si no se realizó la medición."
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Campo label="Peso (kg)">
-                  <input type="number" step="0.1" min="1" name="peso" value={form.peso} onChange={handleChange} placeholder="70" className={inputClass} />
-                </Campo>
-                <Campo label="Altura (cm)">
-                  <input type="number" min="30" name="altura" value={form.altura} onChange={handleChange} placeholder="170" className={inputClass} />
-                </Campo>
-                <Campo label="Temperatura (°C)">
-                  <input type="number" step="0.1" min="25" max="45" name="temperatura" value={form.temperatura} onChange={handleChange} placeholder="36.5" className={inputClass} />
-                </Campo>
-                <Campo label="Frecuencia Cardíaca (bpm)">
-                  <input type="number" min="0" max="300" name="frecuenciaCardiaca" value={form.frecuenciaCardiaca} onChange={handleChange} placeholder="80" className={inputClass} />
-                </Campo>
-                <Campo label="Saturación de Oxígeno (%)">
-                  <input type="number" min="0" max="100" step="0.1" name="saturacion" value={form.saturacion} onChange={handleChange} placeholder="98" className={inputClass} />
-                </Campo>
-                <Campo label="Frecuencia respiratoria (rpm)">
-                  <input type="number" min="0" max="100" name="frecuencia_respiratoria" value={form.frecuencia_respiratoria ?? ''} onChange={handleChange} className={inputClass} />
-                </Campo>
-              </div>
-              <p className="text-xs text-slate-500">
-                IMC calculado (referencial):{' '}
-                <span className="font-semibold text-slate-700">{imc ?? '—'}</span>
-              </p>
-            </Seccion>
-
-            <ObservacionesForm value={form} onChange={setForm} incluirMediciones={false} mostrarCondicion={paciente?.sexo === 'F'} disabled={guardando} />
 
             {sinEdadValida && (
               <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">
@@ -266,73 +235,120 @@ export default function ModalTriaje({
               </p>
             )}
 
-            <Seccion titulo="Antecedentes" usadaPorModelo>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Seccion
+              paso="1"
+              titulo="Signos de esta visita"
+              nota="Obligatorio · se usa para el modelo y el FUA"
+            >
+              <Campo
+                label="Presión arterial (mmHg)"
+                ayuda="Escribe la lectura completa, por ejemplo 120/80."
+              >
+                <input
+                  type="text"
+                  name="presionArterial"
+                  required
+                  inputMode="numeric"
+                  autoComplete="off"
+                  pattern="\d{2,3}\s*/\s*\d{2,3}"
+                  title="Formato: 120/80"
+                  value={form.presionArterial}
+                  onChange={handleChange}
+                  placeholder="120/80"
+                  className={inputClass}
+                />
+              </Campo>
+              <div className="grid grid-cols-2 gap-2" aria-live="polite">
+                <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                  <p className="text-[11px] text-slate-500">Sistólica</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {presion ? `${presion.sistolica} mmHg` : '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2">
+                  <p className="text-[11px] text-slate-500">Diastólica</p>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {presion ? `${presion.diastolica} mmHg` : '—'}
+                  </p>
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Ambas cifras quedan registradas para el FUA. No hace falta escribirlas otra vez.
+              </p>
+            </Seccion>
+
+            <Seccion
+              paso="2"
+              titulo="Antecedentes y hábitos"
+              nota="Marca solo lo confirmado en esta visita"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <Casilla name="hipertensionPrevia" label="Diagnóstico previo de hipertensión" checked={form.hipertensionPrevia} onChange={handleChange} />
                 <Casilla name="colesterolAlto" label="Colesterol alto" checked={form.colesterolAlto} onChange={handleChange} />
                 <Casilla name="derrame" label="Derrame cerebral previo" checked={form.derrame} onChange={handleChange} />
                 <Casilla name="dificultadCaminar" label="Dificultad seria para caminar o subir escaleras" checked={form.dificultadCaminar} onChange={handleChange} />
               </div>
-              <Campo label="Diabetes">
+              <Campo label="Diabetes" ayuda="Prediabetes y diabetes cuentan igual para el modelo.">
                 <select name="diabetes" value={form.diabetes} onChange={handleChange} className={inputClass}>
                   <option value="0">No tiene</option>
                   <option value="1">Prediabetes</option>
                   <option value="2">Diabetes</option>
                 </select>
               </Campo>
-            </Seccion>
-
-            <Seccion titulo="Hábitos" usadaPorModelo>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Casilla name="fuma" label="Ha fumado al menos 100 cigarrillos en su vida" checked={form.fuma} onChange={handleChange} />
-                <Casilla name="actividadFisica" label="Actividad física en los últimos 30 días" checked={form.actividadFisica} onChange={handleChange} />
+              <div className="pt-3 border-t border-slate-100 space-y-2.5">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Hábitos</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <Casilla name="fuma" label="Ha fumado al menos 100 cigarrillos en su vida" checked={form.fuma} onChange={handleChange} />
+                  <Casilla name="actividadFisica" label="Actividad física en los últimos 30 días" checked={form.actividadFisica} onChange={handleChange} />
+                </div>
               </div>
             </Seccion>
 
-            <Seccion titulo="Percepción de salud" usadaPorModelo>
-              <div className="grid grid-cols-1">
-                <Campo label="Salud general">
-                  <select name="saludGeneral" value={form.saludGeneral} onChange={handleChange} className={inputClass}>
-                    <option value="1">Excelente</option>
-                    <option value="2">Muy buena</option>
-                    <option value="3">Buena</option>
-                    <option value="4">Regular</option>
-                    <option value="5">Mala</option>
-                  </select>
-                </Campo>
-              </div>
+            <Seccion paso="3" titulo="Percepción de salud">
+              <Campo label="Salud general" ayuda="1 es excelente y 5 es mala.">
+                <select name="saludGeneral" value={form.saludGeneral} onChange={handleChange} className={inputClass}>
+                  <option value="1">Excelente</option>
+                  <option value="2">Muy buena</option>
+                  <option value="3">Buena</option>
+                  <option value="4">Regular</option>
+                  <option value="5">Mala</option>
+                </select>
+              </Campo>
             </Seccion>
 
-            <Seccion
-              titulo="Datos complementarios"
-              nota="Se capturan para la consulta, pero el modelo no los usa y el registro todavía no los guarda."
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Casilla name="chequeoColesterol" label="Chequeo de colesterol en los últimos 5 años" checked={form.chequeoColesterol} onChange={handleChange} />
-                <Casilla name="frutas" label="Come fruta al menos una vez al día" checked={form.frutas} onChange={handleChange} />
-                <Casilla name="verduras" label="Come verduras al menos una vez al día" checked={form.verduras} onChange={handleChange} />
-                <Casilla name="alcoholExcesivo" label="Consumo excesivo de alcohol" checked={form.alcoholExcesivo} onChange={handleChange} />
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Con los pasos 1 a 3 se calcula el riesgo. El paso 4 solo completa el FUA: no cambia el resultado del modelo.
+            </p>
+
+            <details className="consultation-reference">
+              <summary className="flex items-start gap-2.5">
+                <NumeroPaso>4</NumeroPaso>
+                <span>
+                  <span className="font-semibold">Datos para el FUA</span>
+                  <span className="block text-[11px] font-normal text-slate-500">
+                    Opcional · mediciones, atención, lugar y categoría de la visita
+                  </span>
+                </span>
+              </summary>
+              <div className="space-y-5">
+                <ContextoPacienteForm value={form} onChange={setForm} sexo={paciente?.sexo} grupo={paciente?.grupo_etario} disabled={guardando} />
+                <MedicionesFuaForm value={form} onChange={setForm} presionArterial={form.presionArterial} disabled={guardando} />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Campo label="Días de mala salud mental (último mes)">
-                  <input type="number" min="0" max="30" name="diasSaludMental" value={form.diasSaludMental} onChange={handleChange} className={inputClass} />
-                </Campo>
-                <Campo label="Días de mala salud física (último mes)">
-                  <input type="number" min="0" max="30" name="diasSaludFisica" value={form.diasSaludFisica} onChange={handleChange} className={inputClass} />
-                </Campo>
-              </div>
-            </Seccion>
+            </details>
 
             <details className="text-xs text-slate-600 border-t border-slate-200 pt-3 leading-relaxed">
-              <summary className="flex items-center gap-2 cursor-pointer min-h-11"><BrainCircuit className="w-4 h-4 shrink-0" aria-hidden="true" />Qué información utiliza la evaluación cardiovascular</summary>
+              <summary className="flex items-center gap-2 cursor-pointer min-h-11"><BrainCircuit className="w-4 h-4 shrink-0" aria-hidden="true" />Qué usa el modelo: 9 datos</summary>
               <p className="mt-2">El modelo recibe 9 variables: presión alta, colesterol alto, tabaquismo, actividad física, antecedente de ACV, diabetes, salud general, dificultad para caminar y edad.</p>
+              <p className="mt-2">La edad se toma del paciente. Presión alta se obtiene del diagnóstico previo confirmado o de la lectura de esta visita; prediabetes se agrupa con diabetes. Peso, talla, otros signos y categoría de atención se guardan aparte.</p>
             </details>
           </div>
 
           {/* Acciones fijas: antes el botón de guardar quedaba ~180px por debajo
               del pliegue en un viewport de 900px y había que bajar todo el formulario. */}
-          {hayAlerta(revision.alerta) && <p role="alert" className="shrink-0 px-6 py-3 bg-rose-100 text-rose-950 text-sm font-bold">{revision.alerta.titulo}. La atención no debe esperar al resultado del modelo.</p>}
-          <div className="px-6 lg:px-8 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl flex flex-col-reverse sm:flex-row sm:justify-end gap-3 shrink-0">
+          <div className="px-6 lg:px-8 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-2xl flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 shrink-0">
+            <p className="text-[11px] text-slate-500 sm:mr-auto">
+              Los pasos 1 a 3 alimentan el modelo; el paso 4 solo completa el FUA.
+            </p>
             <button
               type="button"
               onClick={onClose}
@@ -340,6 +356,12 @@ export default function ModalTriaje({
             >
               Cancelar
             </button>
+            {paciente?.sexo === 'F' && <button
+              type="button"
+              onClick={() => onGuardarContexto(form)}
+              disabled={guardando}
+              className="px-4 py-2.5 min-h-11 border border-slate-300 rounded-xl text-slate-700 bg-white hover:bg-slate-100 text-sm font-medium cursor-pointer disabled:opacity-50"
+            >Guardar categoría para el FUA</button>}
             <button
               type="submit"
               disabled={sinEdadValida || guardando}

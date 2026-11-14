@@ -21,6 +21,8 @@ from io import BytesIO
 from pypdf import PdfReader
 
 from app.services.reporte_service import generar_fua_pdf
+from app.services.fua_atencion import datos_fua_desde_atencion
+from app.models.atencion import Atencion
 from app.services.fua_oficial import (
     FuaDatos, RUTA_PLANTILLA, PAGE_W, PAGE_H, _codigo_tdi, pagina_fua_oficial, resumir,
 )
@@ -173,6 +175,18 @@ def test_pagina_1_es_el_formulario_oficial_con_los_datos_del_paciente():
     assert "ANEXO AL FORMATO UNICO DE ATENCION" in paginas[1].extract_text()
 
 
+def test_pagina_1_usa_la_recomendacion_del_modelo_como_diagnostico():
+    """El FUA de evaluación no tiene diagnóstico médico todavía: muestra la recomendación."""
+    p1 = _paginas(generar_fua_pdf(_build_evaluacion()))[0].extract_text()
+    assert "Solicitar perfil lipídico." in p1
+    assert "apoyo de modelo ML" not in p1
+
+
+def test_pagina_1_usa_la_accion_sugerida_si_no_hay_recomendaciones():
+    p1 = _paginas(generar_fua_pdf(_build_evaluacion(recomendaciones_medicas=None)))[0].extract_text()
+    assert "Programar consulta médica de control" in p1
+
+
 def test_pagina_del_formulario_es_oficio():
     p1 = _paginas(generar_fua_pdf(_build_evaluacion()))[0]
     assert abs(float(p1.mediabox.width) - PAGE_W) < 1
@@ -190,6 +204,21 @@ def test_formulario_con_seguro_de_otra_iafas_y_emergencia():
                  fecha_atencion=datetime(2026, 11, 1, 23, 5))
     texto = _paginas(pagina_fua_oficial(d))[0].extract_text()
     assert "67011841PSHR006" in texto and "X123" in texto
+
+
+def test_datos_fua_de_la_atencion_marcan_referencia_y_lugar():
+    atencion = Atencion(
+        id=12, tipo_atencion="referencia", lugar_atencion="extramural",
+        condicion_materna="ninguna", diagnostico="Control de prueba",
+        observaciones_clinicas=None, created_at=datetime(2026, 11, 13, 9, 0),
+    )
+    atencion.paciente = _build_paciente()
+    atencion.usuario = _build_usuario()
+
+    datos = datos_fua_desde_atencion(atencion)
+
+    assert datos.referencia is True and datos.emergencia is False
+    assert datos.lugar_atencion == "extramural"
 
 
 def test_codigo_tdi_segun_directiva():

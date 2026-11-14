@@ -36,7 +36,7 @@ from app.models.usuario import Usuario
 from app.repositories.evaluacion_repository import EvaluacionRepository
 from app.repositories.atencion_repository import AtencionRepository
 from app.services.fua_atencion import generar_fua_atencion_pdf
-from app.services.fua_oficial import construir_datos, pagina_fua_oficial, unir_pdfs
+from app.services.fua_oficial import construir_datos, pagina_fua_oficial, resumir, unir_pdfs
 from app.mappers.evaluacion_mapper import EvaluacionMapper
 from app.services.alerta_clinica_service import SIGNOS, SINTOMAS
 
@@ -186,15 +186,39 @@ def _parrafo(c: canvas.Canvas, cy: float, x: float, w: float, texto: str,
 # ============================================================
 # CONSTRUCCIÓN DEL DOCUMENTO
 # ============================================================
+def _recomendacion_para_fua(evaluacion: Evaluacion) -> str:
+    """
+    Texto que se imprime en DIAGNÓSTICOS del FUA de evaluación.
+
+    Una evaluación todavía no tiene diagnóstico médico: hasta que el
+    profesional lo registre en Consultorio, la casilla muestra la
+    recomendación del tamizaje (primera recomendación; si no hay, la acción
+    sugerida). El detalle completo sigue en el anexo.
+    """
+    triaje = EvaluacionMapper.to_response(evaluacion).triaje_clinico
+    if triaje:
+        for recomendacion in triaje.recomendaciones_medicas or []:
+            if recomendacion and str(recomendacion).strip():
+                return resumir(str(recomendacion))
+        if triaje.accion_sugerida:
+            return resumir(triaje.accion_sugerida)
+    return ""
+
+
 def datos_fua_desde_evaluacion(evaluacion: Evaluacion):
     """Datos que se escriben sobre el formulario FUA oficial (página 1)."""
+    obs = evaluacion.observaciones_clinicas or {}
+    recomendacion = _recomendacion_para_fua(evaluacion)
     return construir_datos(
         paciente=evaluacion.paciente,
         usuario=evaluacion.usuario,
         observaciones=evaluacion.observaciones_clinicas,
         fecha=evaluacion.created_at,
         correlativo=evaluacion.id,
-        diagnosticos=[("Tamizaje de riesgo cardiovascular (apoyo de modelo ML)", "")],
+        emergencia=obs.get("tipo_atencion") == "emergencia",
+        referencia=obs.get("tipo_atencion") == "referencia",
+        lugar_atencion=obs.get("lugar_atencion") or "",
+        diagnosticos=[(recomendacion, "")] if recomendacion else [],
     )
 
 

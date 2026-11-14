@@ -88,12 +88,12 @@ export default function DashboardPage() {
               <div className="mt-5">
                 {[
                   ['Pacientes', 'Consulta el directorio o registra a una persona.', '/dashboard/pacientes'],
-                  ['Triaje y evaluación', 'Registra mediciones y revisa señales de alarma.', '/dashboard/triaje'],
+                  ['Triaje y evaluación', 'Registra datos para el modelo y el FUA.', '/dashboard/triaje'],
                   ['Consultorio médico', 'Documenta la atención y genera el FUA.', '/dashboard/consultorio'],
                 ].map(([titulo, detalle, ruta]) => <button key={ruta} className="dashboard-start-link" onClick={() => navigate(ruta)}><div><span>{titulo}</span><small>{detalle}</small></div><ArrowRight className="w-4 h-4 shrink-0" aria-hidden="true" /></button>)}
               </div>
             </section>
-            <section aria-labelledby="actividad-centro" className="pt-2">
+            <section aria-labelledby="actividad-centro" className="dashboard-activity">
               <h2 id="actividad-centro" className="text-base font-semibold">Actividad del centro</h2>
               <p className="text-xs text-slate-600 mt-2">Resumen de los registros disponibles.</p>
               <dl className="dashboard-metrics mt-3">
@@ -111,14 +111,14 @@ export default function DashboardPage() {
               );
             })}
               </dl>
-              <p className="text-xs text-slate-600 leading-relaxed mt-5">Las bandas del modelo describen el índice cardiovascular. La urgencia se revisa en cada atención.</p>
+              <p className="text-xs text-slate-600 leading-relaxed mt-5">Las bandas describen el índice cardiovascular calculado por el modelo.</p>
             </section>
           </div>
 
           <PanelTendencia />
 
           <div className="clinical-panel overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-100 flex flex-wrap gap-3 items-center justify-between">
               <h2 className="font-semibold text-slate-800">Últimas evaluaciones</h2>
               <span className="text-xs text-slate-500">
                 Mostrando {recientes.length} de {totalEvaluaciones}
@@ -142,7 +142,6 @@ export default function DashboardPage() {
                         </p>
                         <p className="text-xs text-slate-500">
                           {new Date(ev.created_at).toLocaleString()} · {ev.edad} años
-                          {ev.alerta_clinica?.titulo ? ` · ${ev.alerta_clinica.titulo}` : ' · Urgencia actual no revisada'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

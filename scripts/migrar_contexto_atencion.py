@@ -1,4 +1,4 @@
-"""Aplica la migración 003 sin duplicar columnas ni modificar registros antiguos.
+"""Aplica las migraciones 003 y 006 sin duplicar columnas ni modificar registros antiguos.
 
 Ejecutar desde la raíz: python -m scripts.migrar_contexto_atencion
 """
@@ -7,6 +7,7 @@ from app.core.config import get_settings
 
 COLUMNAS = {
     "tipo_atencion": "VARCHAR(20) NULL",
+    "lugar_atencion": "VARCHAR(20) NULL",
     "grupo_etario": "VARCHAR(20) NULL",
     "condicion_materna": "VARCHAR(20) NULL",
     "edad_al_atender": "SMALLINT NULL",
@@ -20,7 +21,7 @@ def migrar(engine):
             if nombre not in existentes:
                 conexion.execute(text(f"ALTER TABLE atenciones ADD COLUMN {nombre} {tipo}"))
                 print(f"Columna añadida: {nombre}")
-    print("Migración 003 lista. Los registros previos conservan NULL en los campos nuevos.")
+    print("Migraciones 003 y 006 listas. Los registros previos conservan NULL en los campos nuevos.")
 
 
 if __name__ == "__main__":

@@ -35,6 +35,8 @@ api.interceptors.response.use(
 // Extrae un mensaje legible de un error de axios/FastAPI.
 // FastAPI devuelve {"detail": "..."} o, en 422, {"detail": [{msg, loc}, ...]}.
 export function mensajeError(error, fallback = 'Ocurrió un error inesperado') {
+  if (error?.code === 'ERR_NETWORK') return 'No pudimos conectar con el servidor. Vuelve a intentarlo.'
+  if (error?.code === 'ECONNABORTED') return 'El servidor está tardando en responder. Vuelve a intentarlo.'
   const detail = error?.response?.data?.detail
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) {

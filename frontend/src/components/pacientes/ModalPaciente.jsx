@@ -3,6 +3,7 @@ import { Alerta } from '../ui/Feedback';
 import { useDialogoAccesible } from '../../hooks/useDialogoAccesible';
 import { calcularEdad } from '../../utils/triaje';
 import { grupoPorEdad, etiquetaGrupo } from '../../utils/clinica';
+import ContextoPacienteForm from '../clinica/ContextoPacienteForm';
 
 const inputClass =
   'w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-sky-400 focus:outline-none disabled:opacity-60';
@@ -16,6 +17,7 @@ export default function ModalPaciente({
   onClose,
   formData,
   onChange,
+  onContextoChange,
   onSubmit,
   esEdicion,
   distritos = [],
@@ -240,6 +242,9 @@ export default function ModalPaciente({
                 />
               </div>
             </div>
+
+            <ContextoPacienteForm value={formData.contexto_atencion} onChange={onContextoChange}
+              sexo={formData.sexo} grupo={grupoPorEdad(calcularEdad(formData.fecha_nacimiento))} disabled={guardando} />
 
             {/* Ubicación (catálogos) + seguro */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

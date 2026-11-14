@@ -54,6 +54,7 @@ class Atencion(Base):
 
     # Instantánea de la visita. NULL identifica registros anteriores a la migración.
     tipo_atencion = Column(String(20), nullable=True)
+    lugar_atencion = Column(String(20), nullable=True)
     grupo_etario = Column(String(20), nullable=True)
     condicion_materna = Column(String(20), nullable=True)
     edad_al_atender = Column(SmallInteger, nullable=True)
