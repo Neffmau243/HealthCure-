@@ -14,10 +14,11 @@ Distrito y Localidad se envían como ID (distrito_id/localidad_id) y
 se retornan como nombre ("distrito": "Alto Selva Alegre") para que el
 frontend muestre el texto sin hacer consultas extra.
 """
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing import Optional
 from datetime import date, datetime
 from enum import Enum
+from app.core.clinica import GrupoEtario
 
 
 class SexoEnum(str, Enum):
@@ -180,6 +181,7 @@ class PacienteResponse(BaseModel):
     }
     """
     id: int
+    grupo_etario: Optional[GrupoEtario] = None
     tipo_documento: TipoDocumentoEnum
     documento_identidad: str
     numero_historia_clinica: Optional[str] = None
@@ -216,6 +218,5 @@ class PacienteResponse(BaseModel):
             return v.nombre
         return v
 
-    class Config:
-        from_attributes = True
-        # Permite crear desde objetos SQLAlchemy (ORM)
+    # Pydantic v2: ConfigDict reemplaza al `class Config` deprecado.
+    model_config = ConfigDict(from_attributes=True)

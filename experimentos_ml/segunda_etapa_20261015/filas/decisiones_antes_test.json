@@ -1,0 +1,29 @@
+{
+  "umbrales": {
+    "xgb_raw": {
+      "umbral": 0.6962235569953918,
+      "f1_validation": 0.4114803625377643,
+      "seleccionado_en": "validation",
+      "criterio": "max F1; empate mayor umbral"
+    },
+    "xgb_sigmoid": {
+      "umbral": 0.20987730826066,
+      "f1_validation": 0.4114803625377643,
+      "seleccionado_en": "validation",
+      "criterio": "max F1; empate mayor umbral"
+    },
+    "logistic": {
+      "umbral": 0.2018560625708279,
+      "f1_validation": 0.4120040691759918,
+      "seleccionado_en": "validation",
+      "criterio": "max F1; empate mayor umbral"
+    }
+  },
+  "brier_validation": {
+    "xgb_raw": 0.17039644718170166,
+    "xgb_sigmoid": 0.07123358523803111
+  },
+  "variante_xgb_seleccionada": "xgb_sigmoid",
+  "scale_pos_weight_train": 9.6171875,
+  "baseline_prevalencia_train": 0.094186902133922
+}

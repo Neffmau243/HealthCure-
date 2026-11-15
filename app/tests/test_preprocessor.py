@@ -8,7 +8,7 @@ Por eso se prueban: orden de columnas, validación de faltantes y rangos.
 import pandas as pd
 import pytest
 
-from app.ml.preprocessor import preprocess, FEATURE_COLUMNS
+from app.ml.preprocessor import preprocess, FEATURE_COLUMNS, mapear_edad_cdc
 
 DATOS_VALIDOS = {
     "edad": 55,
@@ -53,6 +53,32 @@ def test_preprocess_lanza_error_si_edad_fuera_de_rango():
     data = {**DATOS_VALIDOS, "edad": 200}
     with pytest.raises(ValueError, match="Edad fuera de rango"):
         preprocess(data)
+
+
+# ============================================================
+# mapear_edad_cdc (años reales -> codigo 1-13 del BRFSS)
+# ============================================================
+
+def test_mapear_edad_cdc_fronteras():
+    """Límites exactos de cada rango CDC (ver entrenar_modelo.py)."""
+    assert mapear_edad_cdc(24) == 1   # 18-24
+    assert mapear_edad_cdc(25) == 2   # 25-29
+    assert mapear_edad_cdc(29) == 2
+    assert mapear_edad_cdc(30) == 3   # 30-34
+    assert mapear_edad_cdc(54) == 7   # 50-54
+    assert mapear_edad_cdc(55) == 8   # 55-59
+    assert mapear_edad_cdc(79) == 12  # 75-79
+    assert mapear_edad_cdc(80) == 13  # 80+
+    assert mapear_edad_cdc(95) == 13
+
+
+def test_preprocess_convierte_edad_a_codigo_cdc():
+    """El DataFrame que ve el modelo lleva edad 1-13, no años reales."""
+    df = preprocess({**DATOS_VALIDOS, "edad": 55})
+    assert df.iloc[0]["edad"] == 8   # 55 años -> rango 8
+
+    df2 = preprocess({**DATOS_VALIDOS, "edad": 30})
+    assert df2.iloc[0]["edad"] == 3  # 30 años -> rango 3
 
 
 def test_preprocess_lanza_error_si_salud_general_fuera_de_rango():

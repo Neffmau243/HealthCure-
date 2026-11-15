@@ -21,6 +21,7 @@ from app.models.paciente import Paciente
 from app.models.evaluacion import Evaluacion
 from app.models.distrito import Distrito
 from app.models.localidad import Localidad
+from app.services.evaluacion_triaje_service import generar_triaje_clinico
 from passlib.context import CryptContext
 from datetime import date
 
@@ -302,7 +303,13 @@ def seed_database():
         ]
 
         for eval_data in evaluaciones_data:
-            evaluacion = Evaluacion(**eval_data)
+            # Persistir también el triaje clínico (mismas reglas que la API)
+            triaje = generar_triaje_clinico(
+                data=eval_data,
+                probabilidad=eval_data["probabilidad"],
+                clasificacion=eval_data["clasificacion"],
+            )
+            evaluacion = Evaluacion(**eval_data, **triaje)
             db.add(evaluacion)
         db.flush()
         print(f"  [OK] {len(evaluaciones_data)} evaluaciones creadas")

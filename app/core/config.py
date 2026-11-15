@@ -9,7 +9,7 @@ NUNCA se leen variables de entorno directamente con os.getenv() en otros
 archivos — siempre se pasa por este módulo para mantener un solo punto
 de verdad y validación de tipos.
 """
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
 
 
@@ -78,9 +78,11 @@ class Settings(BaseSettings):
     MODEL_PATH: str = "app/resources/modelo_cardiaco.joblib"
     # Ruta al archivo .joblib del modelo entrenado de Random Forest/XGBoost
 
-    class Config:
-        env_file = ".env"  # Lee de este archivo al iniciar
-        env_file_encoding = "utf-8"
+    # Pydantic v2: SettingsConfigDict reemplaza al `class Config` deprecado.
+    model_config = SettingsConfigDict(
+        env_file=".env",          # Lee de este archivo al iniciar
+        env_file_encoding="utf-8",
+    )
 
 
 @lru_cache()

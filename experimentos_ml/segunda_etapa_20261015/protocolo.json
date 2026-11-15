@@ -1,0 +1,62 @@
+{
+  "version": "3.0.0-experimental",
+  "fecha_utc": "2026-10-15T15:31:29.586267+00:00",
+  "seed": 20261015,
+  "fracciones_objetivo": {
+    "train": 0.6,
+    "calibration": 0.15,
+    "validation": 0.1,
+    "test": 0.15
+  },
+  "primario": "perfiles",
+  "escenarios": [
+    "filas",
+    "perfiles",
+    "sin_duplicados_completos"
+  ],
+  "features": [
+    "edad",
+    "presion_alta",
+    "colesterol_alto",
+    "tabaquismo",
+    "actividad_fisica",
+    "antecedente_acv",
+    "diabetes",
+    "salud_general",
+    "dificultad_para_caminar"
+  ],
+  "parametros_xgb_fijos": {
+    "n_estimators": 400,
+    "max_depth": 3,
+    "learning_rate": 0.05,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8
+  },
+  "origen_parametros": "Configuración v2 previamente explorada en este mismo CSV; sin nueva búsqueda",
+  "calibracion": "sigmoid en calibration, con estimador congelado; sin reentrenar después",
+  "eleccion_variante_xgb": "menor Brier en validation; empate xgb_raw",
+  "eleccion_umbral": "máximo F1 en validation, empate mayor umbral; sin criterio clínico",
+  "bandas_app": "Sin cambios; 0.30/0.60 no se trasladan al candidato calibrado",
+  "bootstrap": 200,
+  "bootstrap_unidad": "perfil 9 features",
+  "subgrupos": "sexo, edades 18-44/45-64/65+, e intersecciones; umbral global fijo",
+  "dataset_sha256": "953fb23bb131736d7879539a071d3f6d1eaae8d4867ab05335d0ba89b94d5f99",
+  "runtime_sha256": {
+    "app\\resources\\modelo_cardiaco.joblib": "47f227f51c5ca15bff66cb24b4e9d1ea250e3f3c646cd7d13d017664871b666b",
+    "app\\resources\\modelo_cardiaco_metadata.json": "3b72fb45aca0bacc80e409b79d8992c0ea815fbc48e32cd862af44511fec9c94"
+  },
+  "codigo_sha256": {
+    "app/ml/experiment.py": "9ced3ba4ed23b4a1a7aef45abaa9f9e9d01337f17ef30c638487257ca35066fc",
+    "app/ml/dataset.py": "5381a8a2c8bb6622332703a3fc2a6f38202955f0d1829b38fda39583f1f3839e",
+    "entrenar_modelo.py": "3ed13b0756dec281209cc66341c36bff835857221d15727760f6f72c82d78a33"
+  },
+  "librerias": {
+    "python": "3.12.10",
+    "sklearn": "1.9.0",
+    "xgboost": "3.4.1",
+    "pandas": "3.0.5",
+    "numpy": "2.5.2",
+    "joblib": "1.5.3"
+  },
+  "limite": "Reevaluación interna de datos ya estudiados, no test externo prospectivo."
+}
